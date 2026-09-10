@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arynwood Flowchart — Visual Workflow Designer</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0a0a0f;
+      --surface: #111118;
+      --border:  #1e1e2e;
+      --accent:  #00ff9f;
+      --dim:     #2a2a3a;
+      --text:    #e0e0f0;
+      --muted:   #6e6e8a;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #111; }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+    /* HEADER */
+    #header {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    #header .logo {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    #header .divider { width: 1px; height: 20px; background: var(--border); }
+    #header .subtitle { font-size: 10px; color: var(--muted); }
+    #header .stats { margin-left: auto; font-size: 10px; color: var(--muted); }
+
+    /* TOOLBAR */
+    #toolbar {
+      padding: 10px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .label { font-size: 10px; color: var(--muted); margin-right: 4px; }
+    .tool-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 11px;
+      transition: all 0.15s;
+    }
+    .tool-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .tool-btn.active { background: rgba(0,255,159,0.1); border-color: var(--accent); color: var(--accent); }
+    .tool-btn.danger { border-color: rgba(255,69,58,0.3); color: #ff453a; }
+    .tool-btn.danger:hover { background: rgba(255,69,58,0.1); }
+
+    .node-pill {
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      font-family: inherit;
+      border: 1px solid var(--border);
+      transition: all 0.15s;
+    }
+    .node-pill:hover { filter: brightness(1.3); }
+    .node-pill.active { outline: 2px solid var(--accent); }
+
+    #type-selector { display: none; align-items: center; gap: 8px; }
+    #type-selector.visible { display: flex; }
+
+    /* STATUS */
+    #statusbar {
+      padding: 4px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 10px;
+      color: var(--muted);
+      display: flex;
+      gap: 16px;
+      flex-shrink: 0;
+      background: var(--surface);
+    }
+    #statusbar .connecting-status { color: var(--accent); }
+
+    /* CANVAS AREA */
+    #canvas-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    #canvas {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+    #grid-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    #conn-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+    #nodes-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    /* NODES */
+    .node {
+      position: absolute;
+      cursor: grab;
+      user-select: none;
+      pointer-events: all;
+    }
+    .node:active { cursor: grabbing; }
+    .node svg { position: absolute; top: 0; left: 0; }
+    .node-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      padding: 4px 8px;
+      text-align: center;
+      word-break: break-word;
+      line-height: 1.3;
+      pointer-events: none;
+    }
+    .node-input {
+      position: absolute;
+      inset: 0;
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 12px;
+      text-align: center;
+      border-radius: 4px;
+      outline: none;
+      padding: 4px;
+      z-index: 100;
+    }
+    .node.selected-node::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border: 2px solid var(--accent);
+      border-radius: 4px;
+      box-shadow: 0 0 12px rgba(0,255,159,0.3);
+      pointer-events: none;
+    }
+
+    /* CONN LABEL EDITOR */
+    #conn-editor {
+      display: none;
+      padding: 8px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    #conn-editor.visible { display: flex; }
+    #conn-label-input {
+      background: var(--dim);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      outline: none;
+      width: 200px;
+    }
+    #conn-label-input:focus { border-color: var(--accent); }
+
+    /* LEGEND */
+    #legend {
+      padding: 8px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--muted); }
+    .legend-dot { width: 10px; height: 10px; flex-shrink: 0; }
+
+    /* EXPORT MODAL */
+    #export-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    #export-modal.visible { display: flex; }
+    #export-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      width: 560px;
+      max-width: 90vw;
+    }
+    #export-box h3 { color: var(--accent); font-size: 13px; margin-bottom: 12px; letter-spacing: 1px; }
+    #export-box pre {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 12px;
+      font-size: 11px;
+      color: var(--text);
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin-bottom: 12px;
+    }
+    #export-box .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div class="logo">⬡ Arynwood Flowchart</div>
+  <div class="divider"></div>
+  <div class="subtitle">Visual Workflow Designer</div>
+  <div class="stats" id="stats">0 nodes · 0 connections</div>
+</div>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <span class="label">TOOL</span>
+  <button class="tool-btn active" data-tool="select" onclick="setTool('select')">↖ Select</button>
+  <button class="tool-btn" data-tool="connect" onclick="setTool('connect')">→ Connect</button>
+  <button class="tool-btn" data-tool="add" onclick="setTool('add')">+ Add</button>
+  <button class="tool-btn" data-tool="pan" onclick="setTool('pan')">✥ Pan</button>
+
+  <div id="type-selector">
+    <div class="divider" style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
+    <span class="label">TYPE</span>
+    <div class="node-pill active" data-type="process" style="background:rgba(10,132,255,0.15);color:#0a84ff;border-color:rgba(10,132,255,0.3);" onclick="setAddType('process')">Process</div>
+    <div class="node-pill" data-type="start" style="background:rgba(0,255,159,0.1);color:#00ff9f;border-color:rgba(0,255,159,0.3);" onclick="setAddType('start')">Start/End</div>
+    <div class="node-pill" data-type="decision" style="background:rgba(255,159,10,0.1);color:#ff9f0a;border-color:rgba(255,159,10,0.3);" onclick="setAddType('decision')">Decision</div>
+    <div class="node-pill" data-type="io" style="background:rgba(191,90,242,0.1);color:#bf5af2;border-color:rgba(191,90,242,0.3);" onclick="setAddType('io')">Input/Output</div>
+    <div class="node-pill" data-type="note" style="background:rgba(152,152,157,0.1);color:#98989d;border-color:rgba(152,152,157,0.3);" onclick="setAddType('note')">Note</div>
+  </div>
+
+  <div style="margin-left:auto;display:flex;gap:8px;">
+    <button class="tool-btn danger" id="delete-btn" style="display:none;" onclick="deleteSelected()">✕ Delete</button>
+    <button class="tool-btn" onclick="showExport()">⬡ Export Mermaid</button>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<div id="statusbar">
+  <span id="status-text">Click to select · Drag to move · Double-click to edit label · Delete key to remove</span>
+  <span id="connecting-text" class="connecting-status" style="display:none;">● Connecting… click target node or press Escape to cancel</span>
+</div>
+
+<!-- CANVAS -->
+<div id="canvas-wrap">
+  <div id="canvas">
+    <!-- Grid -->
+    <svg id="grid-svg">
+      <defs>
+        <pattern id="grid-pat" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e1e2e" stroke-width="0.5"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#grid-pat)"/>
+    </svg>
+    <!-- Connections -->
+    <svg id="conn-svg">
+      <defs>
+        <marker id="arrow-def" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M 0 0 L 6 3 L 0 6 z" fill="#6e6e8a"/>
+        </marker>
+        <marker id="arrow-sel" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M 0 0 L 6 3 L 0 6 z" fill="#00ff9f"/>
+        </marker>
+      </defs>
+      <g id="conn-group"></g>
+    </svg>
+    <!-- Nodes -->
+    <div id="nodes-layer"></div>
+  </div>
+</div>
+
+<!-- CONNECTION LABEL EDITOR -->
+<div id="conn-editor">
+  <span class="label">Arrow label:</span>
+  <input id="conn-label-input" type="text" placeholder="e.g. YES / NO / success" oninput="updateConnLabel(this.value)" />
+  <span style="font-size:10px;color:var(--muted);">Press Delete to remove this connection</span>
+</div>
+
+<!-- LEGEND -->
+<div id="legend">
+  <span class="label">SHAPES:</span>
+  <div class="legend-item"><div class="legend-dot" style="background:#00ff9f;border-radius:50%;"></div>Start/End</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#0a84ff;border-radius:2px;"></div>Process</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff9f0a;transform:rotate(45deg);"></div>Decision</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#bf5af2;border-radius:2px;"></div>Input/Output</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#1c1c1e;border:1px dashed #6e6e8a;border-radius:2px;"></div>Note</div>
+</div>
+
+<!-- EXPORT MODAL -->
+<div id="export-modal" onclick="if(event.target===this)hideExport()">
+  <div id="export-box">
+    <h3>⬡ MERMAID EXPORT</h3>
+    <pre id="export-content"></pre>
+    <div class="btn-row">
+      <button class="tool-btn" onclick="copyMermaid()">Copy to Clipboard</button>
+      <button class="tool-btn" onclick="hideExport()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let nodes = [];
+let connections = [];
+let selected = null;
+let selectedConn = null;
+let dragging = null;
+let dragOffset = { x: 0, y: 0 };
+let connecting = null;
+let tool = 'select';
+let addType = 'process';
+let pan = { x: 0, y: 0 };
+let panning = false;
+let panStart = { x: 0, y: 0 };
+let nodeIdCounter = 1;
+let connIdCounter = 1;
+
+const NODE_TYPES = {
+  start:    { color: '#00ff9f', textColor: '#0a0a0a', shape: 'oval' },
+  process:  { color: '#0a84ff', textColor: '#ffffff', shape: 'rect' },
+  decision: { color: '#ff9f0a', textColor: '#0a0a0a', shape: 'diamond' },
+  io:       { color: '#bf5af2', textColor: '#ffffff', shape: 'parallelogram' },
+  note:     { color: '#1c1c1e', textColor: '#98989d', shape: 'note' },
+};
+
+const DEFAULT_SIZE = {
+  start: { w: 130, h: 48 },
+  process: { w: 150, h: 60 },
+  decision: { w: 160, h: 80 },
+  io: { w: 150, h: 60 },
+  note: { w: 150, h: 60 },
+};
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+function init() {
+  const n1 = addNode('start',    300,  80, 'Start');
+  const n2 = addNode('process',  260, 200, 'Initialize scan');
+  const n3 = addNode('decision', 240, 320, 'Target authorized?');
+  const n4 = addNode('io',       420, 420, 'Log & abort');
+  const n5 = addNode('process',  220, 440, 'Run scan');
+  const n6 = addNode('start',    290, 560, 'End');
+  addConn(n1, n2, '');
+  addConn(n2, n3, '');
+  addConn(n3, n4, 'NO');
+  addConn(n3, n5, 'YES');
+  addConn(n5, n6, '');
+  updateStats();
+}
+
+// ─── NODE CREATION ───────────────────────────────────────────────────────────
+function addNode(type, x, y, label) {
+  const id = 'n' + (nodeIdCounter++);
+  const sz = DEFAULT_SIZE[type];
+  const node = { id, type, x, y, w: sz.w, h: sz.h, label: label || type };
+  nodes.push(node);
+  renderNode(node);
+  return id;
+}
+
+function renderNode(node) {
+  const layer = document.getElementById('nodes-layer');
+  const el = document.createElement('div');
+  el.className = 'node';
+  el.id = 'node-' + node.id;
+  el.style.left = node.x + 'px';
+  el.style.top = node.y + 'px';
+  el.style.width = node.w + 'px';
+  el.style.height = node.h + 'px';
+
+  const t = NODE_TYPES[node.type];
+  el.innerHTML = buildNodeHTML(node, t);
+
+  el.addEventListener('mousedown', e => onNodeMouseDown(e, node.id));
+  el.addEventListener('dblclick', e => onNodeDblClick(e, node.id));
+  layer.appendChild(el);
+  updateNodeTransform();
+}
+
+function buildNodeHTML(node, t) {
+  const { w, h } = node;
+  let svgContent = '';
+
+  if (t.shape === 'oval') {
+    svgContent = `<svg width="${w}" height="${h}"><ellipse cx="${w/2}" cy="${h/2}" rx="${w/2-1}" ry="${h/2-1}" fill="${t.color}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/></svg>`;
+  } else if (t.shape === 'diamond') {
+    const cx = w/2, cy = h/2;
+    const pts = `${cx},2 ${w-2},${cy} ${cx},${h-2} 2,${cy}`;
+    svgContent = `<svg width="${w}" height="${h}"><polygon points="${pts}" fill="${t.color}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/></svg>`;
+  } else if (t.shape === 'parallelogram') {
+    const sk = 12;
+    const pts = `${sk},0 ${w},0 ${w-sk},${h} 0,${h}`;
+    svgContent = `<svg width="${w}" height="${h}"><polygon points="${pts}" fill="${t.color}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/></svg>`;
+  } else if (t.shape === 'note') {
+    svgContent = `<svg width="${w}" height="${h}"><rect x="1" y="1" width="${w-2}" height="${h-2}" rx="4" fill="${t.color}" stroke="#6e6e8a" stroke-width="1" stroke-dasharray="4,3"/></svg>`;
+  } else {
+    svgContent = `<svg width="${w}" height="${h}"><rect x="1" y="1" width="${w-2}" height="${h-2}" rx="6" fill="${t.color}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/></svg>`;
+  }
+
+  const lbl = node.label.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return `${svgContent}<div class="node-label" style="color:${t.textColor}">${lbl}</div>`;
+}
+
+function refreshNode(id) {
+  const node = nodes.find(n => n.id === id);
+  if (!node) return;
+  const el = document.getElementById('node-' + id);
+  if (!el) return;
+  const t = NODE_TYPES[node.type];
+  el.style.left = node.x + 'px';
+  el.style.top = node.y + 'px';
+  el.style.width = node.w + 'px';
+  el.style.height = node.h + 'px';
+  el.innerHTML = buildNodeHTML(node, t);
+  el.addEventListener('mousedown', e => onNodeMouseDown(e, node.id));
+  el.addEventListener('dblclick', e => onNodeDblClick(e, node.id));
+}
+
+function updateNodeTransform() {
+  const layer = document.getElementById('nodes-layer');
+  layer.style.transform = `translate(${pan.x}px, ${pan.y}px)`;
+  document.getElementById('conn-group').setAttribute('transform', `translate(${pan.x},${pan.y})`);
+  const pat = document.getElementById('grid-pat');
+  pat.setAttribute('patternTransform', `translate(${pan.x % 40} ${pan.y % 40})`);
+}
+
+// ─── CONNECTIONS ─────────────────────────────────────────────────────────────
+function addConn(from, to, label) {
+  const id = 'c' + (connIdCounter++);
+  connections.push({ id, from, to, label: label || '' });
+  renderConn(id);
+  return id;
+}
+
+function renderConn(id) {
+  const conn = connections.find(c => c.id === id);
+  if (!conn) return;
+  const g = document.getElementById('conn-group');
+  let el = document.getElementById('conn-' + id);
+  if (el) el.remove();
+
+  const from = nodes.find(n => n.id === conn.from);
+  const to = nodes.find(n => n.id === conn.to);
+  if (!from || !to) return;
+
+  const start = getEdge(from, to);
+  const end = getEdge(to, from);
+  const mx = (start.x + end.x) / 2;
+  const my = (start.y + end.y) / 2;
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const cx = mx - dy * 0.25;
+  const cy = my + dx * 0.25;
+  const d = `M ${start.x} ${start.y} Q ${cx} ${cy} ${end.x} ${end.y}`;
+  const isSel = selectedConn === id;
+  const color = isSel ? '#00ff9f' : '#6e6e8a';
+  const lx = (start.x + cx*2 + end.x) / 4;
+  const ly = (start.y + cy*2 + end.y) / 4;
+
+  const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  group.id = 'conn-' + id;
+  group.style.cursor = 'pointer';
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', d);
+  path.setAttribute('fill', 'none');
+  path.setAttribute('stroke', color);
+  path.setAttribute('stroke-width', isSel ? 2 : 1.5);
+  path.setAttribute('marker-end', `url(#arrow-${isSel ? 'sel' : 'def'})`);
+
+  const hitPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  hitPath.setAttribute('d', d);
+  hitPath.setAttribute('fill', 'none');
+  hitPath.setAttribute('stroke', 'transparent');
+  hitPath.setAttribute('stroke-width', 12);
+
+  group.appendChild(path);
+  group.appendChild(hitPath);
+
+  if (conn.label) {
+    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    txt.setAttribute('x', lx);
+    txt.setAttribute('y', ly - 6);
+    txt.setAttribute('fill', '#00ff9f');
+    txt.setAttribute('font-size', 10);
+    txt.setAttribute('font-family', "'JetBrains Mono', monospace");
+    txt.setAttribute('text-anchor', 'middle');
+    txt.textContent = conn.label;
+    group.appendChild(txt);
+  }
+
+  group.addEventListener('click', e => { e.stopPropagation(); selectConn(id); });
+  g.appendChild(group);
+}
+
+function renderAllConns() {
+  connections.forEach(c => renderConn(c.id));
+}
+
+function getCenter(node) {
+  return { x: node.x + node.w / 2, y: node.y + node.h / 2 };
+}
+
+function getEdge(node, target) {
+  const nc = getCenter(node);
+  const tc = getCenter(target);
+  const dx = tc.x - nc.x || 0.01;
+  const dy = tc.y - nc.y || 0.01;
+
+  if (node.type === 'decision') {
+    const hw = node.w / 2, hh = node.h / 2;
+    if (Math.abs(dx) * hh > Math.abs(dy) * hw) {
+      const ex = nc.x + (dx > 0 ? hw : -hw);
+      const ey = nc.y + (dy / dx) * (dx > 0 ? hw : -hw);
+      return { x: ex, y: ey };
+    } else {
+      const ey = nc.y + (dy > 0 ? hh : -hh);
+      const ex = nc.x + (dx / dy) * (dy > 0 ? hh : -hh);
+      return { x: ex, y: ey };
+    }
+  }
+
+  const hw = node.w / 2 + 2, hh = node.h / 2 + 2;
+  const angle = Math.atan2(dy, dx);
+  if (Math.abs(Math.cos(angle)) * hh > Math.abs(Math.sin(angle)) * hw) {
+    const ex = nc.x + (dx > 0 ? hw : -hw);
+    const ey = nc.y + (dy / dx) * (dx > 0 ? hw : -hw);
+    return { x: ex, y: ey };
+  } else {
+    const ey = nc.y + (dy > 0 ? hh : -hh);
+    const ex = nc.x + (dx / dy) * (dy > 0 ? hh : -hh);
+    return { x: ex, y: ey };
+  }
+}
+
+// ─── SELECTION ───────────────────────────────────────────────────────────────
+function selectNode(id) {
+  clearSelection();
+  selected = id;
+  const el = document.getElementById('node-' + id);
+  if (el) el.classList.add('selected-node');
+  document.getElementById('delete-btn').style.display = '';
+}
+
+function selectConn(id) {
+  clearSelection();
+  selectedConn = id;
+  renderAllConns();
+  const conn = connections.find(c => c.id === id);
+  document.getElementById('conn-editor').classList.add('visible');
+  document.getElementById('conn-label-input').value = conn ? conn.label : '';
+  document.getElementById('delete-btn').style.display = '';
+}
+
+function clearSelection() {
+  if (selected) {
+    const el = document.getElementById('node-' + selected);
+    if (el) el.classList.remove('selected-node');
+  }
+  selected = null;
+  selectedConn = null;
+  document.getElementById('conn-editor').classList.remove('visible');
+  document.getElementById('delete-btn').style.display = 'none';
+  renderAllConns();
+}
+
+// ─── TOOLS ───────────────────────────────────────────────────────────────────
+function setTool(t) {
+  tool = t;
+  document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === t));
+  document.getElementById('type-selector').classList.toggle('visible', t === 'add');
+  const statusMap = {
+    select: 'Click to select · Drag to move · Double-click to edit label · Delete key to remove',
+    connect: 'Click source node to start connection',
+    add: `Click anywhere on canvas to place a node`,
+    pan: 'Click and drag to pan the canvas',
+  };
+  document.getElementById('status-text').textContent = statusMap[t];
+  document.getElementById('canvas').style.cursor = { select: 'default', connect: 'cell', add: 'crosshair', pan: 'grab' }[t];
+  if (t !== 'connect') { connecting = null; document.getElementById('connecting-text').style.display = 'none'; }
+}
+
+function setAddType(type) {
+  addType = type;
+  document.querySelectorAll('[data-type]').forEach(p => p.classList.toggle('active', p.dataset.type === type));
+}
+
+// ─── EVENTS ──────────────────────────────────────────────────────────────────
+function onNodeMouseDown(e, id) {
+  e.stopPropagation();
+  if (tool === 'connect') {
+    if (!connecting) {
+      connecting = id;
+      document.getElementById('connecting-text').style.display = '';
+    } else if (connecting !== id) {
+      addConn(connecting, id, '');
+      connecting = null;
+      document.getElementById('connecting-text').style.display = 'none';
+      updateStats();
+    }
+  } else if (tool === 'select') {
+    selectNode(id);
+    dragging = id;
+    const node = nodes.find(n => n.id === id);
+    const canvasRect = document.getElementById('canvas').getBoundingClientRect();
+    dragOffset = { x: e.clientX - canvasRect.left - pan.x - node.x, y: e.clientY - canvasRect.top - pan.y - node.y };
+  }
+}
+
+function onNodeDblClick(e, id) {
+  e.stopPropagation();
+  const node = nodes.find(n => n.id === id);
+  if (!node) return;
+  const el = document.getElementById('node-' + id);
+  const input = document.createElement('input');
+  input.className = 'node-input';
+  input.value = node.label;
+  input.addEventListener('blur', () => { node.label = input.value; refreshNode(id); renderAllConns(); });
+  input.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { node.label = input.value; refreshNode(id); renderAllConns(); } });
+  el.innerHTML = '';
+  el.appendChild(input);
+  input.focus();
+  input.select();
+}
+
+document.getElementById('canvas').addEventListener('mousedown', e => {
+  if (e.target === document.getElementById('canvas') || e.target === document.getElementById('conn-svg') || e.target === document.getElementById('grid-svg') || e.target.tagName === 'rect') {
+    if (tool === 'add') {
+      const rect = document.getElementById('canvas').getBoundingClientRect();
+      const x = e.clientX - rect.left - pan.x - DEFAULT_SIZE[addType].w / 2;
+      const y = e.clientY - rect.top - pan.y - DEFAULT_SIZE[addType].h / 2;
+      const id = addNode(addType, x, y);
+      selectNode(id);
+      updateStats();
+    } else if (tool === 'pan') {
+      panning = true;
+      panStart = { x: e.clientX, y: e.clientY };
+      document.getElementById('canvas').style.cursor = 'grabbing';
+    } else {
+      clearSelection();
+    }
+  }
+});
+
+document.addEventListener('mousemove', e => {
+  if (dragging) {
+    const node = nodes.find(n => n.id === dragging);
+    if (!node) return;
+    const rect = document.getElementById('canvas').getBoundingClientRect();
+    node.x = e.clientX - rect.left - pan.x - dragOffset.x;
+    node.y = e.clientY - rect.top - pan.y - dragOffset.y;
+    const el = document.getElementById('node-' + dragging);
+    if (el) { el.style.left = node.x + 'px'; el.style.top = node.y + 'px'; }
+    renderAllConns();
+  }
+  if (panning) {
+    pan.x += e.clientX - panStart.x;
+    pan.y += e.clientY - panStart.y;
+    panStart = { x: e.clientX, y: e.clientY };
+    updateNodeTransform();
+    renderAllConns();
+  }
+});
+
+document.addEventListener('mouseup', () => {
+  dragging = null;
+  if (panning) { panning = false; document.getElementById('canvas').style.cursor = tool === 'pan' ? 'grab' : 'default'; }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { connecting = null; document.getElementById('connecting-text').style.display = 'none'; }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && e.target.tagName !== 'INPUT') deleteSelected();
+});
+
+function deleteSelected() {
+  if (selected) {
+    nodes = nodes.filter(n => n.id !== selected);
+    connections = connections.filter(c => c.from !== selected && c.to !== selected);
+    const el = document.getElementById('node-' + selected);
+    if (el) el.remove();
+    clearSelection();
+    renderAllConns();
+    updateStats();
+  }
+  if (selectedConn) {
+    connections = connections.filter(c => c.id !== selectedConn);
+    const el = document.getElementById('conn-' + selectedConn);
+    if (el) el.remove();
+    clearSelection();
+    updateStats();
+  }
+}
+
+function updateConnLabel(val) {
+  const conn = connections.find(c => c.id === selectedConn);
+  if (conn) { conn.label = val; renderConn(conn.id); }
+}
+
+function updateStats() {
+  document.getElementById('stats').textContent = `${nodes.length} nodes · ${connections.length} connections`;
+}
+
+// ─── EXPORT ──────────────────────────────────────────────────────────────────
+function exportMermaid() {
+  const lines = ['flowchart TD'];
+  nodes.forEach(n => {
+    const lbl = n.label.replace(/"/g, "'");
+    if (n.type === 'start')    lines.push(`  ${n.id}([${lbl}])`);
+    else if (n.type === 'decision') lines.push(`  ${n.id}{${lbl}}`);
+    else if (n.type === 'io')  lines.push(`  ${n.id}[/${lbl}/]`);
+    else                       lines.push(`  ${n.id}[${lbl}]`);
+  });
+  connections.forEach(c => {
+    const lbl = c.label ? `|${c.label}|` : '';
+    lines.push(`  ${c.from} -->${lbl} ${c.to}`);
+  });
+  return lines.join('\n');
+}
+
+function showExport() {
+  document.getElementById('export-content').textContent = exportMermaid();
+  document.getElementById('export-modal').classList.add('visible');
+}
+
+function hideExport() {
+  document.getElementById('export-modal').classList.remove('visible');
+}
+
+function copyMermaid() {
+  const text = document.getElementById('export-content').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = 'Copy to Clipboard', 2000);
+  }).catch(() => {
+    document.getElementById('export-content').select();
+    document.execCommand('copy');
+  });
+}
+
+// ─── START ───────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

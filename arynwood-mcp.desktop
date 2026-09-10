@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=0.4.0
+Name=Arynwood MCP
+Comment=Local AI Creative Studio — chat, video, sound, design, GPU tools
+Exec=/home/lorelei/GitHub/arynwood-mcp/arynwood-desktop.sh
+Icon=/home/lorelei/GitHub/arynwood-mcp/frontend/public/arynwood.svg
+Terminal=false
+Type=Application
+Categories=Development;ArtificialIntelligence;Graphics;
+Keywords=ai;llm;ollama;design;image;stable diffusion;video;audio;
+StartupNotify=true

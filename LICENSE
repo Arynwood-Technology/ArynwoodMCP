@@ -1,0 +1,40 @@
+Arynwood MCP Source-Available License (Alpha)
+Copyright (c) 2026 Lorelei Noble. All rights reserved.
+
+This is a template starting point, not reviewed by a lawyer — have counsel review
+and adapt it before relying on it for a real public release.
+
+1. Grant. Subject to the terms below, you are granted a limited, non-exclusive,
+   non-transferable, revocable license to:
+   (a) download and run unmodified builds of this software for your own personal
+       or internal evaluation, and
+   (b) view and modify the source code for your own personal or internal use only.
+
+2. Restrictions. Except as expressly permitted in Section 1, you may not, without
+   prior written permission from the copyright holder:
+   (a) redistribute, sublicense, sell, rent, lease, or otherwise make this
+       software or any derivative of it available to any third party, in source
+       or binary form;
+   (b) offer this software, or any derivative of it, as part of a hosted or
+       managed service to third parties;
+   (c) remove or alter any copyright, trademark, or attribution notices.
+
+3. No warranty. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. THIS IS
+   ALPHA SOFTWARE: EXPECT BREAKING CHANGES, DATA LOSS, AND INCOMPLETE FEATURES.
+
+4. Limitation of liability. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR
+   ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION
+   WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+5. Termination. This license terminates automatically if you breach any of its
+   terms. Upon termination, you must stop using the software and destroy any
+   copies in your possession.
+
+6. Third-party components. This software depends on third-party open-source
+   packages, each under its own license (see requirements.txt, frontend/package.json,
+   and frontend/src-tauri/Cargo.toml for the current list). Those licenses govern
+   your use of those components and are unaffected by this license.
+
+For licensing inquiries beyond the scope of Section 1, contact the copyright holder.

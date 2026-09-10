@@ -1,0 +1,85 @@
+name: Release (Linux)
+
+# Builds Linux desktop artifacts (AppImage + .deb) on a semver tag push, computes
+# SHA-256 checksums, and publishes a draft GitHub Release with notes pulled from
+# CHANGELOG.md. No code-signing/notarization step — this environment has no signing
+# keys/certs. Add one later as a separate step once real signing credentials exist;
+# don't add a signing step that silently no-ops without them.
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    uses: ./.github/workflows/ci.yml
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+      - run: pip install -r requirements.txt pyinstaller
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      - run: cd frontend && npm ci
+
+      - name: Install Tauri Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      # Backend sidecar: bundled as a standalone binary and placed where Tauri's
+      # `externalBin` config (frontend/src-tauri/tauri.conf.json) expects it. See
+      # docs/release-readiness-audit.md §3 for why this step exists at all — the
+      # packaged desktop app can't just spawn `python3` the way dev launchers do.
+      - name: Build backend sidecar
+        run: |
+          pyinstaller arynwood-backend.spec
+          mkdir -p frontend/src-tauri/binaries
+          cp dist/arynwood-backend frontend/src-tauri/binaries/arynwood-backend-x86_64-unknown-linux-gnu
+
+      - name: Extract release notes from CHANGELOG.md
+        id: notes
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VERSION" '
+            BEGIN{found=0}
+            /^## \[/{ if (found) exit; if ($0 ~ "\\[" ver "\\]" || $0 ~ "\\[Unreleased\\]") found=1; next }
+            found{print}
+          ' CHANGELOG.md > release-notes.md
+          echo "Extracted notes:"; cat release-notes.md
+
+      - name: Build Tauri bundles (AppImage + .deb)
+        uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: frontend
+          args: --bundles appimage,deb
+          releaseDraft: true
+          releaseBody: ""
+          releaseBodyFile: release-notes.md
+
+      - name: Generate SHA-256 checksums
+        run: |
+          cd frontend/src-tauri/target/release/bundle
+          find . -type f \( -name "*.AppImage" -o -name "*.deb" \) -exec sha256sum {} \; > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Upload checksums to the release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: frontend/src-tauri/target/release/bundle/SHA256SUMS.txt

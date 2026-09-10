@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+/* ── Design tokens ────────────────────────────────────────────────────────────
+   Single source of truth. Tailwind v4 reads @theme and emits both the CSS
+   custom properties *and* the matching utilities, so `--color-surface` here
+   gives you `bg-surface` / `text-surface` / `border-surface` for free.       */
+
+@theme {
+  --color-bg: #0d0d0f;
+  --color-surface: #141418;
+  --color-surface2: #1c1c22;
+  --color-border: #2a2a35;
+  --color-accent: #7c6ef7;
+  --color-accent2: #5eead4;
+  --color-text: #e8e8f0;
+  --color-muted: #6b6b80;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Legacy aliases. ~1,100 inline style objects across the app still read these
+   names via var(); they re-export @theme above rather than duplicating values,
+   so there is no second source of truth to drift. Kept deliberately out of
+   @theme — Tailwind v4 owns the `--text-*` namespace for font sizes, and
+   `--text` would collide with it. Remove an alias once nothing references it. */
+:root {
+  --bg: var(--color-bg);
+  --surface: var(--color-surface);
+  --surface2: var(--color-surface2);
+  --border: var(--color-border);
+  --accent: var(--color-accent);
+  --accent2: var(--color-accent2);
+  --text: var(--color-text);
+  --text-muted: var(--color-muted);
+  --success: var(--color-success);
+  --warning: var(--color-warning);
+  --danger: var(--color-danger);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  color-scheme: dark;
+}
+
+/* ── Focus visibility ─────────────────────────────────────────────────────────
+   Previously the app had no global focus treatment at all, and the form reset
+   below removes the UA outline — so keyboard users had nothing. :focus-visible
+   only paints for keyboard/programmatic focus, never on mouse click.         */
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Global form element theming ──────────────────────────────────────────── */
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+select,
+textarea {
+  background: var(--color-surface2);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-family: inherit;
+  font-size: inherit;
+  transition: border-color 0.15s;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+/* …but never at the cost of the keyboard focus ring. */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-muted);
+  opacity: 1;
+}
+
+/* Dropdown option list */
+option {
+  background: var(--color-surface2);
+  color: var(--color-text);
+}
+
+/* Date/time picker icon — invert so it's visible on dark bg */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
+/* Number input — hide spinner arrows (they clash with dark bg) */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  opacity: 0.4;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-muted); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────────────────
+   The app animates spinners and transitions in many inline styles; this is the
+   one global lever that covers all of them without touching each call site.  */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

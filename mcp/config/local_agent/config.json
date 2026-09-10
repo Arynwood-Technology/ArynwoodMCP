@@ -1,0 +1,6 @@
+{
+  "model": "qwen2.5-coder:14b",
+  "ollama_url": "http://localhost:11434",
+  "max_tool_rounds": 6,
+  "_comment": "qwen2.5-coder reliably calls real tools; plain qwen2.5 (the chat personas' model) mostly just describes JSON instead of sending it. Change `model` here if you pull something better at tool-calling — nothing else needs editing."
+}

@@ -1,0 +1,22 @@
+# Pinned to ~= (locks the version up to the last given segment, allows patch bumps)
+# against what's actually installed and tested against — this file previously had no
+# version constraints at all, so a routine `pip install -r requirements.txt` on a new
+# machine could silently pull a breaking release of e.g. ollama or ddgs (both move
+# fast) with no warning. Bump deliberately, not by accident.
+fastapi~=0.141.1
+uvicorn[standard]~=0.52.0
+aiosqlite~=0.22.1
+httpx~=0.28.1
+ollama~=0.6.2
+python-multipart~=0.0.32
+watchdog~=6.0.0
+requests~=2.34.2
+paramiko~=5.0.0
+prometheus-fastapi-instrumentator~=8.1.0
+# Direct dependency now (roadmap 2.5's LLM/tool call metrics import it explicitly),
+# not just transitive via prometheus-fastapi-instrumentator.
+prometheus_client~=0.26.0
+ddgs~=9.14.4
+beautifulsoup4~=4.15.0
+python-dotenv~=1.2.2
+Pillow~=12.3.0
