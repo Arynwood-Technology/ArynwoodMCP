@@ -1,0 +1,11 @@
+{
+  "kdenlive": {
+    "label": "Kdenlive",
+    "hints": [
+      "kdenlive", "video timeline", "video editor", "video editing",
+      "video clip", "video track", "video marker", "video project",
+      "render the video", "cross-dissolve", "crossdissolve",
+      "subtitle track", "proxy clip", "b-roll"
+    ]
+  }
+}

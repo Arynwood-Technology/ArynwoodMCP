@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Generator - Complete</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #09090b;
+            --bg-secondary: #18181b;
+            --bg-tertiary: #27272a;
+            --bg-hover: #3f3f46;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --accent-primary: #818cf8;
+            --accent-secondary: #c084fc;
+            --accent-tertiary: #38bdf8;
+            --accent-glow: rgba(129, 140, 248, 0.15);
+            --accent-glow-strong: rgba(129, 140, 248, 0.25);
+            --border: rgba(250, 250, 250, 0.08);
+            --border-hover: rgba(250, 250, 250, 0.15);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* App Container */
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-container.form-mode {
+            height: auto;
+            min-height: 100vh;
+        }
+
+        /* Form Container */
+        .form-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 4rem 2rem;
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(129, 140, 248, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(192, 132, 252, 0.03) 0%, transparent 50%);
+            transition: background-image 0.6s ease;
+        }
+
+        .container {
+            max-width: 840px;
+            width: 100%;
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 3.5rem;
+        }
+
+        .form-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3.25rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.75rem;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 50%, var(--accent-tertiary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+            transition: background 0.6s ease;
+        }
+
+        .form-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.0625rem;
+            font-weight: 400;
+            letter-spacing: -0.01em;
+        }
+
+        /* Theme Preview Indicator */
+        .theme-preview {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .theme-preview.active {
+            display: flex;
+        }
+
+        .theme-preview-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .theme-preview-dots {
+            display: flex;
+            gap: 0.375rem;
+        }
+
+        .theme-preview-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .theme-preview-dot:nth-child(1) {
+            background: var(--accent-primary);
+        }
+
+        .theme-preview-dot:nth-child(2) {
+            background: var(--accent-secondary);
+        }
+
+        .theme-preview-dot:nth-child(3) {
+            background: var(--accent-tertiary);
+        }
+
+        .question-block {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 0;
+            animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .question-block:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .question-block:nth-child(1) { animation-delay: 0.05s; }
+        .question-block:nth-child(2) { animation-delay: 0.1s; }
+        .question-block:nth-child(3) { animation-delay: 0.15s; }
+        .question-block:nth-child(4) { animation-delay: 0.2s; }
+        .question-block:nth-child(5) { animation-delay: 0.25s; }
+        .question-block:nth-child(6) { animation-delay: 0.3s; }
+        .question-block:nth-child(7) { animation-delay: 0.35s; }
+        .question-block:nth-child(8) { animation-delay: 0.4s; }
+
+        .question-label {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.375rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: block;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            line-height: 1.3;
+        }
+
+        .question-number {
+            display: inline-block;
+            color: var(--accent-primary);
+            font-size: 0.8125rem;
+            margin-right: 0.625rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            background: var(--accent-glow);
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            transition: all 0.4s ease;
+        }
+
+        .question-description {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            margin-bottom: 1.25rem;
+            line-height: 1.5;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .radio-option {
+            position: relative;
+        }
+
+        .radio-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            padding: 0.875rem 1.25rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            font-size: 0.9375rem;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .radio-bubble {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border-hover);
+            border-radius: 50%;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            flex-shrink: 0;
+        }
+
+        .radio-bubble::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .radio-option input[type="radio"]:checked + .radio-label {
+            background: var(--accent-glow);
+            border-color: var(--accent-primary);
+        }
+
+        .radio-option input[type="radio"]:checked + .radio-label .radio-bubble {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .radio-option input[type="radio"]:checked + .radio-label .radio-bubble::after {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .radio-label:hover {
+            border-color: var(--accent-primary);
+            background: var(--accent-glow);
+            transform: translateY(-1px);
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 1rem 1.125rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9375rem;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            outline: none;
+        }
+
+        .text-input:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            background: var(--bg-hover);
+        }
+
+        .text-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .textarea-input {
+            width: 100%;
+            padding: 1rem 1.125rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9375rem;
+            min-height: 120px;
+            resize: vertical;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            outline: none;
+            line-height: 1.6;
+        }
+
+        .textarea-input:focus {
+            border-color: var(--accent-secondary);
+            box-shadow: 0 0 0 3px rgba(192, 132, 252, 0.15);
+            background: var(--bg-hover);
+        }
+
+        .textarea-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.875rem;
+        }
+
+        .color-option {
+            position: relative;
+        }
+
+        .color-option input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            width: 0;
+            height: 0;
+        }
+
+        .color-card {
+            padding: 1.25rem 1rem;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 120px;
+        }
+
+        .color-swatch {
+            width: 56px;
+            height: 56px;
+            border-radius: 10px;
+            margin-bottom: 0.75rem;
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .color-name {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .color-option input[type="checkbox"]:checked + .color-card {
+            border-color: var(--accent-tertiary);
+            background: rgba(56, 189, 248, 0.08);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+        }
+
+        .color-option input[type="checkbox"]:checked + .color-card .color-swatch {
+            transform: scale(1.08);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .color-option input[type="checkbox"]:checked + .color-card .color-name {
+            color: var(--accent-tertiary);
+            font-weight: 600;
+        }
+
+        .color-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .color-card:hover .color-swatch {
+            transform: scale(1.08);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .priority-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.875rem;
+        }
+
+        .priority-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.125rem;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .priority-item:hover {
+            border-color: var(--border-hover);
+        }
+
+        .priority-label {
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+        }
+
+        .priority-scale {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: space-between;
+        }
+
+        .priority-scale input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .priority-scale label {
+            flex: 1;
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            font-size: 0.8125rem;
+            font-weight: 500;
+        }
+
+        .priority-scale input[type="radio"]:checked + label {
+            background: var(--accent-secondary);
+            border-color: var(--accent-secondary);
+            color: var(--text-primary);
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(192, 132, 252, 0.3);
+        }
+
+        .priority-scale label:hover {
+            border-color: var(--accent-secondary);
+            transform: translateY(-1px);
+        }
+
+        .submit-container {
+            text-align: center;
+            margin-top: 2.5rem;
+        }
+
+        .submit-btn {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 1.125rem 2.75rem;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            color: var(--text-primary);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            letter-spacing: -0.01em;
+            box-shadow: 0 4px 16px rgba(129, 140, 248, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--accent-secondary) 0%, var(--accent-primary) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(129, 140, 248, 0.4);
+        }
+
+        .submit-btn:hover::before {
+            opacity: 1;
+        }
+
+        .submit-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Loading State */
+        .generating-message {
+            display: none;
+            text-align: center;
+            padding: 3rem 2rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--accent-primary);
+            border-radius: 12px;
+            margin-top: 2rem;
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .generating-message.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .generating-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .generating-text {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Editor View */
+        .editor-view {
+            display: none;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .editor-view.active {
+            display: flex;
+        }
+
+        .editor-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .editor-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.375rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            padding: 0.875rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex: 1;
+        }
+
+        .tab {
+            appearance: none;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-primary);
+            padding: 0.625rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.875rem;
+        }
+
+        .tab:hover {
+            opacity: 0.9;
+            border-color: var(--border-hover);
+        }
+
+        .tab[aria-selected="true"] {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+            background: var(--accent-glow);
+            opacity: 1;
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.625rem;
+            align-items: center;
+        }
+
+        .btn {
+            appearance: none;
+            border: 1px solid var(--border);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 0.625rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.875rem;
+        }
+
+        .btn:hover {
+            filter: brightness(1.1);
+            border-color: var(--border-hover);
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            border-color: transparent;
+        }
+
+        .btn.success {
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            border-color: transparent;
+        }
+
+        .main {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+        }
+
+        .pane {
+            flex: 1;
+            min-width: 0;
+            min-height: 0;
+            display: none;
+            background: var(--bg-primary);
+        }
+
+        .pane.active {
+            display: flex;
+        }
+
+        #codeEditor {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            outline: none;
+            resize: none;
+            padding: 1.25rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            tab-size: 2;
+        }
+
+        .preview-wrap {
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.875rem;
+        }
+
+        .preview-note {
+            color: var(--text-secondary);
+            font-size: 0.8125rem;
+            padding: 0.625rem 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        iframe {
+            flex: 1;
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: white;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 2rem 1.25rem;
+            }
+
+            .form-title {
+                font-size: 2.25rem;
+            }
+
+            .form-subtitle {
+                font-size: 1rem;
+            }
+
+            .question-block {
+                padding: 1.5rem;
+            }
+
+            .question-label {
+                font-size: 1.25rem;
+            }
+
+            .radio-group {
+                flex-direction: column;
+            }
+
+            .radio-label {
+                width: 100%;
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .priority-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .editor-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .tabs {
+                width: 100%;
+            }
+
+            .actions {
+                width: 100%;
+                justify-content: stretch;
+            }
+
+            .btn {
+                flex: 1;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .form-title {
+                font-size: 2rem;
+            }
+
+            .question-block {
+                padding: 1.25rem;
+            }
+
+            .color-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
+
+            .color-card {
+                padding: 1rem 0.75rem;
+                min-height: 100px;
+            }
+
+            .color-swatch {
+                width: 48px;
+                height: 48px;
+            }
+
+            .submit-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container form-mode" id="appContainer">
+        <!-- FORM VIEW -->
+        <div class="form-container" id="formView">
+            <div class="container">
+                <div class="form-header">
+                    <h1 class="form-title">Website Generator</h1>
+                    <p class="form-subtitle">Tell us about your vision and we'll generate your perfect site</p>
+                </div>
+
+                <!-- Theme Preview Indicator -->
+                <div class="theme-preview" id="themePreview">
+                    <span class="theme-preview-label">Live Theme Preview:</span>
+                    <div class="theme-preview-dots">
+                        <div class="theme-preview-dot"></div>
+                        <div class="theme-preview-dot"></div>
+                        <div class="theme-preview-dot"></div>
+                    </div>
+                </div>
+
+                <form id="questionnaireForm">
+                    <!-- Question 1: Business Type -->
+                    <div class="question-block">
+                        <label class="question-label">
+                            <span class="question-number">01</span>
+                            What type of business or project is this for?
+                        </label>
+                        <p class="question-description">This helps us understand the purpose and tone of your website.</p>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" id="biz1" name="business_type" value="portfolio" required>
+                                <label for="biz1" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>Portfolio</span>
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="biz2" name="business_type" value="ecommerce">
+                                <label for="biz2" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>E-commerce</span>
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="biz3" name="business_type" value="service">
+                                <label for="biz3" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>Service Business</span>
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="biz4" name="business_type" value="blog">
+                                <label for="biz4" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>Blog/Content</span>
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="biz5" name="business_type" value="landing">
+                                <label for="biz5" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>Landing Page</span>
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="biz6" name="business_type" value="nonprofit">
+                                <label for="biz6" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>Non-Profit</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question 2: Page Type -->
+                    <div class="question-block">
+                        <label class="question-label">
+                            <span class="question-number">02</span>
+                            What type of page do you need?
+                        </label>
+                        <p class="question-description">Select the primary page structure you're looking for.</p>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" id="page1" name="page_type" value="single_page" required>
+                                <label for="page1" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>Single Page</span>
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="page2" name="page_type" value="multi_section">
+                                <label for="page2" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>Multi-Section</span>
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="page3" name="page_type" value="homepage">
+                                <label for="page3" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>Homepage</span>
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="page4" name="page_type" value="about">
+                                <label for="page4" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>About Page</span>
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="page5" name="page_type" value="contact">
+                                <label for="page5" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>Contact Page</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question 3: Design Style -->
+                    <div class="question-block">
+                        <label class="question-label">
+                            <span class="question-number">03</span>
+                            What design style appeals to you?
+                        </label>
+                        <p class="question-description">Choose the aesthetic that best matches your vision.</p>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" id="style1" name="design_style" value="minimal" required>
+                                <label for="style1" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>Minimal & Clean</span>
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="style2" name="design_style" value="modern">
+                                <label for="style2" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>Modern & Bold</span>
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="style3" name="design_style" value="elegant">
+                                <label for="style3" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>Elegant & Refined</span>
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="style4" name="design_style" value="playful">
+                                <label for="style4" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>Playful & Creative</span>
+                                </label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" id="style5" name="design_style" value="professional">
+                                <label for="style5" class="radio-label">
+                                    <span class="radio-bubble"></span>
+                                    <span>Professional & Corporate</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question 4: Color Preferences -->
+                    <div class="question-block">
+                        <label class="question-label">
+                            <span class="question-number">04</span>
+                            Select your preferred color palette
+                        </label>
+                        <p class="question-description">Choose up to 3 colors that represent your brand. Watch the theme update live!</p>
+                        <div class="color-grid">
+                            <div class="color-option">
+                                <input type="checkbox" id="color1" name="colors" value="blue" data-hex="#6366f1">
+                                <label for="color1" class="color-card">
+                                    <div class="color-swatch" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);"></div>
+                                    <div class="color-name">Blue</div>
+                                </label>
+                            </div>
+                            <div class="color-option">
+                                <input type="checkbox" id="color2" name="colors" value="teal" data-hex="#14b8a6">
+                                <label for="color2" class="color-card">
+                                    <div class="color-swatch" style="background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);"></div>
+                                    <div class="color-name">Teal</div>
+                                </label>
+                            </div>
+                            <div class="color-option">
+                                <input type="checkbox" id="color3" name="colors" value="pink" data-hex="#ec4899">
+                                <label for="color3" class="color-card">
+                                    <div class="color-swatch" style="background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);"></div>
+                                    <div class="color-name">Pink</div>
+                                </label>
+                            </div>
+                            <div class="color-option">
+                                <input type="checkbox" id="color4" name="colors" value="purple" data-hex="#a855f7">
+                                <label for="color4" class="color-card">
+                                    <div class="color-swatch" style="background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);"></div>
+                                    <div class="color-name">Purple</div>
+                                </label>
+                            </div>
+                            <div class="color-option">
+                                <input type="checkbox" id="color5" name="colors" value="green" data-hex="#22c55e">
+                                <label for="color5" class="color-card">
+                                    <div class="color-swatch" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);"></div>
+                                    <div class="color-name">Green</div>
+                                </label>
+                            </div>
+                            <div class="color-option">
+                                <input type="checkbox" id="color6" name="colors" value="orange" data-hex="#f97316">
+                                <label for="color6" class="color-card">
+                                    <div class="color-swatch" style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);"></div>
+                                    <div class="color-name">Orange</div>
+                                </label>
+                            </div>
+                            <div class="color-option">
+                                <input type="checkbox" id="color7" name="colors" value="slate" data-hex="#64748b">
+                                <label for="color7" class="color-card">
+                                    <div class="color-swatch" style="background: linear-gradient(135deg, #64748b 0%, #475569 100%);"></div>
+                                    <div class="color-name">Slate</div>
+                                </label>
+                            </div>
+                            <div class="color-option">
+                                <input type="checkbox" id="color8" name="colors" value="amber" data-hex="#f59e0b">
+                                <label for="color8" class="color-card">
+                                    <div class="color-swatch" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);"></div>
+                                    <div class="color-name">Amber</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question 5: Features Priority -->
+                    <div class="question-block">
+                        <label class="question-label">
+                            <span class="question-number">05</span>
+                            Rate the importance of these features
+                        </label>
+                        <p class="question-description">Help us prioritize what matters most to you.</p>
+                        <div class="priority-grid">
+                            <div class="priority-item">
+                                <div class="priority-label">Visual Impact</div>
+                                <div class="priority-scale">
+                                    <input type="radio" id="visual1" name="visual_priority" value="1" required>
+                                    <label for="visual1">Low</label>
+                                    <input type="radio" id="visual2" name="visual_priority" value="2">
+                                    <label for="visual2">Med</label>
+                                    <input type="radio" id="visual3" name="visual_priority" value="3">
+                                    <label for="visual3">High</label>
+                                </div>
+                            </div>
+                            <div class="priority-item">
+                                <div class="priority-label">Animations</div>
+                                <div class="priority-scale">
+                                    <input type="radio" id="anim1" name="animation_priority" value="1" required>
+                                    <label for="anim1">Low</label>
+                                    <input type="radio" id="anim2" name="animation_priority" value="2">
+                                    <label for="anim2">Med</label>
+                                    <input type="radio" id="anim3" name="animation_priority" value="3">
+                                    <label for="anim3">High</label>
+                                </div>
+                            </div>
+                            <div class="priority-item">
+                                <div class="priority-label">Simplicity</div>
+                                <div class="priority-scale">
+                                    <input type="radio" id="simple1" name="simplicity_priority" value="1" required>
+                                    <label for="simple1">Low</label>
+                                    <input type="radio" id="simple2" name="simplicity_priority" value="2">
+                                    <label for="simple2">Med</label>
+                                    <input type="radio" id="simple3" name="simplicity_priority" value="3">
+                                    <label for="simple3">High</label>
+                                </div>
+                            </div>
+                            <div class="priority-item">
+                                <div class="priority-label">Content Focus</div>
+                                <div class="priority-scale">
+                                    <input type="radio" id="content1" name="content_priority" value="1" required>
+                                    <label for="content1">Low</label>
+                                    <input type="radio" id="content2" name="content_priority" value="2">
+                                    <label for="content2">Med</label>
+                                    <input type="radio" id="content3" name="content_priority" value="3">
+                                    <label for="content3">High</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question 6: Business Name -->
+                    <div class="question-block">
+                        <label class="question-label" for="business_name">
+                            <span class="question-number">06</span>
+                            What's your business or project name?
+                        </label>
+                        <input 
+                            type="text" 
+                            id="business_name" 
+                            name="business_name" 
+                            class="text-input" 
+                            placeholder="Enter your business name"
+                            required
+                        >
+                    </div>
+
+                    <!-- Question 7: Main Message -->
+                    <div class="question-block">
+                        <label class="question-label" for="tagline">
+                            <span class="question-number">07</span>
+                            What's your main headline or tagline?
+                        </label>
+                        <p class="question-description">This will be the hero text that visitors see first.</p>
+                        <input 
+                            type="text" 
+                            id="tagline" 
+                            name="tagline" 
+                            class="text-input" 
+                            placeholder="e.g., 'Design that speaks volumes' or 'Your success, our mission'"
+                        >
+                    </div>
+
+                    <!-- Question 8: Additional Details -->
+                    <div class="question-block">
+                        <label class="question-label" for="additional_info">
+                            <span class="question-number">08</span>
+                            Tell us more about your vision
+                        </label>
+                        <p class="question-description">Any specific features, sections, or design elements you want included?</p>
+                        <textarea 
+                            id="additional_info" 
+                            name="additional_info" 
+                            class="textarea-input" 
+                            placeholder="Describe any specific requirements, inspirations, or features you'd like to see..."
+                        ></textarea>
+                    </div>
+
+                    <div class="submit-container">
+                        <button type="submit" class="submit-btn">
+                            <span>Generate My Website</span>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="generating-message" id="generatingMessage">
+                    <div class="spinner"></div>
+                    <h2 class="generating-title">Generating Your Website</h2>
+                    <p class="generating-text">This will take just a moment...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- EDITOR VIEW -->
+        <div class="editor-view" id="editorView">
+            <div class="editor-header">
+                <h1 class="editor-title">Website Preview & Editor</h1>
+                <button class="btn" id="btnBackToForm">← Back to Form</button>
+            </div>
+
+            <div class="toolbar">
+                <div class="tabs" role="tablist" aria-label="Editor tabs">
+                    <button class="tab" id="tabCode" role="tab" aria-selected="false" aria-controls="paneCode" type="button">Code</button>
+                    <button class="tab" id="tabPreview" role="tab" aria-selected="true" aria-controls="panePreview" type="button">Preview</button>
+                </div>
+
+                <div class="actions">
+                    <button class="btn" id="btnRefresh" type="button" title="Refresh preview">Refresh</button>
+                    <button class="btn success" id="btnPublish" type="button" title="Download HTML file">Download</button>
+                </div>
+            </div>
+
+            <div class="main">
+                <section class="pane" id="paneCode" role="tabpanel" aria-labelledby="tabCode">
+                    <textarea id="codeEditor" spellcheck="false" aria-label="HTML code editor"></textarea>
+                </section>
+
+                <section class="pane active" id="panePreview" role="tabpanel" aria-labelledby="tabPreview">
+                    <div class="preview-wrap">
+                        <div class="preview-note">
+                            Preview of your generated website. Switch to the Code tab to edit the HTML.
+                        </div>
+                        <iframe id="preview" title="Website preview"></iframe>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // DYNAMIC THEMING ENGINE
+        // ============================================================
+
+        const COLOR_MAP = {
+            'blue': '#6366f1',
+            'teal': '#14b8a6',
+            'pink': '#ec4899',
+            'purple': '#a855f7',
+            'green': '#22c55e',
+            'orange': '#f97316',
+            'slate': '#64748b',
+            'amber': '#f59e0b'
+        };
+
+        function getSelectedColors() {
+            const checkboxes = document.querySelectorAll('input[name="colors"]:checked');
+            return Array.from(checkboxes).map(cb => COLOR_MAP[cb.value]);
+        }
+
+        function mapColorsToAccentVars(colors) {
+            if (colors.length === 0) {
+                return {
+                    primary: '#818cf8',
+                    secondary: '#c084fc',
+                    tertiary: '#38bdf8'
+                };
+            } else if (colors.length === 1) {
+                return {
+                    primary: colors[0],
+                    secondary: colors[0],
+                    tertiary: colors[0]
+                };
+            } else if (colors.length === 2) {
+                return {
+                    primary: colors[0],
+                    secondary: colors[1],
+                    tertiary: colors[0]
+                };
+            } else {
+                return {
+                    primary: colors[0],
+                    secondary: colors[1],
+                    tertiary: colors[2]
+                };
+            }
+        }
+
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
+        function applyTheme(colors) {
+            const root = document.documentElement;
+            const mapped = mapColorsToAccentVars(colors);
+            
+            root.style.setProperty('--accent-primary', mapped.primary);
+            root.style.setProperty('--accent-secondary', mapped.secondary);
+            root.style.setProperty('--accent-tertiary', mapped.tertiary);
+            root.style.setProperty('--accent-glow', hexToRgba(mapped.primary, 0.15));
+            root.style.setProperty('--accent-glow-strong', hexToRgba(mapped.primary, 0.25));
+            
+            const themePreview = document.getElementById('themePreview');
+            if (colors.length > 0) {
+                themePreview.classList.add('active');
+            } else {
+                themePreview.classList.remove('active');
+            }
+        }
+
+        function initThemingEngine() {
+            const colorCheckboxes = document.querySelectorAll('input[name="colors"]');
+            
+            colorCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const checkedCount = document.querySelectorAll('input[name="colors"]:checked').length;
+                    
+                    if (checkedCount > 3) {
+                        this.checked = false;
+                        alert('Please select a maximum of 3 colors');
+                        return;
+                    }
+                    
+                    const selectedColors = getSelectedColors();
+                    applyTheme(selectedColors);
+                });
+            });
+        }
+
+        // ============================================================
+        // EDITOR FUNCTIONALITY
+        // ============================================================
+
+        const appContainer = document.getElementById('appContainer');
+        const formView = document.getElementById('formView');
+        const editorView = document.getElementById('editorView');
+        const questionnaireForm = document.getElementById('questionnaireForm');
+        const generatingMessage = document.getElementById('generatingMessage');
+        
+        const codeEditor = document.getElementById('codeEditor');
+        const preview = document.getElementById('preview');
+        
+        const tabCode = document.getElementById('tabCode');
+        const tabPreview = document.getElementById('tabPreview');
+        const paneCode = document.getElementById('paneCode');
+        const panePreview = document.getElementById('panePreview');
+        
+        const btnBackToForm = document.getElementById('btnBackToForm');
+        const btnRefresh = document.getElementById('btnRefresh');
+        const btnPublish = document.getElementById('btnPublish');
+
+        function setTab(which) {
+            const isCode = which === 'code';
+            tabCode.setAttribute('aria-selected', String(isCode));
+            tabPreview.setAttribute('aria-selected', String(!isCode));
+            paneCode.classList.toggle('active', isCode);
+            panePreview.classList.toggle('active', !isCode);
+        }
+
+        function renderPreview() {
+            const html = codeEditor.value || '';
+            preview.srcdoc = html;
+        }
+
+        function generateWebsite(formData) {
+            const selectedColorHexes = getSelectedColors();
+            const businessName = formData.business_name;
+            const tagline = formData.tagline || 'Your success, our mission';
+            
+            const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${businessName}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        header {
+            background: linear-gradient(135deg, ${selectedColorHexes[0] || '#667eea'} 0%, ${selectedColorHexes[1] || '#764ba2'} 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .tagline {
+            font-size: 1.5rem;
+            opacity: 0.95;
+        }
+
+        .content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature {
+            padding: 2rem;
+            border-radius: 12px;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            transition: transform 0.3s ease;
+        }
+
+        .feature:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .feature h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: ${selectedColorHexes[0] || '#667eea'};
+        }
+
+        footer {
+            background: #1a1a1a;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            margin-top: 4rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            .tagline {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>${businessName}</h1>
+        <p class="tagline">${tagline}</p>
+    </header>
+
+    <div class="content">
+        <h2>Welcome to ${businessName}</h2>
+        <p>This is a ${formData.design_style} style ${formData.page_type} designed for ${formData.business_type}.</p>
+        
+        ${formData.additional_info ? `<p style="margin-top: 1rem; font-style: italic;">${formData.additional_info}</p>` : ''}
+
+        <div class="features">
+            <div class="feature">
+                <h3>Feature One</h3>
+                <p>Describe your first key feature or service here.</p>
+            </div>
+            <div class="feature">
+                <h3>Feature Two</h3>
+                <p>Describe your second key feature or service here.</p>
+            </div>
+            <div class="feature">
+                <h3>Feature Three</h3>
+                <p>Describe your third key feature or service here.</p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 ${businessName}. All rights reserved.</p>
+    </footer>
+</body>
+</html>`;
+            
+            return html;
+        }
+
+        // Form submission
+        questionnaireForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formDataObj = new FormData(e.target);
+            const data = {
+                colors: []
+            };
+            
+            formDataObj.getAll('colors').forEach(color => {
+                data.colors.push(color);
+            });
+            
+            for (let [key, value] of formDataObj.entries()) {
+                if (key !== 'colors') {
+                    data[key] = value;
+                }
+            }
+            
+            questionnaireForm.style.display = 'none';
+            generatingMessage.classList.add('show');
+            
+            setTimeout(() => {
+                const generatedHTML = generateWebsite(data);
+                codeEditor.value = generatedHTML;
+                renderPreview();
+                
+                appContainer.classList.remove('form-mode');
+                formView.classList.add('hidden');
+                editorView.classList.add('active');
+            }, 2000);
+        });
+
+        btnBackToForm.addEventListener('click', () => {
+            appContainer.classList.add('form-mode');
+            formView.classList.remove('hidden');
+            editorView.classList.remove('active');
+            questionnaireForm.style.display = 'block';
+            generatingMessage.classList.remove('show');
+        });
+
+        tabCode.addEventListener('click', () => setTab('code'));
+        tabPreview.addEventListener('click', () => setTab('preview'));
+        btnRefresh.addEventListener('click', renderPreview);
+
+        btnPublish.addEventListener('click', () => {
+            const html = codeEditor.value;
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'website.html';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                renderPreview();
+                setTab('preview');
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', initThemingEngine);
+    </script>
+</body>
+</html>

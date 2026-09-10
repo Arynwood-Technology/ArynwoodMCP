@@ -1,0 +1,1614 @@
+{
+  "Roboto": {
+    "slug": "roboto",
+    "category": "sans",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/roboto/roboto-400-normal-latin-ext.woff2",
+        "bytes": 29392,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/roboto/roboto-400-normal-latin.woff2",
+        "bytes": 43136,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/roboto/roboto-700-normal-latin-ext.woff2",
+        "bytes": 29392,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/roboto/roboto-700-normal-latin.woff2",
+        "bytes": 43136,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Open Sans": {
+    "slug": "open-sans",
+    "category": "sans",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/open-sans/open-sans-400-normal-latin-ext.woff2",
+        "bytes": 35156,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/open-sans/open-sans-400-normal-latin.woff2",
+        "bytes": 48320,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/open-sans/open-sans-700-normal-latin-ext.woff2",
+        "bytes": 35156,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/open-sans/open-sans-700-normal-latin.woff2",
+        "bytes": 48320,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Lato": {
+    "slug": "lato",
+    "category": "sans",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/lato/lato-400-normal-latin-ext.woff2",
+        "bytes": 5612,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/lato/lato-400-normal-latin.woff2",
+        "bytes": 23580,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/lato/lato-700-normal-latin-ext.woff2",
+        "bytes": 5552,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/lato/lato-700-normal-latin.woff2",
+        "bytes": 23040,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Montserrat": {
+    "slug": "montserrat",
+    "category": "sans",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/montserrat/montserrat-400-normal-latin-ext.woff2",
+        "bytes": 70688,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/montserrat/montserrat-400-normal-latin.woff2",
+        "bytes": 37956,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/montserrat/montserrat-700-normal-latin-ext.woff2",
+        "bytes": 70688,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/montserrat/montserrat-700-normal-latin.woff2",
+        "bytes": 37956,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Poppins": {
+    "slug": "poppins",
+    "category": "sans",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/poppins/poppins-400-normal-latin-ext.woff2",
+        "bytes": 5644,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/poppins/poppins-400-normal-latin.woff2",
+        "bytes": 7884,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/poppins/poppins-700-normal-latin-ext.woff2",
+        "bytes": 5432,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/poppins/poppins-700-normal-latin.woff2",
+        "bytes": 7816,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Raleway": {
+    "slug": "raleway",
+    "category": "sans",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/raleway/raleway-400-normal-latin-ext.woff2",
+        "bytes": 31480,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/raleway/raleway-400-normal-latin.woff2",
+        "bytes": 48264,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/raleway/raleway-700-normal-latin-ext.woff2",
+        "bytes": 31480,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/raleway/raleway-700-normal-latin.woff2",
+        "bytes": 48264,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Nunito": {
+    "slug": "nunito",
+    "category": "sans",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/nunito/nunito-400-normal-latin-ext.woff2",
+        "bytes": 35588,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/nunito/nunito-400-normal-latin.woff2",
+        "bytes": 39128,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/nunito/nunito-700-normal-latin-ext.woff2",
+        "bytes": 35588,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/nunito/nunito-700-normal-latin.woff2",
+        "bytes": 39128,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Work Sans": {
+    "slug": "work-sans",
+    "category": "sans",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/work-sans/work-sans-400-normal-latin-ext.woff2",
+        "bytes": 35716,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/work-sans/work-sans-400-normal-latin.woff2",
+        "bytes": 50316,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/work-sans/work-sans-700-normal-latin-ext.woff2",
+        "bytes": 35716,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/work-sans/work-sans-700-normal-latin.woff2",
+        "bytes": 50316,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Rubik": {
+    "slug": "rubik",
+    "category": "sans",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/rubik/rubik-400-normal-latin-ext.woff2",
+        "bytes": 19400,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/rubik/rubik-400-normal-latin.woff2",
+        "bytes": 35348,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/rubik/rubik-700-normal-latin-ext.woff2",
+        "bytes": 19400,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/rubik/rubik-700-normal-latin.woff2",
+        "bytes": 35348,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Manrope": {
+    "slug": "manrope",
+    "category": "sans",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/manrope/manrope-400-normal-latin-ext.woff2",
+        "bytes": 15120,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/manrope/manrope-400-normal-latin.woff2",
+        "bytes": 24836,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/manrope/manrope-700-normal-latin-ext.woff2",
+        "bytes": 15120,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/manrope/manrope-700-normal-latin.woff2",
+        "bytes": 24836,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Karla": {
+    "slug": "karla",
+    "category": "sans",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/karla/karla-400-normal-latin-ext.woff2",
+        "bytes": 11956,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/karla/karla-400-normal-latin.woff2",
+        "bytes": 24320,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/karla/karla-700-normal-latin-ext.woff2",
+        "bytes": 11956,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/karla/karla-700-normal-latin.woff2",
+        "bytes": 24320,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "DM Sans": {
+    "slug": "dm-sans",
+    "category": "sans",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/dm-sans/dm-sans-400-normal-latin-ext.woff2",
+        "bytes": 18228,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/dm-sans/dm-sans-400-normal-latin.woff2",
+        "bytes": 36932,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/dm-sans/dm-sans-700-normal-latin-ext.woff2",
+        "bytes": 18228,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/dm-sans/dm-sans-700-normal-latin.woff2",
+        "bytes": 36932,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Outfit": {
+    "slug": "outfit",
+    "category": "sans",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/outfit/outfit-400-normal-latin-ext.woff2",
+        "bytes": 14808,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/outfit/outfit-400-normal-latin.woff2",
+        "bytes": 32292,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/outfit/outfit-700-normal-latin-ext.woff2",
+        "bytes": 14808,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/outfit/outfit-700-normal-latin.woff2",
+        "bytes": 32292,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Inter": {
+    "slug": "inter",
+    "category": "sans",
+    "faces": [
+      {
+        "weight": 300,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/inter/inter-300-normal-latin-ext.woff2",
+        "bytes": 85068,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 300,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/inter/inter-300-normal-latin.woff2",
+        "bytes": 48256,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/inter/inter-400-normal-latin-ext.woff2",
+        "bytes": 85068,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/inter/inter-400-normal-latin.woff2",
+        "bytes": 48256,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 500,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/inter/inter-500-normal-latin-ext.woff2",
+        "bytes": 85068,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 500,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/inter/inter-500-normal-latin.woff2",
+        "bytes": 48256,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 600,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/inter/inter-600-normal-latin-ext.woff2",
+        "bytes": 85068,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 600,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/inter/inter-600-normal-latin.woff2",
+        "bytes": 48256,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/inter/inter-700-normal-latin-ext.woff2",
+        "bytes": 85068,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/inter/inter-700-normal-latin.woff2",
+        "bytes": 48256,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Playfair Display": {
+    "slug": "playfair-display",
+    "category": "serif",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/playfair-display/playfair-display-400-normal-latin-ext.woff2",
+        "bytes": 21140,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/playfair-display/playfair-display-400-normal-latin.woff2",
+        "bytes": 38404,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/playfair-display/playfair-display-700-normal-latin-ext.woff2",
+        "bytes": 21140,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/playfair-display/playfair-display-700-normal-latin.woff2",
+        "bytes": 38404,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Merriweather": {
+    "slug": "merriweather",
+    "category": "serif",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/merriweather/merriweather-400-normal-latin-ext.woff2",
+        "bytes": 74960,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/merriweather/merriweather-400-normal-latin.woff2",
+        "bytes": 97548,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/merriweather/merriweather-700-normal-latin-ext.woff2",
+        "bytes": 74960,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/merriweather/merriweather-700-normal-latin.woff2",
+        "bytes": 97548,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Lora": {
+    "slug": "lora",
+    "category": "serif",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/lora/lora-400-normal-latin-ext.woff2",
+        "bytes": 20088,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/lora/lora-400-normal-latin.woff2",
+        "bytes": 37788,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/lora/lora-700-normal-latin-ext.woff2",
+        "bytes": 20088,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/lora/lora-700-normal-latin.woff2",
+        "bytes": 37788,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "PT Serif": {
+    "slug": "pt-serif",
+    "category": "serif",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/pt-serif/pt-serif-400-normal-latin-ext.woff2",
+        "bytes": 21548,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/pt-serif/pt-serif-400-normal-latin.woff2",
+        "bytes": 33116,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/pt-serif/pt-serif-700-normal-latin-ext.woff2",
+        "bytes": 19492,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/pt-serif/pt-serif-700-normal-latin.woff2",
+        "bytes": 29588,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Cormorant Garamond": {
+    "slug": "cormorant-garamond",
+    "category": "serif",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/cormorant-garamond/cormorant-garamond-400-normal-latin-ext.woff2",
+        "bytes": 33736,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/cormorant-garamond/cormorant-garamond-400-normal-latin.woff2",
+        "bytes": 37640,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/cormorant-garamond/cormorant-garamond-700-normal-latin-ext.woff2",
+        "bytes": 33736,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/cormorant-garamond/cormorant-garamond-700-normal-latin.woff2",
+        "bytes": 37640,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Libre Baskerville": {
+    "slug": "libre-baskerville",
+    "category": "serif",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/libre-baskerville/libre-baskerville-400-normal-latin-ext.woff2",
+        "bytes": 35468,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/libre-baskerville/libre-baskerville-400-normal-latin.woff2",
+        "bytes": 33872,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/libre-baskerville/libre-baskerville-700-normal-latin-ext.woff2",
+        "bytes": 35468,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/libre-baskerville/libre-baskerville-700-normal-latin.woff2",
+        "bytes": 33872,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Crimson Text": {
+    "slug": "crimson-text",
+    "category": "serif",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/crimson-text/crimson-text-400-normal-latin-ext.woff2",
+        "bytes": 20212,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/crimson-text/crimson-text-400-normal-latin.woff2",
+        "bytes": 25184,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/crimson-text/crimson-text-700-normal-latin-ext.woff2",
+        "bytes": 20832,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/crimson-text/crimson-text-700-normal-latin.woff2",
+        "bytes": 25540,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "EB Garamond": {
+    "slug": "eb-garamond",
+    "category": "serif",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/eb-garamond/eb-garamond-400-normal-latin-ext.woff2",
+        "bytes": 113928,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/eb-garamond/eb-garamond-400-normal-latin.woff2",
+        "bytes": 44336,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/eb-garamond/eb-garamond-700-normal-latin-ext.woff2",
+        "bytes": 113928,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/eb-garamond/eb-garamond-700-normal-latin.woff2",
+        "bytes": 44336,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Bitter": {
+    "slug": "bitter",
+    "category": "serif",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/bitter/bitter-400-normal-latin-ext.woff2",
+        "bytes": 32716,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/bitter/bitter-400-normal-latin.woff2",
+        "bytes": 34072,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/bitter/bitter-700-normal-latin-ext.woff2",
+        "bytes": 32716,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/bitter/bitter-700-normal-latin.woff2",
+        "bytes": 34072,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Spectral": {
+    "slug": "spectral",
+    "category": "serif",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/spectral/spectral-400-normal-latin-ext.woff2",
+        "bytes": 20240,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/spectral/spectral-400-normal-latin.woff2",
+        "bytes": 21696,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/spectral/spectral-700-normal-latin-ext.woff2",
+        "bytes": 20824,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/spectral/spectral-700-normal-latin.woff2",
+        "bytes": 23036,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Roboto Mono": {
+    "slug": "roboto-mono",
+    "category": "mono",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/roboto-mono/roboto-mono-400-normal-latin-ext.woff2",
+        "bytes": 22916,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/roboto-mono/roboto-mono-400-normal-latin.woff2",
+        "bytes": 32796,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/roboto-mono/roboto-mono-700-normal-latin-ext.woff2",
+        "bytes": 22916,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/roboto-mono/roboto-mono-700-normal-latin.woff2",
+        "bytes": 32796,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Space Mono": {
+    "slug": "space-mono",
+    "category": "mono",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/space-mono/space-mono-400-normal-latin-ext.woff2",
+        "bytes": 15832,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/space-mono/space-mono-400-normal-latin.woff2",
+        "bytes": 16520,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/space-mono/space-mono-700-normal-latin-ext.woff2",
+        "bytes": 15808,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/space-mono/space-mono-700-normal-latin.woff2",
+        "bytes": 16724,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "IBM Plex Mono": {
+    "slug": "ibm-plex-mono",
+    "category": "mono",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/ibm-plex-mono/ibm-plex-mono-400-normal-latin-ext.woff2",
+        "bytes": 13348,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/ibm-plex-mono/ibm-plex-mono-400-normal-latin.woff2",
+        "bytes": 14708,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/ibm-plex-mono/ibm-plex-mono-700-normal-latin-ext.woff2",
+        "bytes": 13380,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/ibm-plex-mono/ibm-plex-mono-700-normal-latin.woff2",
+        "bytes": 14908,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Fira Code": {
+    "slug": "fira-code",
+    "category": "mono",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/fira-code/fira-code-400-normal-latin-ext.woff2",
+        "bytes": 13272,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/fira-code/fira-code-400-normal-latin.woff2",
+        "bytes": 36276,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/fira-code/fira-code-700-normal-latin-ext.woff2",
+        "bytes": 13272,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/fira-code/fira-code-700-normal-latin.woff2",
+        "bytes": 36276,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Source Code Pro": {
+    "slug": "source-code-pro",
+    "category": "mono",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/source-code-pro/source-code-pro-400-normal-latin-ext.woff2",
+        "bytes": 33568,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/source-code-pro/source-code-pro-400-normal-latin.woff2",
+        "bytes": 22044,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/source-code-pro/source-code-pro-700-normal-latin-ext.woff2",
+        "bytes": 33568,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/source-code-pro/source-code-pro-700-normal-latin.woff2",
+        "bytes": 22044,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "JetBrains Mono": {
+    "slug": "jetbrains-mono",
+    "category": "mono",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/jetbrains-mono/jetbrains-mono-400-normal-latin-ext.woff2",
+        "bytes": 11624,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/jetbrains-mono/jetbrains-mono-400-normal-latin.woff2",
+        "bytes": 31432,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 600,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/jetbrains-mono/jetbrains-mono-600-normal-latin-ext.woff2",
+        "bytes": 11624,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 600,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/jetbrains-mono/jetbrains-mono-600-normal-latin.woff2",
+        "bytes": 31432,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/jetbrains-mono/jetbrains-mono-700-normal-latin-ext.woff2",
+        "bytes": 11624,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/jetbrains-mono/jetbrains-mono-700-normal-latin.woff2",
+        "bytes": 31432,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Bebas Neue": {
+    "slug": "bebas-neue",
+    "category": "display",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/bebas-neue/bebas-neue-400-normal-latin-ext.woff2",
+        "bytes": 8928,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/bebas-neue/bebas-neue-400-normal-latin.woff2",
+        "bytes": 13768,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Anton": {
+    "slug": "anton",
+    "category": "display",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/anton/anton-400-normal-latin-ext.woff2",
+        "bytes": 31356,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/anton/anton-400-normal-latin.woff2",
+        "bytes": 18612,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Righteous": {
+    "slug": "righteous",
+    "category": "display",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/righteous/righteous-400-normal-latin-ext.woff2",
+        "bytes": 9700,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/righteous/righteous-400-normal-latin.woff2",
+        "bytes": 12756,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Bungee": {
+    "slug": "bungee",
+    "category": "display",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/bungee/bungee-400-normal-latin-ext.woff2",
+        "bytes": 10712,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/bungee/bungee-400-normal-latin.woff2",
+        "bytes": 14344,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Lobster": {
+    "slug": "lobster",
+    "category": "display",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/lobster/lobster-400-normal-latin-ext.woff2",
+        "bytes": 27912,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/lobster/lobster-400-normal-latin.woff2",
+        "bytes": 33844,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Passion One": {
+    "slug": "passion-one",
+    "category": "display",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/passion-one/passion-one-400-normal-latin-ext.woff2",
+        "bytes": 1936,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/passion-one/passion-one-400-normal-latin.woff2",
+        "bytes": 7540,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/passion-one/passion-one-700-normal-latin-ext.woff2",
+        "bytes": 1884,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/passion-one/passion-one-700-normal-latin.woff2",
+        "bytes": 7468,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Alfa Slab One": {
+    "slug": "alfa-slab-one",
+    "category": "display",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/alfa-slab-one/alfa-slab-one-400-normal-latin-ext.woff2",
+        "bytes": 19492,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/alfa-slab-one/alfa-slab-one-400-normal-latin.woff2",
+        "bytes": 19052,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Abril Fatface": {
+    "slug": "abril-fatface",
+    "category": "display",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/abril-fatface/abril-fatface-400-normal-latin-ext.woff2",
+        "bytes": 7716,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/abril-fatface/abril-fatface-400-normal-latin.woff2",
+        "bytes": 13156,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Archivo Black": {
+    "slug": "archivo-black",
+    "category": "display",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/archivo-black/archivo-black-400-normal-latin-ext.woff2",
+        "bytes": 14332,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/archivo-black/archivo-black-400-normal-latin.woff2",
+        "bytes": 18604,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Fjalla One": {
+    "slug": "fjalla-one",
+    "category": "display",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/fjalla-one/fjalla-one-400-normal-latin-ext.woff2",
+        "bytes": 25500,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/fjalla-one/fjalla-one-400-normal-latin.woff2",
+        "bytes": 45228,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Caveat": {
+    "slug": "caveat",
+    "category": "hand",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/caveat/caveat-400-normal-latin-ext.woff2",
+        "bytes": 29472,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/caveat/caveat-400-normal-latin.woff2",
+        "bytes": 74932,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/caveat/caveat-700-normal-latin-ext.woff2",
+        "bytes": 29472,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/caveat/caveat-700-normal-latin.woff2",
+        "bytes": 74932,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Dancing Script": {
+    "slug": "dancing-script",
+    "category": "hand",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/dancing-script/dancing-script-400-normal-latin-ext.woff2",
+        "bytes": 22652,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/dancing-script/dancing-script-400-normal-latin.woff2",
+        "bytes": 42708,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/dancing-script/dancing-script-700-normal-latin-ext.woff2",
+        "bytes": 22652,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/dancing-script/dancing-script-700-normal-latin.woff2",
+        "bytes": 42708,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Satisfy": {
+    "slug": "satisfy",
+    "category": "hand",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/satisfy/satisfy-400-normal-latin.woff2",
+        "bytes": 22724,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Kalam": {
+    "slug": "kalam",
+    "category": "hand",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/kalam/kalam-400-normal-latin-ext.woff2",
+        "bytes": 12140,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/kalam/kalam-400-normal-latin.woff2",
+        "bytes": 22336,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/kalam/kalam-700-normal-latin-ext.woff2",
+        "bytes": 12152,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 700,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/kalam/kalam-700-normal-latin.woff2",
+        "bytes": 22144,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Shadows Into Light": {
+    "slug": "shadows-into-light",
+    "category": "hand",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/shadows-into-light/shadows-into-light-400-normal-latin-ext.woff2",
+        "bytes": 9388,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/shadows-into-light/shadows-into-light-400-normal-latin.woff2",
+        "bytes": 16296,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  },
+  "Indie Flower": {
+    "slug": "indie-flower",
+    "category": "hand",
+    "faces": [
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin-ext",
+        "file": "fonts/indie-flower/indie-flower-400-normal-latin-ext.woff2",
+        "bytes": 10756,
+        "unicodeRange": "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF"
+      },
+      {
+        "weight": 400,
+        "style": "normal",
+        "subset": "latin",
+        "file": "fonts/indie-flower/indie-flower-400-normal-latin.woff2",
+        "bytes": 19508,
+        "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD"
+      }
+    ]
+  }
+}

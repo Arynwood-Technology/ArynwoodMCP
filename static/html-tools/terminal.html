@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terminal - Linux Hub | Arynwood</title>
+  <meta name="description" content="Linux system command reference and terminal interface">
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap");
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse-glow {
+      0%,100% { opacity:.5; filter:blur(140px); }
+      50%     { opacity:.8; filter:blur(180px); }
+    }
+    @keyframes cursor-blink {
+      0%,50%   { opacity:1; }
+      51%,100% { opacity:0; }
+    }
+    @keyframes icon-glow {
+      0%,100% { filter:drop-shadow(0 0 8px rgba(103,232,249,.4)); }
+      50%     { filter:drop-shadow(0 0 16px rgba(103,232,249,.7)); }
+    }
+
+    :root {
+      --bg-deepest:#0a0412;
+      --bg-deep:#110820;
+      --purple-500:#7c5eb8;
+      --lavender:#c4b5fd;
+      --lavender-bright:#ddd6fe;
+      --pink-bright:#f0abfc;
+      --cyan-bright:#67e8f9;
+      --teal:#2dd4bf;
+      --teal-bright:#5eead4;
+      --text-primary:#faf5ff;
+      --text-secondary:#e9d5ff;
+      --text-muted:#c4b5fd;
+      --text-dim:#a78bfa;
+      --border-subtle:rgba(167,139,250,.12);
+      --border-medium:rgba(167,139,250,.22);
+      --border-bright:rgba(196,181,253,.38);
+      --glow-teal:0 0 30px rgba(94,234,212,.4),0 0 60px rgba(94,234,212,.2);
+      --mono:"JetBrains Mono",ui-monospace,monospace;
+      --safe:#22c55e;
+      --risky:#f59e0b;
+    }
+
+    body {
+      background:
+        radial-gradient(ellipse 100% 60% at 50% 0%,rgba(124,94,184,.25),transparent 70%),
+        radial-gradient(ellipse 80% 50% at 80% 100%,rgba(240,171,252,.15),transparent 65%),
+        radial-gradient(ellipse 90% 60% at 20% 100%,rgba(103,232,249,.1),transparent 70%),
+        linear-gradient(180deg,var(--bg-deepest) 0%,#000 100%);
+      color:var(--text-primary);
+      font-family:var(--mono);
+      margin:0;
+      padding:0;
+      min-height:100vh;
+    }
+
+    /* ── LAYOUT ── */
+    .terminal-container {
+      max-width:1400px;
+      margin:0 auto;
+      padding:2rem;
+      animation:fadeInUp .8s ease-out;
+      position:relative;
+      z-index:1;
+    }
+    .orb-teal {
+      position:fixed;width:800px;height:800px;
+      background:radial-gradient(circle,var(--teal),transparent 70%);
+      top:-400px;right:-200px;
+      animation:pulse-glow 12s ease-in-out infinite;
+      pointer-events:none;z-index:0;opacity:.5;
+    }
+    .orb-pink {
+      position:fixed;width:600px;height:600px;
+      background:radial-gradient(circle,var(--pink-bright),transparent 70%);
+      bottom:-300px;left:-100px;
+      animation:pulse-glow 15s ease-in-out infinite reverse;
+      pointer-events:none;z-index:0;opacity:.3;filter:blur(140px);
+    }
+
+    /* ── HEADER ── */
+    .terminal-header {
+      margin-bottom:2rem;
+      padding-bottom:1.5rem;
+      border-bottom:1px solid var(--border-subtle);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:1rem;
+    }
+    .terminal-title {
+      font-family:var(--mono);
+      font-size:clamp(1.5rem,4vw,2.5rem);
+      font-weight:700;
+      background:linear-gradient(135deg,var(--teal-bright) 0%,var(--cyan-bright) 50%,var(--lavender-bright) 100%);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      background-clip:text;
+      margin:0;
+    }
+    .terminal-subtitle {
+      font-family:var(--mono);
+      font-size:.9rem;
+      color:var(--text-dim);
+      letter-spacing:.1em;
+      text-transform:uppercase;
+      margin-top:.5rem;
+    }
+    .nav-links { display:flex;gap:1rem;align-items:center; }
+    .nav-link {
+      display:inline-flex;align-items:center;gap:.5rem;
+      padding:.75rem 1.25rem;
+      background:rgba(94,234,212,.1);
+      border:1px solid var(--teal);
+      border-radius:8px;
+      color:var(--teal-bright);
+      text-decoration:none;
+      font-size:.9rem;font-weight:600;
+      transition:all .3s ease;
+      white-space:nowrap;
+    }
+    .nav-link:hover { background:rgba(94,234,212,.2);box-shadow:var(--glow-teal);transform:translateY(-2px); }
+    .nav-link svg { width:18px;height:18px; }
+
+    /* ── SEARCH BAR ── */
+    .search-bar {
+      display:flex;
+      align-items:center;
+      gap:.75rem;
+      background:rgba(17,8,32,.8);
+      border:1px solid var(--border-medium);
+      border-radius:12px;
+      padding:.875rem 1.25rem;
+      margin-bottom:1.5rem;
+      transition:border-color .2s;
+    }
+    .search-bar:focus-within {
+      border-color:var(--teal-bright);
+      box-shadow:var(--glow-teal);
+    }
+    .search-icon { color:var(--teal);flex-shrink:0; }
+    .search-input {
+      background:none;border:none;outline:none;
+      color:var(--text-primary);
+      font:inherit;font-size:.95rem;
+      width:100%;
+      caret-color:var(--teal-bright);
+    }
+    .search-input::placeholder { color:var(--text-dim);opacity:.6; }
+    .search-hint { font-size:.75rem;color:var(--text-dim);white-space:nowrap; }
+
+    /* ── SEARCH RESULTS ── */
+    .search-results {
+      display:none;
+      background:rgba(17,8,32,.95);
+      border:1px solid var(--border-medium);
+      border-radius:12px;
+      padding:1rem;
+      margin-bottom:1.5rem;
+      max-height:60vh;
+      overflow-y:auto;
+    }
+    .search-results.active { display:block; }
+    .search-results-title {
+      font-size:.75rem;
+      color:var(--text-dim);
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      margin-bottom:.75rem;
+      padding-bottom:.5rem;
+      border-bottom:1px solid var(--border-subtle);
+    }
+    .result-item {
+      padding:.75rem 1rem;
+      border:1px solid var(--border-subtle);
+      border-radius:8px;
+      margin-bottom:.5rem;
+      cursor:pointer;
+      transition:all .2s;
+      background:rgba(26,15,46,.4);
+    }
+    .result-item:hover {
+      border-color:var(--teal-bright);
+      background:rgba(94,234,212,.07);
+    }
+    .result-item:last-child { margin-bottom:0; }
+    .result-cmd {
+      font-size:.9rem;
+      color:var(--teal-bright);
+      font-weight:600;
+      margin-bottom:.25rem;
+    }
+    .result-desc { font-size:.8rem;color:var(--text-muted); }
+    .result-meta {
+      display:flex;gap:.5rem;align-items:center;margin-top:.35rem;flex-wrap:wrap;
+    }
+    .result-tag {
+      font-size:.7rem;
+      padding:.15rem .5rem;
+      border-radius:999px;
+      border:1px solid var(--border-medium);
+      color:var(--text-dim);
+    }
+    .result-tag.safe  { border-color:var(--safe); color:var(--safe); }
+    .result-tag.risky { border-color:var(--risky);color:var(--risky); }
+    .result-tag.section-tag { color:var(--lavender); border-color:var(--lavender); }
+    .result-highlight { color:var(--cyan-bright); }
+    .no-results { color:var(--text-dim);font-size:.9rem;text-align:center;padding:1rem 0; }
+
+    /* ── TERMINAL SCREEN ── */
+    .terminal-screen {
+      background:rgba(17,8,32,.8);
+      border:1px solid var(--border-medium);
+      border-radius:16px;
+      padding:2rem;
+      font-family:var(--mono);
+      font-size:.95rem;
+      line-height:1.7;
+      color:var(--text-primary);
+      box-shadow:var(--glow-teal),0 20px 60px rgba(0,0,0,.5);
+      backdrop-filter:blur(12px);
+      min-height:60vh;
+      position:relative;
+      overflow-y:auto;
+      scroll-behavior:smooth;
+    }
+    .output { margin-bottom:1.5rem;white-space:pre-wrap;word-wrap:break-word; }
+    .prompt { color:var(--teal-bright);font-weight:700;text-shadow:0 0 10px rgba(94,234,212,.5); }
+    .command { color:var(--lavender); }
+    .comment { color:var(--text-dim);font-style:italic; }
+    .input-line { display:flex;align-items:center;margin-top:2rem; }
+    .command-input {
+      background:none;border:none;color:var(--text-primary);
+      font:inherit;width:100%;outline:none;
+      caret-color:var(--teal-bright);
+      margin-left:.5rem;
+    }
+    .command-input::placeholder { color:var(--text-dim);opacity:.5; }
+
+    /* ── CATEGORY GRID ── */
+    .category-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      gap:1.25rem;
+      margin:2rem 0;
+    }
+    .category-card {
+      background:rgba(26,15,46,.5);
+      border:1px solid var(--border-medium);
+      border-radius:12px;
+      padding:1.25rem;
+      transition:all .3s ease;
+      backdrop-filter:blur(8px);
+      cursor:pointer;
+    }
+    .category-card:hover {
+      border-color:var(--teal-bright);
+      box-shadow:var(--glow-teal);
+      transform:translateY(-4px);
+    }
+    .category-icon {
+      width:28px;height:28px;margin-bottom:.875rem;
+      color:var(--teal);animation:icon-glow 3s ease-in-out infinite;
+    }
+    .category-card:hover .category-icon { color:var(--teal-bright); }
+    .category-title { font-size:1rem;font-weight:700;color:var(--lavender-bright);margin-bottom:.375rem; }
+    .category-desc  { font-size:.8rem;color:var(--text-muted);line-height:1.5; }
+    .category-count { font-size:.7rem;color:var(--text-dim);margin-top:.625rem;display:block; }
+
+    /* ── TREE ── */
+    .tree { font-family:var(--mono);font-size:.9rem;line-height:1.8; }
+    .tree-path { color:var(--teal-bright);font-weight:600; }
+    .tree-desc  { color:var(--text-muted); }
+
+    /* ── SYNTAX ── */
+    .syntax-command { color:var(--teal-bright);font-weight:600; }
+    .syntax-flag    { color:var(--pink-bright); }
+    .syntax-path    { color:var(--lavender); }
+    .syntax-string  { color:var(--cyan-bright); }
+    .syntax-comment { color:var(--text-dim);font-style:italic; }
+    .syntax-safe    { color:var(--safe); }
+    .syntax-risky   { color:var(--risky); }
+
+    a { color:var(--teal);text-decoration:none;transition:color .3s; }
+    a:hover { color:var(--teal-bright);text-shadow:0 0 8px rgba(94,234,212,.5); }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:768px){
+      .terminal-container { padding:1.25rem; }
+      .terminal-screen    { padding:1.25rem;font-size:.85rem; }
+      .terminal-header    { flex-direction:column;align-items:flex-start; }
+      .category-grid      { grid-template-columns:1fr; }
+      .nav-links          { width:100%;flex-direction:column; }
+      .nav-link           { width:100%;justify-content:center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="orb-teal"></div>
+  <div class="orb-pink"></div>
+
+  <div class="terminal-container">
+
+    <!-- HEADER -->
+    <div class="terminal-header">
+      <div>
+        <h1 class="terminal-title">Linux Terminal Hub</h1>
+        <p class="terminal-subtitle">Sysadmin Reference</p>
+      </div>
+      <div class="nav-links">
+        <a href="https://dev.arynwood.com" target="_blank" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>Home
+        </a>
+        <a href="https://arynwood.com/editor" target="_blank" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>HTML Editor
+        </a>
+      </div>
+    </div>
+
+    <!-- REVERSE SEARCH BAR -->
+    <div class="search-bar">
+      <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input class="search-input" id="searchInput" type="text"
+        placeholder="Search commands, flags, descriptions… e.g. 'port 80', 'restart nginx', 'list containers', 'cargo build'" />
+      <span class="search-hint">↑↓ navigate · Enter to run · Esc clear</span>
+    </div>
+
+    <!-- SEARCH RESULTS -->
+    <div class="search-results" id="searchResults">
+      <div class="search-results-title" id="searchResultsTitle"></div>
+      <div id="searchResultsList"></div>
+    </div>
+
+    <!-- TERMINAL SCREEN -->
+    <div class="terminal-screen" id="terminal">
+      <div class="output">
+        <span class="prompt">$</span> <span class="command">whoami</span>
+      </div>
+      <div class="output">root</div>
+      <div class="output">
+        <span class="prompt">$</span> <span class="command">uname -a</span>
+      </div>
+      <div class="output">Linux arynwood 6.8.0-51 #52-Ubuntu SMP x86_64 GNU/Linux</div>
+      <div class="output" style="margin-top:2rem;">
+        <span class="comment"># Use the search bar above to find any command by keyword or description</span>
+        <span class="comment"># Or type a category: filesystem, nginx, docker, git, ollama, tailscale, aider, rust, cargo, tauri, npm, etc.</span>
+      </div>
+
+      <div class="category-grid">
+        <div class="category-card" data-category="filesystem">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          <div class="category-title">Filesystem Layout</div>
+          <div class="category-desc">FHS structure — what lives where and why</div>
+          <span class="category-count">→ filesystem</span>
+        </div>
+        <div class="category-card" data-category="system">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+          </svg>
+          <div class="category-title">System Info</div>
+          <div class="category-desc">Kernel, uptime, hardware, identity</div>
+          <span class="category-count">→ system</span>
+        </div>
+        <div class="category-card" data-category="files">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+            <polyline points="13 2 13 9 20 9"/>
+          </svg>
+          <div class="category-title">Files & Directories</div>
+          <div class="category-desc">Navigation, permissions, disk usage</div>
+          <span class="category-count">→ files</span>
+        </div>
+        <div class="category-card" data-category="network">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <div class="category-title">Networking</div>
+          <div class="category-desc">Interfaces, DNS, routes, ports</div>
+          <span class="category-count">→ network</span>
+        </div>
+        <div class="category-card" data-category="services">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+          </svg>
+          <div class="category-title">Services / systemd</div>
+          <div class="category-desc">Start, stop, enable, reload services</div>
+          <span class="category-count">→ services</span>
+        </div>
+        <div class="category-card" data-category="logs">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          <div class="category-title">Logs & Monitoring</div>
+          <div class="category-desc">journalctl, htop, process analysis</div>
+          <span class="category-count">→ logs</span>
+        </div>
+        <div class="category-card" data-category="security">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <div class="category-title">Security</div>
+          <div class="category-desc">SSH, users, firewall, fail2ban</div>
+          <span class="category-count">→ security</span>
+        </div>
+        <div class="category-card" data-category="nginx">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 2 7 2 17 12 22 22 17 22 7"/>
+          </svg>
+          <div class="category-title">Nginx + Certbot</div>
+          <div class="category-desc">Reverse proxy, HTTPS, virtual hosts</div>
+          <span class="category-count">→ nginx</span>
+        </div>
+        <div class="category-card" data-category="docker">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+          </svg>
+          <div class="category-title">Docker</div>
+          <div class="category-desc">Containers, images, compose, volumes</div>
+          <span class="category-count">→ docker</span>
+        </div>
+        <div class="category-card" data-category="git">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/>
+            <path d="M6 9v6M15.7 6.3A9 9 0 0 1 21 12a9 9 0 0 1-9 9"/>
+          </svg>
+          <div class="category-title">Git + SSH Keys</div>
+          <div class="category-desc">Repo workflow and key management</div>
+          <span class="category-count">→ git</span>
+        </div>
+        <div class="category-card" data-category="python">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+          </svg>
+          <div class="category-title">Python / pip</div>
+          <div class="category-desc">venv, pip, package management</div>
+          <span class="category-count">→ python</span>
+        </div>
+        <div class="category-card" data-category="node">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+          </svg>
+          <div class="category-title">Node / npm</div>
+          <div class="category-desc">JS tooling, nvm, global installs</div>
+          <span class="category-count">→ node</span>
+        </div>
+        <!-- ── NEW: RUST / CARGO / TAURI CARDS ── -->
+        <div class="category-card" data-category="rust">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 8v4l3 3"/>
+            <path d="M8 12h8"/>
+          </svg>
+          <div class="category-title">Rust / rustup</div>
+          <div class="category-desc">Install, toolchains, targets, components</div>
+          <span class="category-count">→ rust</span>
+        </div>
+        <div class="category-card" data-category="cargo">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+          </svg>
+          <div class="category-title">Cargo</div>
+          <div class="category-desc">Build, test, deps, publish, plugins</div>
+          <span class="category-count">→ cargo</span>
+        </div>
+        <div class="category-card" data-category="tauri">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/>
+            <circle cx="12" cy="12" r="4"/>
+          </svg>
+          <div class="category-title">Tauri</div>
+          <div class="category-desc">Desktop app dev, build, plugins, icons</div>
+          <span class="category-count">→ tauri</span>
+        </div>
+        <!-- ── END NEW CARDS ── -->
+        <div class="category-card" data-category="ollama">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <div class="category-title">Ollama</div>
+          <div class="category-desc">Local LLM management and serving</div>
+          <span class="category-count">→ ollama</span>
+        </div>
+        <div class="category-card" data-category="tailscale">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <div class="category-title">Tailscale</div>
+          <div class="category-desc">Zero-config mesh VPN, peer connectivity</div>
+          <span class="category-count">→ tailscale</span>
+        </div>
+        <div class="category-card" data-category="aider">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+            <circle cx="19" cy="19" r="3"/>
+            <path d="M19 16v3h3"/>
+          </svg>
+          <div class="category-title">Aider</div>
+          <div class="category-desc">AI pair programmer with local Ollama models</div>
+          <span class="category-count">→ aider</span>
+        </div>
+        <div class="category-card" data-category="n8n">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+          </svg>
+          <div class="category-title">n8n</div>
+          <div class="category-desc">Workflow automation in Docker</div>
+          <span class="category-count">→ n8n</span>
+        </div>
+        <div class="category-card" data-category="terraform">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 19 21 12 17 5 21"/>
+          </svg>
+          <div class="category-title">Terraform</div>
+          <div class="category-desc">IaC lifecycle and provisioning</div>
+          <span class="category-count">→ terraform</span>
+        </div>
+        <div class="category-card" data-category="dns">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <div class="category-title">DNS / BIND9</div>
+          <div class="category-desc">Authoritative DNS, zones, queries</div>
+          <span class="category-count">→ dns</span>
+        </div>
+        <div class="category-card" data-category="mail">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+          <div class="category-title">Mail / Postfix</div>
+          <div class="category-desc">SMTP, Maildir, queue management</div>
+          <span class="category-count">→ mail</span>
+        </div>
+        <div class="category-card" data-category="shortcuts">
+          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+          </svg>
+          <div class="category-title">Quick Commands</div>
+          <div class="category-desc">High-value shortcuts and one-liners</div>
+          <span class="category-count">→ shortcuts</span>
+        </div>
+      </div>
+
+      <div class="input-line">
+        <span class="prompt">$</span>
+        <input class="command-input" id="command" type="text"
+          placeholder="Type a category name or any Linux command…" autofocus />
+      </div>
+    </div>
+  </div>
+
+  <script>
+  // =====================================================================
+  // MASTER COMMAND DATABASE
+  // Each entry: { cmd, desc, section, safe }
+  // safe: true = safe, false = risky, null = neutral
+  // =====================================================================
+  const DB = [
+    // ── IDENTITY / SYSTEM INFO ──────────────────────────────────────────
+    { cmd:'whoami',                            desc:'Show current logged-in username',                                      section:'system',   safe:true  },
+    { cmd:'id',                                desc:'Show user ID (UID), group ID (GID), and all group memberships',        section:'system',   safe:true  },
+    { cmd:'id <USER>',                         desc:'Show UID/GID/groups for a specific user',                              section:'system',   safe:true  },
+    { cmd:'hostnamectl',                       desc:'Show system hostname, chassis type, OS, kernel, architecture',         section:'system',   safe:true  },
+    { cmd:'hostnamectl set-hostname <NAME>',   desc:'Set a new system hostname permanently',                                section:'system',   safe:false },
+    { cmd:'uname -a',                          desc:'Show all kernel info: name, release, version, machine type',          section:'system',   safe:true  },
+    { cmd:'uname -r',                          desc:'Show only the kernel release version',                                 section:'system',   safe:true  },
+    { cmd:'uptime',                            desc:'Show how long the system has been running and load averages',          section:'system',   safe:true  },
+    { cmd:'date',                              desc:'Display the current date and time',                                    section:'system',   safe:true  },
+    { cmd:'timedatectl',                       desc:'Show and control system time, date, and timezone',                     section:'system',   safe:true  },
+    { cmd:'timedatectl set-timezone <TZ>',     desc:'Set the system timezone (e.g. America/New_York)',                      section:'system',   safe:false },
+    { cmd:'free -h',                           desc:'Show RAM and swap usage in human-readable format (GB/MB)',             section:'system',   safe:true  },
+    { cmd:'lscpu',                             desc:'Display detailed CPU architecture: cores, threads, cache, speed',      section:'system',   safe:true  },
+    { cmd:'lsblk',                             desc:'List block devices (disks, partitions, mount points)',                 section:'system',   safe:true  },
+    { cmd:'lsblk -f',                          desc:'List block devices with filesystem type and UUID',                     section:'system',   safe:true  },
+    { cmd:'lspci',                             desc:'List all PCI hardware devices',                                        section:'system',   safe:true  },
+    { cmd:'lsusb',                             desc:'List all USB devices attached to the system',                          section:'system',   safe:true  },
+    { cmd:'cat /etc/os-release',               desc:'Show OS distribution name, version, and ID',                          section:'system',   safe:true  },
+    { cmd:'cat /proc/cpuinfo',                 desc:'Detailed CPU info from the kernel process filesystem',                 section:'system',   safe:true  },
+    { cmd:'cat /proc/meminfo',                 desc:'Detailed memory stats from the kernel',                                section:'system',   safe:true  },
+    { cmd:'env',                               desc:'Print all environment variables for the current session',              section:'system',   safe:true  },
+    { cmd:'printenv <VAR>',                    desc:'Print the value of a specific environment variable',                   section:'system',   safe:true  },
+    { cmd:'export VAR=value',                  desc:'Set or create an environment variable for the current shell',          section:'system',   safe:true  },
+
+    // ── FILES & DIRECTORIES ──────────────────────────────────────────────
+    { cmd:'pwd',                               desc:'Print the full path of the current working directory',                 section:'files',    safe:true  },
+    { cmd:'ls',                                desc:'List files and directories in current location',                       section:'files',    safe:true  },
+    { cmd:'ls -lah',                           desc:'List all files including hidden, with sizes in MB/GB, sorted by name', section:'files',    safe:true  },
+    { cmd:'ls -lt',                            desc:'List files sorted by modification time, newest first',                 section:'files',    safe:true  },
+    { cmd:'ls -lS',                            desc:'List files sorted by size, largest first',                             section:'files',    safe:true  },
+    { cmd:'tree -L 2',                         desc:'Show directory tree structure limited to 2 levels deep',               section:'files',    safe:true  },
+    { cmd:'cd -',                              desc:'Return to the previous directory you were in',                         section:'files',    safe:true  },
+    { cmd:'cd ~',                              desc:'Navigate to your home directory',                                      section:'files',    safe:true  },
+    { cmd:'mkdir -p <PATH>',                   desc:'Create a directory and all missing parent directories',                section:'files',    safe:true  },
+    { cmd:'rm -rf <PATH>',                     desc:'Recursively delete a directory and all its contents — IRREVERSIBLE',   section:'files',    safe:false },
+    { cmd:'cp -r <SRC> <DST>',                 desc:'Copy a directory and all its contents recursively',                    section:'files',    safe:true  },
+    { cmd:'mv <SRC> <DST>',                    desc:'Move or rename a file or directory',                                   section:'files',    safe:true  },
+    { cmd:'touch <FILE>',                      desc:'Create an empty file or update its timestamp',                         section:'files',    safe:true  },
+    { cmd:'cat <FILE>',                        desc:'Print file contents to the terminal',                                  section:'files',    safe:true  },
+    { cmd:'less <FILE>',                       desc:'Browse a file with scrolling (q to quit)',                             section:'files',    safe:true  },
+    { cmd:'head -n 20 <FILE>',                 desc:'Show the first 20 lines of a file',                                    section:'files',    safe:true  },
+    { cmd:'tail -n 50 <FILE>',                 desc:'Show the last 50 lines of a file',                                     section:'files',    safe:true  },
+    { cmd:'tail -f <FILE>',                    desc:'Follow a file in real-time as new lines are added (great for logs)',   section:'files',    safe:true  },
+    { cmd:'less +F <FILE>',                    desc:'Follow a file in less — press Ctrl+C to stop following',               section:'files',    safe:true  },
+    { cmd:'wc -l <FILE>',                      desc:'Count the number of lines in a file',                                  section:'files',    safe:true  },
+    { cmd:'df -hT',                            desc:'Show disk usage for all filesystems with type, in human-readable form', section:'files',   safe:true  },
+    { cmd:'du -sh */',                         desc:'Show total size of each subdirectory in current location',             section:'files',    safe:true  },
+    { cmd:'du -h --max-depth=1 /var',          desc:'Show size of each item one level deep inside /var',                   section:'files',    safe:true  },
+    { cmd:'find . -name "*.log"',              desc:'Find all .log files recursively from current directory',               section:'files',    safe:true  },
+    { cmd:'find /var -type f -size +500M',     desc:'Find files larger than 500MB under /var',                             section:'files',    safe:true  },
+    { cmd:'find /var -mtime -7',               desc:'Find files modified in the last 7 days under /var',                   section:'files',    safe:true  },
+    { cmd:'find / -name <FILE> 2>/dev/null',   desc:'Search the entire filesystem for a file, suppressing permission errors', section:'files', safe:true  },
+    { cmd:'chmod 644 <FILE>',                  desc:'Set permissions: owner rw, group r, others r (standard file)',         section:'files',    safe:true  },
+    { cmd:'chmod 640 <FILE>',                  desc:'Set permissions: owner rw, group r, others none (private config)',     section:'files',    safe:true  },
+    { cmd:'chmod 600 <FILE>',                  desc:'Set permissions: owner rw only — for SSH keys and secrets',            section:'files',    safe:true  },
+    { cmd:'chmod 755 <DIR>',                   desc:'Set permissions: owner rwx, group rx, others rx (standard dir)',       section:'files',    safe:true  },
+    { cmd:'chmod +x <FILE>',                   desc:'Add execute permission for all (make a script runnable)',               section:'files',    safe:true  },
+    { cmd:'chown <USER>:<GROUP> <FILE>',       desc:'Change the owner and group of a file or directory',                    section:'files',    safe:true  },
+    { cmd:'chown -R <USER>:<GROUP> <DIR>',     desc:'Recursively change ownership of a directory tree',                     section:'files',    safe:false },
+    { cmd:'chown root:root <FILE>',            desc:'Set ownership to root user and root group',                            section:'files',    safe:true  },
+    { cmd:'stat <FILE>',                       desc:'Show detailed metadata: permissions, size, timestamps, inode',         section:'files',    safe:true  },
+    { cmd:'grep -R "text" /etc/nginx',         desc:'Recursively search for a string in all files under a directory',       section:'files',    safe:true  },
+    { cmd:'grep -n "pattern" <FILE>',          desc:'Search a file for a pattern and show line numbers',                    section:'files',    safe:true  },
+    { cmd:'grep -i "pattern" <FILE>',          desc:'Case-insensitive search for a pattern in a file',                      section:'files',    safe:true  },
+    { cmd:'ln -s <TARGET> <LINK>',             desc:'Create a symbolic (soft) link to a file or directory',                 section:'files',    safe:true  },
+    { cmd:'readlink -f <LINK>',                desc:'Show the absolute path that a symlink points to',                      section:'files',    safe:true  },
+
+    // ── NETWORKING ───────────────────────────────────────────────────────
+    { cmd:'ip -br a',                          desc:'Brief, human-friendly list of all network interfaces and IPs',         section:'network',  safe:true  },
+    { cmd:'ip a',                              desc:'Show all network interfaces with full IP address details',             section:'network',  safe:true  },
+    { cmd:'ip a show <IFACE>',                 desc:'Show details for a specific network interface (e.g. eth0)',            section:'network',  safe:true  },
+    { cmd:'ip r',                              desc:'Show the IP routing table',                                            section:'network',  safe:true  },
+    { cmd:'ip link set <IFACE> up',            desc:'Bring a network interface up',                                         section:'network',  safe:false },
+    { cmd:'ip link set <IFACE> down',          desc:'Bring a network interface down',                                       section:'network',  safe:false },
+    { cmd:'ss -tulpn',                         desc:'Show all TCP/UDP listening sockets with process names and PIDs',       section:'network',  safe:true  },
+    { cmd:'ss -ltnp',                          desc:'Show TCP listening ports with associated process info',                section:'network',  safe:true  },
+    { cmd:'ss -s',                             desc:'Show socket summary statistics',                                       section:'network',  safe:true  },
+    { cmd:'netstat -tulpn',                    desc:'List all listening TCP/UDP ports with process names (legacy)',         section:'network',  safe:true  },
+    { cmd:'netstat -tulpn | grep :80',         desc:'Check what process is listening on port 80',                           section:'network',  safe:true  },
+    { cmd:'lsof -i :<PORT>',                   desc:'Show which process is using a specific port number',                   section:'network',  safe:true  },
+    { cmd:'resolvectl status',                 desc:'Show DNS resolver configuration per interface',                        section:'network',  safe:true  },
+    { cmd:'cat /etc/resolv.conf',              desc:'View the DNS nameserver configuration file',                          section:'network',  safe:true  },
+    { cmd:'dig +short A <DOMAIN>',             desc:'Quick DNS lookup — return just the IP address for a domain',           section:'network',  safe:true  },
+    { cmd:'dig @127.0.0.1 NS <DOMAIN>',        desc:'Query local DNS server for NS records of a domain',                   section:'network',  safe:true  },
+    { cmd:'dig @127.0.0.1 AAAA <DOMAIN>',      desc:'Query local DNS server for IPv6 AAAA record',                         section:'network',  safe:true  },
+    { cmd:'nslookup <DOMAIN>',                 desc:'Simple interactive DNS query tool',                                    section:'network',  safe:true  },
+    { cmd:'ping -c 3 1.1.1.1',                desc:'Send 3 ICMP pings to test basic network connectivity',                section:'network',  safe:true  },
+    { cmd:'traceroute 8.8.8.8',               desc:'Show the route packets take to reach Google DNS — diagnose hops',     section:'network',  safe:true  },
+    { cmd:'mtr 8.8.8.8',                       desc:'Interactive traceroute with live packet loss stats (requires mtr)',    section:'network',  safe:true  },
+    { cmd:'curl -I https://<DOMAIN>',          desc:'Fetch only HTTP response headers (check status code, headers)',        section:'network',  safe:true  },
+    { cmd:'curl http://127.0.0.1',             desc:'Test if local web server responds on port 80',                         section:'network',  safe:true  },
+    { cmd:'curl -fsSL <URL> | sh',             desc:'Download and pipe a remote script into sh — SUPPLY CHAIN RISK',        section:'network',  safe:false },
+    { cmd:'wget -O <FILE> <URL>',              desc:'Download a file from a URL and save it to a local path',               section:'network',  safe:true  },
+
+    // ── SERVICES / SYSTEMD ───────────────────────────────────────────────
+    { cmd:'systemctl status <SERVICE>',        desc:'Show current status, recent logs, and PID of a service',              section:'services', safe:true  },
+    { cmd:'systemctl start <SERVICE>',         desc:'Start a service that is currently stopped',                           section:'services', safe:false },
+    { cmd:'systemctl stop <SERVICE>',          desc:'Stop a running service',                                               section:'services', safe:false },
+    { cmd:'systemctl restart <SERVICE>',       desc:'Stop and start a service — causes brief downtime',                     section:'services', safe:false },
+    { cmd:'systemctl reload <SERVICE>',        desc:'Reload service config without restarting — no downtime',              section:'services', safe:false },
+    { cmd:'systemctl enable <SERVICE>',        desc:'Configure a service to start automatically at boot',                  section:'services', safe:false },
+    { cmd:'systemctl disable <SERVICE>',       desc:'Prevent a service from starting at boot',                             section:'services', safe:false },
+    { cmd:'systemctl daemon-reload',           desc:'Reload systemd unit files after editing a service definition',        section:'services', safe:false },
+    { cmd:'systemctl --failed',                desc:'List all services that failed to start',                              section:'services', safe:true  },
+    { cmd:'systemctl list-units --type=service', desc:'List all loaded systemd service units and their current state',     section:'services', safe:true  },
+    { cmd:'systemctl cat <SERVICE>',           desc:'View the full unit file for a service',                               section:'services', safe:true  },
+    { cmd:'systemctl edit <SERVICE>',          desc:'Open an override file to customise a service without editing the original', section:'services', safe:false },
+
+    // ── LOGS & MONITORING ────────────────────────────────────────────────
+    { cmd:'journalctl -b',                     desc:'Show all logs from the current boot',                                  section:'logs',     safe:true  },
+    { cmd:'journalctl -b -1',                  desc:'Show logs from the previous (last) boot',                             section:'logs',     safe:true  },
+    { cmd:'journalctl -u <SERVICE>',           desc:'Show all logs for a specific service unit',                           section:'logs',     safe:true  },
+    { cmd:'journalctl -u <SERVICE> -f',        desc:'Follow logs for a service in real-time',                              section:'logs',     safe:true  },
+    { cmd:'journalctl -u nginx --since "1 hour ago"', desc:'Show nginx logs from the last hour only',                     section:'logs',     safe:true  },
+    { cmd:'journalctl -f',                     desc:'Follow the system journal in real-time (all services)',               section:'logs',     safe:true  },
+    { cmd:'journalctl -k -b',                  desc:'Show kernel messages from the current boot',                          section:'logs',     safe:true  },
+    { cmd:'journalctl -p err',                 desc:'Show only error-level and above messages across all services',        section:'logs',     safe:true  },
+    { cmd:'journalctl --disk-usage',           desc:'Show how much disk space the journal logs are using',                 section:'logs',     safe:true  },
+    { cmd:'journalctl --vacuum-size=500M',     desc:'Trim journal logs to keep total size under 500MB',                   section:'logs',     safe:false },
+    { cmd:'tail -f /var/log/syslog',           desc:'Follow the general system log file in real-time',                    section:'logs',     safe:true  },
+    { cmd:'tail -f /var/log/nginx/error.log',  desc:'Follow nginx error log in real-time',                                 section:'logs',     safe:true  },
+    { cmd:'tail -f /var/log/mail.log',         desc:'Follow Postfix mail log in real-time',                               section:'logs',     safe:true  },
+    { cmd:'tail -f /var/log/auth.log',         desc:'Follow authentication and SSH login log in real-time',               section:'logs',     safe:true  },
+    { cmd:'top',                               desc:'Interactive real-time process and resource usage monitor',            section:'logs',     safe:true  },
+    { cmd:'htop',                              desc:'Enhanced interactive process viewer with colour and filtering',       section:'logs',     safe:true  },
+    { cmd:'ps aux',                            desc:'Show all running processes with CPU, memory, and command details',    section:'logs',     safe:true  },
+    { cmd:'ps aux | grep nginx',               desc:'Filter the process list to show only nginx-related processes',       section:'logs',     safe:true  },
+    { cmd:'ps aux --sort=-%mem | head',        desc:'Show the top 10 processes consuming the most RAM',                   section:'logs',     safe:true  },
+    { cmd:'ps aux --sort=-%cpu | head',        desc:'Show the top 10 processes consuming the most CPU',                   section:'logs',     safe:true  },
+    { cmd:'w',                                 desc:'Show who is logged in and what they are currently running',           section:'logs',     safe:true  },
+    { cmd:'last -a | head -n 30',              desc:'Show the last 30 login records with hostname details',               section:'logs',     safe:true  },
+    { cmd:'last reboot',                       desc:'Show the history of system reboots',                                  section:'logs',     safe:true  },
+    { cmd:'vmstat 1 5',                        desc:'Show CPU, memory, swap, and I/O stats every 1 second for 5 samples', section:'logs',     safe:true  },
+    { cmd:'iostat -xz 1',                      desc:'Show disk I/O stats per device (requires sysstat)',                  section:'logs',     safe:true  },
+
+    // ── SECURITY / USERS ─────────────────────────────────────────────────
+    { cmd:'useradd -m -s /bin/bash <USER>',    desc:'Create a new user with a home directory and bash as default shell',  section:'security', safe:false },
+    { cmd:'passwd <USER>',                     desc:'Set or change the password for a specific user',                     section:'security', safe:false },
+    { cmd:'usermod -aG sudo <USER>',           desc:'Add a user to the sudo group (grants sudo privileges)',              section:'security', safe:false },
+    { cmd:'usermod -aG <GROUP> <USER>',        desc:'Add a user to any supplementary group',                              section:'security', safe:false },
+    { cmd:'userdel -r <USER>',                 desc:'Delete a user account AND their home directory — irreversible',      section:'security', safe:false },
+    { cmd:'groups <USER>',                     desc:'List all groups a user belongs to',                                  section:'security', safe:true  },
+    { cmd:'cat /etc/passwd',                   desc:'List all user accounts on the system',                               section:'security', safe:true  },
+    { cmd:'sudo -l',                           desc:'List the sudo commands the current user is allowed to run',          section:'security', safe:true  },
+    { cmd:'sudo -i',                           desc:'Start an interactive root shell session',                            section:'security', safe:false },
+    { cmd:'visudo',                            desc:'Safely edit /etc/sudoers with syntax checking',                      section:'security', safe:false },
+    { cmd:'ssh <USER>@<HOST>',                 desc:'Connect to a remote server over SSH',                                section:'security', safe:true  },
+    { cmd:'ssh -p <PORT> <USER>@<HOST>',       desc:'Connect to a remote server on a non-standard SSH port',              section:'security', safe:true  },
+    { cmd:'ssh -vvv -p 22 <USER>@<HOST>',      desc:'SSH with maximum debug verbosity for troubleshooting auth issues',   section:'security', safe:true  },
+    { cmd:'ssh-keygen -t ed25519 -C "<LABEL>"', desc:'Generate a modern ED25519 SSH key pair with a descriptive label',  section:'security', safe:true  },
+    { cmd:'ssh-keygen -t ed25519 -C "<LABEL>" -f ~/.ssh/id_ed25519_<LABEL>', desc:'Generate ED25519 key with a specific output filename', section:'security', safe:true },
+    { cmd:'ssh-copy-id <USER>@<HOST>',         desc:'Install your public key on a remote server for passwordless login',  section:'security', safe:true  },
+    { cmd:'cat ~/.ssh/id_ed25519.pub',         desc:'Print your public SSH key (safe to share)',                          section:'security', safe:true  },
+    { cmd:'eval "$(ssh-agent -s)"',            desc:'Start the SSH agent in the current shell session',                   section:'security', safe:true  },
+    { cmd:'ssh-add ~/.ssh/id_ed25519_<LABEL>', desc:'Add a private key to the SSH agent for the current session',         section:'security', safe:true  },
+    { cmd:'ufw status verbose',                desc:'Show firewall status with all rules, policies, and profiles',        section:'security', safe:true  },
+    { cmd:'ufw allow 22/tcp',                  desc:'Allow inbound SSH connections through the firewall',                 section:'security', safe:false },
+    { cmd:'ufw allow 80/tcp',                  desc:'Allow inbound HTTP traffic on port 80',                              section:'security', safe:false },
+    { cmd:'ufw allow 443/tcp',                 desc:'Allow inbound HTTPS traffic on port 443',                            section:'security', safe:false },
+    { cmd:'ufw deny <PORT>',                   desc:'Block all inbound traffic on a specific port',                       section:'security', safe:false },
+    { cmd:'ufw delete allow <PORT>',           desc:'Remove a specific firewall allow rule',                              section:'security', safe:false },
+    { cmd:'ufw enable',                        desc:'Activate the UFW firewall — applies all rules immediately',          section:'security', safe:false },
+    { cmd:'ufw disable',                       desc:'Deactivate the UFW firewall — all traffic allowed',                  section:'security', safe:false },
+    { cmd:'ufw reload',                        desc:'Reload UFW rules without disabling the firewall',                    section:'security', safe:false },
+    { cmd:'fail2ban-client status',            desc:'Show fail2ban status and list of active jails',                      section:'security', safe:true  },
+    { cmd:'fail2ban-client status sshd',       desc:'Show details for the sshd jail: banned IPs, total bans',            section:'security', safe:true  },
+    { cmd:'fail2ban-client set sshd banip <IP>', desc:'Manually ban an IP address in the sshd jail',                    section:'security', safe:false },
+    { cmd:'fail2ban-client set sshd unbanip <IP>', desc:'Manually unban an IP address from the sshd jail',              section:'security', safe:false },
+    { cmd:'truncate --size=0 ~/.bash_history', desc:'Wipe shell command history — only when intentionally needed',       section:'security', safe:false },
+
+    // ── NGINX + CERTBOT ──────────────────────────────────────────────────
+    { cmd:'sudo apt install -y nginx certbot python3-certbot-nginx', desc:'Install Nginx web server and Certbot for HTTPS',    section:'nginx', safe:false },
+    { cmd:'nginx -t',                          desc:'Test Nginx configuration syntax — always do this before reloading',  section:'nginx',    safe:true  },
+    { cmd:'systemctl reload nginx',            desc:'Reload Nginx config gracefully with zero downtime',                  section:'nginx',    safe:false },
+    { cmd:'systemctl restart nginx',           desc:'Fully restart Nginx — causes brief downtime',                        section:'nginx',    safe:false },
+    { cmd:'systemctl status nginx',            desc:'Check if Nginx is running and see recent log entries',               section:'nginx',    safe:true  },
+    { cmd:'systemctl enable nginx',            desc:'Enable Nginx to start automatically at boot',                        section:'nginx',    safe:false },
+    { cmd:'nginx -s reload',                   desc:'Send reload signal directly to Nginx master process',                section:'nginx',    safe:false },
+    { cmd:'certbot --nginx -d <DOMAIN>',       desc:'Issue or renew an SSL certificate for a domain using Nginx plugin',  section:'nginx',    safe:false },
+    { cmd:'certbot renew --dry-run',           desc:'Test certificate renewal process without actually renewing',         section:'nginx',    safe:true  },
+    { cmd:'certbot renew',                     desc:'Renew all certificates that are close to expiry',                    section:'nginx',    safe:false },
+    { cmd:'certbot certificates',              desc:'List all certificates managed by Certbot with expiry dates',         section:'nginx',    safe:true  },
+    { cmd:'grep -R "listen 80" /etc/nginx',    desc:'Find which Nginx config files contain a port 80 listener',          section:'nginx',    safe:true  },
+    { cmd:'grep -R "server_name" /etc/nginx',  desc:'Find all server_name directives across all Nginx configs',          section:'nginx',    safe:true  },
+    { cmd:'tail -f /var/log/nginx/error.log',  desc:'Follow Nginx error log in real-time',                                section:'nginx',    safe:true  },
+    { cmd:'tail -f /var/log/nginx/access.log', desc:'Follow Nginx access log — see incoming requests live',              section:'nginx',    safe:true  },
+    { cmd:'a2ensite <CONF>',                   desc:'Enable an Apache virtual host config file',                         section:'nginx',    safe:false },
+    { cmd:'a2dissite <CONF>',                  desc:'Disable an Apache virtual host config file',                        section:'nginx',    safe:false },
+    { cmd:'a2enmod rewrite',                   desc:'Enable the Apache mod_rewrite module',                              section:'nginx',    safe:false },
+    { cmd:'apache2ctl -t',                     desc:'Test Apache configuration syntax',                                  section:'nginx',    safe:true  },
+
+    // ── DOCKER ───────────────────────────────────────────────────────────
+    { cmd:'docker ps',                         desc:'List currently running containers with status and ports',             section:'docker',   safe:true  },
+    { cmd:'docker ps -a',                      desc:'List all containers including stopped ones',                         section:'docker',   safe:true  },
+    { cmd:'docker images',                     desc:'List all locally cached Docker images',                              section:'docker',   safe:true  },
+    { cmd:'docker logs <CONTAINER>',           desc:'View all logs output by a container',                               section:'docker',   safe:true  },
+    { cmd:'docker logs -f <CONTAINER>',        desc:'Follow container logs in real-time',                                section:'docker',   safe:true  },
+    { cmd:'docker logs --tail 100 <CONTAINER>',desc:'Show the last 100 lines of a container log',                       section:'docker',   safe:true  },
+    { cmd:'docker exec -it <CONTAINER> bash',  desc:'Open an interactive bash shell inside a running container',         section:'docker',   safe:true  },
+    { cmd:'docker exec -it <CONTAINER> sh',    desc:'Open sh shell inside container (use if bash is unavailable)',       section:'docker',   safe:true  },
+    { cmd:'docker stop <CONTAINER>',           desc:'Gracefully stop a running container',                               section:'docker',   safe:false },
+    { cmd:'docker start <CONTAINER>',          desc:'Start a stopped container',                                         section:'docker',   safe:false },
+    { cmd:'docker restart <CONTAINER>',        desc:'Stop and restart a container',                                      section:'docker',   safe:false },
+    { cmd:'docker rm <CONTAINER>',             desc:'Remove a stopped container',                                        section:'docker',   safe:false },
+    { cmd:'docker rmi <IMAGE>',                desc:'Delete a locally cached Docker image',                              section:'docker',   safe:false },
+    { cmd:'docker pull <IMAGE>:<TAG>',         desc:'Download a Docker image from a registry',                           section:'docker',   safe:true  },
+    { cmd:'docker build -t <NAME> .',          desc:'Build a Docker image from the Dockerfile in current directory',     section:'docker',   safe:true  },
+    { cmd:'docker inspect <CONTAINER>',        desc:'Show full JSON metadata about a container',                         section:'docker',   safe:true  },
+    { cmd:'docker stats',                      desc:'Live CPU, memory, and network usage for all running containers',    section:'docker',   safe:true  },
+    { cmd:'docker volume ls',                  desc:'List all Docker volumes',                                           section:'docker',   safe:true  },
+    { cmd:'docker network ls',                 desc:'List all Docker networks',                                          section:'docker',   safe:true  },
+    { cmd:'docker compose up -d',              desc:'Start all services defined in docker-compose.yml in the background', section:'docker',  safe:false },
+    { cmd:'docker compose down',               desc:'Stop and remove containers, networks from compose stack',           section:'docker',   safe:false },
+    { cmd:'docker compose logs <SERVICE>',     desc:'View logs for a specific service defined in docker-compose.yml',    section:'docker',   safe:true  },
+    { cmd:'docker compose logs -f',            desc:'Follow logs for all services in the compose stack',                 section:'docker',   safe:true  },
+    { cmd:'docker compose pull',               desc:'Pull latest images for all services in compose file',               section:'docker',   safe:true  },
+    { cmd:'docker compose up -d --build',      desc:'Rebuild images and restart all compose services',                  section:'docker',   safe:false },
+    { cmd:'docker system prune',               desc:'Remove all stopped containers, unused networks, dangling images',   section:'docker',   safe:false },
+    { cmd:'docker system prune -a',            desc:'Remove ALL unused Docker resources including all unused images',    section:'docker',   safe:false },
+    { cmd:'docker system df',                  desc:'Show Docker disk usage by images, containers, and volumes',         section:'docker',   safe:true  },
+    { cmd:'systemctl restart docker',          desc:'Restart the Docker daemon',                                         section:'docker',   safe:false },
+
+    // ── GIT + SSH KEYS ───────────────────────────────────────────────────
+    { cmd:'git status',                        desc:'Show working tree status: staged, unstaged, and untracked files',    section:'git',      safe:true  },
+    { cmd:'git log --oneline -20',             desc:'Show last 20 commits in compact one-line format',                   section:'git',      safe:true  },
+    { cmd:'git log --oneline --graph --all',   desc:'Show full branch graph with commits across all branches',           section:'git',      safe:true  },
+    { cmd:'git diff',                          desc:'Show unstaged changes in the working directory',                    section:'git',      safe:true  },
+    { cmd:'git diff --staged',                 desc:'Show changes that are staged and ready to commit',                  section:'git',      safe:true  },
+    { cmd:'git add .',                         desc:'Stage all changes in the current directory for commit',             section:'git',      safe:true  },
+    { cmd:'git add <FILE>',                    desc:'Stage a specific file for commit',                                  section:'git',      safe:true  },
+    { cmd:'git commit -m "message"',           desc:'Commit staged changes with a message',                             section:'git',      safe:true  },
+    { cmd:'git commit --amend',                desc:'Edit the most recent commit message or add forgotten changes',      section:'git',      safe:false },
+    { cmd:'git push',                          desc:'Push local commits to the remote repository',                       section:'git',      safe:true  },
+    { cmd:'git push -u origin <BRANCH>',       desc:'Push a branch and set upstream tracking for future pushes',        section:'git',      safe:true  },
+    { cmd:'git pull --rebase',                 desc:'Pull remote changes, replaying local commits on top (cleaner history)', section:'git',  safe:true  },
+    { cmd:'git fetch --all',                   desc:'Download all remote branch updates without merging',               section:'git',      safe:true  },
+    { cmd:'git checkout -b <BRANCH>',          desc:'Create and switch to a new branch',                                section:'git',      safe:true  },
+    { cmd:'git branch -a',                     desc:'List all local and remote branches',                               section:'git',      safe:true  },
+    { cmd:'git branch -d <BRANCH>',            desc:'Delete a local branch (only if fully merged)',                     section:'git',      safe:false },
+    { cmd:'git stash',                         desc:'Temporarily save uncommitted changes without committing them',      section:'git',      safe:true  },
+    { cmd:'git stash pop',                     desc:'Restore the most recently stashed changes',                        section:'git',      safe:true  },
+    { cmd:'git reset --hard HEAD',             desc:'Discard all uncommitted changes — IRREVERSIBLE',                   section:'git',      safe:false },
+    { cmd:'git remote -v',                     desc:'Show all remote repositories and their fetch/push URLs',           section:'git',      safe:true  },
+    { cmd:'git clone <URL>',                   desc:'Clone a remote repository to the current directory',               section:'git',      safe:true  },
+    { cmd:'git tag v1.0.0',                    desc:'Create a lightweight tag at the current commit',                   section:'git',      safe:true  },
+    { cmd:'git push origin --tags',            desc:'Push all local tags to the remote repository',                    section:'git',      safe:true  },
+
+    // ── PYTHON ───────────────────────────────────────────────────────────
+    { cmd:'sudo apt install -y python3 python3-pip python3-venv', desc:'Install Python 3 with pip and venv support', section:'python',  safe:false },
+    { cmd:'python3 -m venv venv',              desc:'Create a Python virtual environment in a folder named venv',       section:'python',   safe:true  },
+    { cmd:'source venv/bin/activate',          desc:'Activate the virtual environment in the current shell session',    section:'python',   safe:true  },
+    { cmd:'deactivate',                        desc:'Deactivate the current Python virtual environment',                section:'python',   safe:true  },
+    { cmd:'pip install <PACKAGE>',             desc:'Install a Python package into the active virtual environment',     section:'python',   safe:true  },
+    { cmd:'pip install -r requirements.txt',   desc:'Install all packages listed in a requirements.txt file',           section:'python',   safe:true  },
+    { cmd:'pip freeze > requirements.txt',     desc:'Save all currently installed packages and versions to a file',     section:'python',   safe:true  },
+    { cmd:'pip list',                          desc:'List all installed Python packages in the current environment',    section:'python',   safe:true  },
+    { cmd:'pip show <PACKAGE>',                desc:'Show metadata and install location for an installed package',      section:'python',   safe:true  },
+    { cmd:'pip uninstall <PACKAGE>',           desc:'Uninstall a Python package from the current environment',          section:'python',   safe:false },
+    { cmd:'python3 -m pip install --upgrade pip', desc:'Upgrade pip itself to the latest version',                     section:'python',   safe:true  },
+    { cmd:'python3 --version',                 desc:'Show the installed Python 3 version',                              section:'python',   safe:true  },
+    { cmd:'which python3',                     desc:'Show the path to the Python 3 executable being used',              section:'python',   safe:true  },
+
+    // ── NODE / NPM ───────────────────────────────────────────────────────
+    { cmd:'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash', desc:'Install nvm (Node Version Manager) — supply-chain risk, verify URL first', section:'node', safe:false },
+    { cmd:'nvm install --lts',                 desc:'Install the latest LTS version of Node.js via nvm',                section:'node',     safe:true  },
+    { cmd:'nvm install <VERSION>',             desc:'Install a specific Node.js version via nvm',                       section:'node',     safe:true  },
+    { cmd:'nvm use <VERSION>',                 desc:'Switch to a specific Node.js version in the current shell',        section:'node',     safe:true  },
+    { cmd:'nvm ls',                            desc:'List all Node.js versions installed via nvm',                      section:'node',     safe:true  },
+    { cmd:'nvm current',                       desc:'Show the currently active Node.js version',                        section:'node',     safe:true  },
+    { cmd:'node --version',                    desc:'Show the installed Node.js version',                               section:'node',     safe:true  },
+    { cmd:'npm --version',                     desc:'Show the installed npm version',                                   section:'node',     safe:true  },
+    { cmd:'npm install',                       desc:'Install all dependencies listed in package.json',                  section:'node',     safe:true  },
+    { cmd:'npm install <PACKAGE>',             desc:'Install a package and add it to dependencies',                     section:'node',     safe:true  },
+    { cmd:'npm install -D <PACKAGE>',          desc:'Install a package as a dev dependency',                            section:'node',     safe:true  },
+    { cmd:'npm install -g <PACKAGE>',          desc:'Install a package globally — use with caution on servers',         section:'node',     safe:false },
+    { cmd:'npm run <SCRIPT>',                  desc:'Run a script defined in package.json scripts section',             section:'node',     safe:true  },
+    { cmd:'npm run dev',                       desc:'Start the development server (if defined in package.json)',        section:'node',     safe:true  },
+    { cmd:'npm run build',                     desc:'Run the production build script',                                  section:'node',     safe:true  },
+    { cmd:'npm list --depth=0',                desc:'List top-level installed npm packages',                            section:'node',     safe:true  },
+    { cmd:'npm outdated',                      desc:'Show packages with newer versions available',                      section:'node',     safe:true  },
+    { cmd:'npm update',                        desc:'Update all packages to their latest allowed versions',             section:'node',     safe:true  },
+    { cmd:'npm uninstall <PACKAGE>',           desc:'Remove a package and update package.json',                        section:'node',     safe:false },
+    { cmd:'npx <COMMAND>',                     desc:'Run a package binary without globally installing it',              section:'node',     safe:true  },
+    { cmd:'npm init -y',                       desc:'Initialize a new package.json with all defaults',                  section:'node',     safe:true  },
+    { cmd:'npm ci',                            desc:'Clean install from package-lock.json — faster and stricter than npm install', section:'node', safe:true },
+    { cmd:'npm cache clean --force',           desc:'Clear the npm cache entirely',                                     section:'node',     safe:false },
+    { cmd:'npm run preview',                   desc:'Preview the production build locally',                             section:'node',     safe:true  },
+    { cmd:'pnpm install',                      desc:'Install all dependencies using pnpm (fast disk-efficient alternative to npm)', section:'node', safe:true },
+    { cmd:'pnpm dev',                          desc:'Start development server with pnpm',                               section:'node',     safe:true  },
+    { cmd:'pnpm build',                        desc:'Run production build with pnpm',                                   section:'node',     safe:true  },
+    { cmd:'pnpm add <PACKAGE>',                desc:'Add a dependency using pnpm',                                      section:'node',     safe:true  },
+    { cmd:'pnpm remove <PACKAGE>',             desc:'Remove a dependency using pnpm',                                   section:'node',     safe:false },
+
+    // ── RUST / RUSTUP ────────────────────────────────────────────────────
+    { cmd:'curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh', desc:'Install Rust via rustup — the official recommended method', section:'rust', safe:false },
+    { cmd:'rustup update',                     desc:'Update all installed Rust toolchains to the latest versions',      section:'rust',     safe:true  },
+    { cmd:'rustup update stable',              desc:'Update only the stable Rust toolchain',                            section:'rust',     safe:true  },
+    { cmd:'rustup self update',                desc:'Update the rustup installer itself',                               section:'rust',     safe:true  },
+    { cmd:'rustup uninstall',                  desc:'Completely uninstall Rust and all toolchains from the system',     section:'rust',     safe:false },
+    { cmd:'rustup show',                       desc:'Show the active toolchain, installed toolchains, and targets',     section:'rust',     safe:true  },
+    { cmd:'rustup toolchain list',             desc:'List all currently installed Rust toolchains',                     section:'rust',     safe:true  },
+    { cmd:'rustup toolchain install nightly',  desc:'Install the latest nightly Rust toolchain',                        section:'rust',     safe:true  },
+    { cmd:'rustup toolchain install stable',   desc:'Install or reinstall the stable Rust toolchain',                  section:'rust',     safe:true  },
+    { cmd:'rustup default stable',             desc:'Set stable as the default Rust toolchain for the system',          section:'rust',     safe:true  },
+    { cmd:'rustup default nightly',            desc:'Set nightly as the default Rust toolchain',                        section:'rust',     safe:true  },
+    { cmd:'rustup override set nightly',       desc:'Override the toolchain for the current directory only',            section:'rust',     safe:true  },
+    { cmd:'rustup override unset',             desc:'Remove the toolchain override for the current directory',          section:'rust',     safe:true  },
+    { cmd:'rustup target list',                desc:'List all compilation targets available for the current toolchain', section:'rust',     safe:true  },
+    { cmd:'rustup target list --installed',    desc:'List only the compilation targets already installed',              section:'rust',     safe:true  },
+    { cmd:'rustup target add <TARGET>',        desc:'Add a compilation target to the current toolchain',               section:'rust',     safe:true  },
+    { cmd:'rustup target add wasm32-unknown-unknown', desc:'Add the WebAssembly target — required for Tauri and web builds', section:'rust', safe:true },
+    { cmd:'rustup target add aarch64-unknown-linux-gnu', desc:'Add ARM64 Linux cross-compilation target',              section:'rust',     safe:true  },
+    { cmd:'rustup target add x86_64-unknown-linux-musl', desc:'Add musl target for static Linux binaries',             section:'rust',     safe:true  },
+    { cmd:'rustup component add rustfmt',      desc:'Add rustfmt — the official Rust code formatter',                  section:'rust',     safe:true  },
+    { cmd:'rustup component add clippy',       desc:'Add clippy — the official Rust linter',                           section:'rust',     safe:true  },
+    { cmd:'rustup component add rust-analyzer', desc:'Add rust-analyzer language server for IDE integration',          section:'rust',     safe:true  },
+    { cmd:'rustup component add rust-src',     desc:'Add Rust standard library source code (needed for some tools)',   section:'rust',     safe:true  },
+    { cmd:'rustup component list --installed', desc:'List all installed rustup components for the active toolchain',   section:'rust',     safe:true  },
+    { cmd:'rustc --version',                   desc:'Show the installed Rust compiler version',                        section:'rust',     safe:true  },
+    { cmd:'rustc <FILE>.rs',                   desc:'Compile a single Rust source file directly',                      section:'rust',     safe:true  },
+    { cmd:'rustc <FILE>.rs -o <OUTPUT>',       desc:'Compile a single Rust file and specify the output binary name',   section:'rust',     safe:true  },
+
+    // ── CARGO ─────────────────────────────────────────────────────────────
+    { cmd:'cargo new my_project',              desc:'Create a new binary project with a src/main.rs and Cargo.toml',   section:'cargo',    safe:true  },
+    { cmd:'cargo new my_lib --lib',            desc:'Create a new library project with a src/lib.rs',                  section:'cargo',    safe:true  },
+    { cmd:'cargo init',                        desc:'Initialize a new Cargo project in the current directory',         section:'cargo',    safe:true  },
+    { cmd:'cargo init --lib',                  desc:'Initialize a library project in the current directory',           section:'cargo',    safe:true  },
+    { cmd:'cargo build',                       desc:'Compile the project in debug mode (faster compile, no optimization)', section:'cargo', safe:true  },
+    { cmd:'cargo build --release',             desc:'Compile with full optimization — use for production binaries',    section:'cargo',    safe:true  },
+    { cmd:'cargo build --target <TRIPLE>',     desc:'Cross-compile for a specific target triple (e.g. aarch64-linux)', section:'cargo',    safe:true  },
+    { cmd:'cargo run',                         desc:'Build and immediately run the default binary target',             section:'cargo',    safe:true  },
+    { cmd:'cargo run -- <ARGS>',               desc:'Build and run with arguments passed to the binary',               section:'cargo',    safe:true  },
+    { cmd:'cargo run --release',               desc:'Build in release mode and run the optimized binary',              section:'cargo',    safe:true  },
+    { cmd:'cargo run -p <PACKAGE>',            desc:'Run a specific package in a workspace',                           section:'cargo',    safe:true  },
+    { cmd:'cargo check',                       desc:'Check code for errors without producing a binary — much faster',  section:'cargo',    safe:true  },
+    { cmd:'cargo check --all-targets',         desc:'Check all targets (bins, tests, examples, benches) for errors',   section:'cargo',    safe:true  },
+    { cmd:'cargo clean',                       desc:'Remove all build artifacts from the target/ directory',           section:'cargo',    safe:true  },
+    { cmd:'cargo test',                        desc:'Run all unit and integration tests in the project',               section:'cargo',    safe:true  },
+    { cmd:'cargo test <TEST_NAME>',            desc:'Run only tests whose names contain the given string',             section:'cargo',    safe:true  },
+    { cmd:'cargo test -- --nocapture',         desc:'Run tests and print stdout/stderr output even when tests pass',   section:'cargo',    safe:true  },
+    { cmd:'cargo test --workspace',            desc:'Run all tests across every package in the workspace',             section:'cargo',    safe:true  },
+    { cmd:'cargo bench',                       desc:'Run all benchmark tests (requires nightly or criterion crate)',   section:'cargo',    safe:true  },
+    { cmd:'cargo doc',                         desc:'Generate HTML documentation from doc comments in source code',    section:'cargo',    safe:true  },
+    { cmd:'cargo doc --open',                  desc:'Generate documentation and open it in the default browser',      section:'cargo',    safe:true  },
+    { cmd:'cargo doc --no-deps',               desc:'Generate docs only for this crate, not its dependencies',        section:'cargo',    safe:true  },
+    { cmd:'cargo fmt',                         desc:'Format all Rust source files using rustfmt',                      section:'cargo',    safe:true  },
+    { cmd:'cargo fmt -- --check',              desc:'Check formatting without making changes — useful in CI',          section:'cargo',    safe:true  },
+    { cmd:'cargo clippy',                      desc:'Run the Clippy linter for additional style and correctness warnings', section:'cargo', safe:true  },
+    { cmd:'cargo clippy -- -D warnings',       desc:'Run Clippy and treat all warnings as errors',                    section:'cargo',    safe:true  },
+    { cmd:'cargo clippy --all-targets',        desc:'Run Clippy on all targets including tests and examples',         section:'cargo',    safe:true  },
+    { cmd:'cargo fix',                         desc:'Automatically apply compiler suggestions and lint fixes',         section:'cargo',    safe:true  },
+    { cmd:'cargo update',                      desc:'Update all dependencies to their latest allowed versions in Cargo.lock', section:'cargo', safe:true },
+    { cmd:'cargo update -p <CRATE>',           desc:'Update only a specific crate to its latest allowed version',     section:'cargo',    safe:true  },
+    { cmd:'cargo add <CRATE>',                 desc:'Add a dependency to Cargo.toml (built-in since Rust 1.62)',      section:'cargo',    safe:true  },
+    { cmd:'cargo add <CRATE>@1.2.3',           desc:'Add a dependency at a specific version',                         section:'cargo',    safe:true  },
+    { cmd:'cargo add <CRATE> --dev',           desc:'Add a dev dependency (only for tests and examples)',             section:'cargo',    safe:true  },
+    { cmd:'cargo add <CRATE> --build',         desc:'Add a build dependency (for build.rs scripts)',                  section:'cargo',    safe:true  },
+    { cmd:'cargo add <CRATE> --features <F>',  desc:'Add a crate with specific feature flags enabled',                section:'cargo',    safe:true  },
+    { cmd:'cargo remove <CRATE>',              desc:'Remove a dependency from Cargo.toml',                            section:'cargo',    safe:false },
+    { cmd:'cargo tree',                        desc:'Display the full dependency tree for the project',               section:'cargo',    safe:true  },
+    { cmd:'cargo tree -d',                     desc:'Show only duplicate dependencies in the tree',                   section:'cargo',    safe:true  },
+    { cmd:'cargo publish',                     desc:'Package and publish the crate to crates.io',                     section:'cargo',    safe:false },
+    { cmd:'cargo publish --dry-run',           desc:'Simulate publishing without actually uploading',                 section:'cargo',    safe:true  },
+    { cmd:'cargo login',                       desc:'Authenticate with crates.io using an API token',                 section:'cargo',    safe:true  },
+    { cmd:'cargo package',                     desc:'Package the crate into a .crate file without publishing',        section:'cargo',    safe:true  },
+    { cmd:'cargo search <QUERY>',              desc:'Search crates.io for crates matching a query string',            section:'cargo',    safe:true  },
+    { cmd:'cargo install <CRATE>',             desc:'Install a binary crate globally from crates.io',                 section:'cargo',    safe:true  },
+    { cmd:'cargo install --path .',            desc:'Install the current project as a global binary',                 section:'cargo',    safe:true  },
+    { cmd:'cargo uninstall <CRATE>',           desc:'Uninstall a globally installed binary crate',                    section:'cargo',    safe:false },
+    { cmd:'cargo build --workspace',           desc:'Build all packages in a Cargo workspace',                        section:'cargo',    safe:true  },
+    { cmd:'cargo test --workspace',            desc:'Test all packages in a Cargo workspace',                         section:'cargo',    safe:true  },
+    { cmd:'cargo metadata',                    desc:'Output project metadata and dependency info as JSON',             section:'cargo',    safe:true  },
+    { cmd:'cargo vendor',                      desc:'Vendor all dependencies locally for offline builds',             section:'cargo',    safe:true  },
+    { cmd:'RUST_LOG=debug cargo run',          desc:'Set log level to debug and run — uses env_logger or similar',    section:'cargo',    safe:true  },
+    { cmd:'RUST_BACKTRACE=1 cargo run',        desc:'Enable full backtraces on panics',                               section:'cargo',    safe:true  },
+    { cmd:'RUST_BACKTRACE=full cargo run',     desc:'Enable full detailed backtrace output on panic',                 section:'cargo',    safe:true  },
+    { cmd:'cargo install cargo-edit',          desc:'Install cargo-edit plugin for cargo add/remove commands',        section:'cargo',    safe:true  },
+    { cmd:'cargo install cargo-watch',         desc:'Install cargo-watch to re-run commands on file changes',         section:'cargo',    safe:true  },
+    { cmd:'cargo watch -x run',                desc:'Re-build and run on every file change',                          section:'cargo',    safe:true  },
+    { cmd:'cargo watch -x check',             desc:'Re-check for errors on every file change',                       section:'cargo',    safe:true  },
+    { cmd:'cargo watch -x test',              desc:'Re-run tests on every file change',                              section:'cargo',    safe:true  },
+    { cmd:'cargo watch -x "run -- --flag"',   desc:'Watch and run with arguments on every change',                   section:'cargo',    safe:true  },
+    { cmd:'cargo install cargo-audit',         desc:'Install cargo-audit for security vulnerability checks',          section:'cargo',    safe:true  },
+    { cmd:'cargo audit',                       desc:'Audit dependencies for known security vulnerabilities',          section:'cargo',    safe:true  },
+    { cmd:'cargo install cargo-outdated',      desc:'Install cargo-outdated to check for newer dependency versions',  section:'cargo',    safe:true  },
+    { cmd:'cargo outdated',                    desc:'Show which dependencies have newer versions available',          section:'cargo',    safe:true  },
+    { cmd:'cargo install cargo-expand',        desc:'Install cargo-expand to show macro-expanded source code',        section:'cargo',    safe:true  },
+    { cmd:'cargo expand',                      desc:'Print macro-expanded Rust source code (requires cargo-expand)',  section:'cargo',    safe:true  },
+    { cmd:'cargo install cargo-nextest',       desc:'Install nextest — a significantly faster Rust test runner',      section:'cargo',    safe:true  },
+    { cmd:'cargo nextest run',                 desc:'Run tests with nextest (faster than cargo test)',                 section:'cargo',    safe:true  },
+    { cmd:'cargo install cargo-flamegraph',    desc:'Install flamegraph profiling tool for Cargo projects',           section:'cargo',    safe:true  },
+    { cmd:'cargo flamegraph',                  desc:'Profile the binary and generate a flamegraph SVG',               section:'cargo',    safe:true  },
+    { cmd:'cargo install wasm-pack',           desc:'Install wasm-pack for building WebAssembly packages',            section:'cargo',    safe:true  },
+    { cmd:'wasm-pack build --target web',      desc:'Build Rust as a WebAssembly package for web use',               section:'cargo',    safe:true  },
+    { cmd:'cargo install trunk',               desc:'Install Trunk — a WASM web app bundler and dev server',          section:'cargo',    safe:true  },
+    { cmd:'trunk serve',                       desc:'Start Trunk dev server with hot-reload for WASM apps',           section:'cargo',    safe:true  },
+    { cmd:'trunk build --release',             desc:'Build WASM app for production with Trunk',                       section:'cargo',    safe:true  },
+    { cmd:'cargo install cross',               desc:'Install cross — easy cross-compilation with Docker',             section:'cargo',    safe:true  },
+    { cmd:'cross build --target aarch64-unknown-linux-gnu', desc:'Cross-compile for ARM64 Linux using Docker',       section:'cargo',    safe:true  },
+    { cmd:'cargo install sqlx-cli',            desc:'Install SQLx CLI for database migrations and queries',           section:'cargo',    safe:true  },
+    { cmd:'cargo install cargo-generate',      desc:'Install cargo-generate to scaffold projects from git templates', section:'cargo',    safe:true  },
+    { cmd:'cargo generate --git <URL>',        desc:'Generate a new project from a git template repository',         section:'cargo',    safe:true  },
+
+    // ── TAURI ─────────────────────────────────────────────────────────────
+    // Prerequisites
+    { cmd:'sudo apt update && sudo apt install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev', desc:'Install Tauri Linux prerequisites on Ubuntu/Debian', section:'tauri', safe:false },
+    { cmd:'sudo dnf install webkit2gtk4.1-devel openssl-devel curl wget file libxdo-devel libappindicator-gtk3-devel librsvg2-devel', desc:'Install Tauri Linux prerequisites on Fedora', section:'tauri', safe:false },
+    { cmd:'sudo pacman -S --needed webkit2gtk-4.1 base-devel curl wget file openssl libxdo appmenu-gtk-module gtk3 librsvg', desc:'Install Tauri Linux prerequisites on Arch Linux', section:'tauri', safe:false },
+    // CLI installation
+    { cmd:'npm install --save-dev @tauri-apps/cli',  desc:'Install Tauri CLI as a local dev dependency via npm',          section:'tauri',    safe:true  },
+    { cmd:'npx tauri --version',               desc:'Check the installed Tauri CLI version',                              section:'tauri',    safe:true  },
+    { cmd:'cargo install tauri-cli',           desc:'Install Tauri CLI globally via Cargo',                               section:'tauri',    safe:true  },
+    { cmd:'cargo tauri --version',             desc:'Check the Tauri CLI version installed via Cargo',                    section:'tauri',    safe:true  },
+    // Scaffold & init
+    { cmd:'npm create tauri-app@latest',       desc:'Scaffold a new Tauri v2 app — interactive prompts for framework and package manager', section:'tauri', safe:true },
+    { cmd:'npx tauri init',                    desc:'Add Tauri to an existing frontend project',                          section:'tauri',    safe:true  },
+    { cmd:'cargo tauri init',                  desc:'Add Tauri to an existing project using the Cargo CLI',               section:'tauri',    safe:true  },
+    // Development
+    { cmd:'npx tauri dev',                     desc:'Start the Tauri development server with hot-reload',                 section:'tauri',    safe:true  },
+    { cmd:'cargo tauri dev',                   desc:'Start Tauri dev mode using the Cargo CLI',                           section:'tauri',    safe:true  },
+    { cmd:'npx tauri dev --verbose',           desc:'Start Tauri dev server with verbose output for debugging',           section:'tauri',    safe:true  },
+    // Building
+    { cmd:'npx tauri build',                   desc:'Build a production Tauri app and installer bundle',                  section:'tauri',    safe:true  },
+    { cmd:'cargo tauri build',                 desc:'Build production app using the Cargo CLI',                           section:'tauri',    safe:true  },
+    { cmd:'npx tauri build --debug',           desc:'Build app with debug symbols for debugging production issues',       section:'tauri',    safe:true  },
+    { cmd:'npx tauri build --target <TRIPLE>', desc:'Build app for a specific target triple (cross-compile)',             section:'tauri',    safe:true  },
+    // Info & plugins
+    { cmd:'npx tauri info',                    desc:'Show full environment info: OS, toolchain, Node, Rust, Tauri versions', section:'tauri', safe:true  },
+    { cmd:'npx tauri add <PLUGIN>',            desc:'Add an official Tauri plugin and configure it automatically',        section:'tauri',    safe:true  },
+    { cmd:'npx tauri add fs',                  desc:'Add the filesystem plugin for reading/writing files',                section:'tauri',    safe:true  },
+    { cmd:'npx tauri add shell',               desc:'Add the shell plugin for running system commands',                   section:'tauri',    safe:true  },
+    { cmd:'npx tauri add dialog',              desc:'Add the native dialog (open/save/message) plugin',                   section:'tauri',    safe:true  },
+    { cmd:'npx tauri add http',                desc:'Add the HTTP client plugin for making network requests',             section:'tauri',    safe:true  },
+    { cmd:'npx tauri add notification',        desc:'Add the system notification plugin',                                 section:'tauri',    safe:true  },
+    { cmd:'npx tauri add store',               desc:'Add the persistent key-value store plugin',                         section:'tauri',    safe:true  },
+    { cmd:'npx tauri add updater',             desc:'Add the auto-updater plugin for in-app updates',                    section:'tauri',    safe:true  },
+    { cmd:'npx tauri add process',             desc:'Add the process plugin to exit or restart the app',                 section:'tauri',    safe:true  },
+    { cmd:'npx tauri add global-shortcut',     desc:'Add the global keyboard shortcut plugin',                           section:'tauri',    safe:true  },
+    { cmd:'npx tauri add clipboard-manager',   desc:'Add the clipboard read/write plugin',                               section:'tauri',    safe:true  },
+    { cmd:'npx tauri add os',                  desc:'Add the OS info plugin (platform, version, arch)',                   section:'tauri',    safe:true  },
+    { cmd:'npx tauri add window-state',        desc:'Add window state persistence (remember size/position)',             section:'tauri',    safe:true  },
+    { cmd:'npx tauri migrate',                 desc:'Migrate a Tauri v1 project to Tauri v2',                            section:'tauri',    safe:false },
+    { cmd:'npx tauri icon ./icon.png',         desc:'Generate all required icon sizes from a single 1024x1024 PNG source', section:'tauri', safe:true  },
+    // Cargo add common Tauri crates
+    { cmd:'cargo add tauri --features default', desc:'Add the tauri crate with default features to Cargo.toml',          section:'tauri',    safe:true  },
+    { cmd:'cargo add tauri-build --build',     desc:'Add tauri-build as a build dependency (required for build.rs)',     section:'tauri',    safe:true  },
+    { cmd:'cargo add serde --features derive', desc:'Add serde with derive macros — essential for Tauri command serialization', section:'tauri', safe:true },
+    { cmd:'cargo add serde_json',              desc:'Add serde_json for JSON serialization in Tauri backends',           section:'tauri',    safe:true  },
+    { cmd:'cargo add tokio --features full',   desc:'Add Tokio async runtime with all features (common in Tauri apps)',  section:'tauri',    safe:true  },
+    // Vite (common Tauri frontend bundler)
+    { cmd:'npm create vite@latest',            desc:'Create a Vite project — the recommended frontend bundler for Tauri', section:'tauri',   safe:true  },
+    { cmd:'npx vite',                          desc:'Start Vite dev server',                                              section:'tauri',    safe:true  },
+    { cmd:'npx vite build',                    desc:'Build frontend with Vite for production',                            section:'tauri',    safe:true  },
+    { cmd:'npx vite preview',                  desc:'Preview the Vite production build locally',                         section:'tauri',    safe:true  },
+    // Troubleshooting
+    { cmd:'WEBKIT_DISABLE_COMPOSITING_MODE=1 npx tauri dev', desc:'Workaround for WebKit rendering issues on some Linux systems', section:'tauri', safe:true },
+    { cmd:'RUST_LOG=tauri=debug npx tauri dev', desc:'Enable Tauri debug logging during development',                    section:'tauri',    safe:true  },
+
+    // ── OLLAMA ───────────────────────────────────────────────────────────
+    { cmd:'ollama list',                       desc:'List all locally installed Ollama models',                         section:'ollama',   safe:true  },
+    { cmd:'ollama pull <MODEL>',               desc:'Download a model from the Ollama registry',                        section:'ollama',   safe:true  },
+    { cmd:'ollama run <MODEL>',                desc:'Start an interactive chat session with a model',                   section:'ollama',   safe:true  },
+    { cmd:'ollama run <MODEL> "<PROMPT>"',     desc:'Run a one-shot prompt against a model without interactive mode',   section:'ollama',   safe:true  },
+    { cmd:'ollama show <MODEL>',               desc:'Show model metadata: parameters, template, license',               section:'ollama',   safe:true  },
+    { cmd:'ollama rm <MODEL>',                 desc:'Delete a locally installed model to free disk space',              section:'ollama',   safe:false },
+    { cmd:'ollama ps',                         desc:'Show which models are currently loaded and running in memory',     section:'ollama',   safe:true  },
+    { cmd:'ollama serve',                      desc:'Start the Ollama API server (default: localhost:11434)',            section:'ollama',   safe:true  },
+    { cmd:'OLLAMA_HOST=0.0.0.0:11434 ollama serve', desc:'Expose Ollama API to all interfaces — only behind firewall', section:'ollama',  safe:false },
+    { cmd:'ollama pull qwen2.5-coder:14b',     desc:'Download qwen2.5-coder:14b — fast daily driver for workflows',    section:'ollama',   safe:true  },
+    { cmd:'ollama pull deepseek-coder:33b',    desc:'Download deepseek-coder:33b — heavy reasoning/architect tasks',   section:'ollama',   safe:true  },
+    { cmd:'ollama run qwen2.5-coder:14b "<PROMPT>"', desc:'One-shot prompt to qwen2.5-coder:14b',                     section:'ollama',   safe:true  },
+    { cmd:'curl http://localhost:11434/api/tags', desc:'List installed models via the Ollama REST API',                 section:'ollama',   safe:true  },
+    { cmd:'curl http://localhost:11434/api/generate -d \'{"model":"<MODEL>","prompt":"Hi"}\'', desc:'Send a prompt to Ollama via REST API', section:'ollama', safe:true },
+    { cmd:'systemctl status ollama',           desc:'Check if the Ollama systemd service is running',                   section:'ollama',   safe:true  },
+    { cmd:'systemctl restart ollama',          desc:'Restart the Ollama service',                                       section:'ollama',   safe:false },
+    { cmd:'systemctl edit ollama',             desc:'Edit Ollama systemd override — set OLLAMA_HOST to Tailscale IP',   section:'ollama',   safe:false },
+    { cmd:'journalctl -u ollama -f',           desc:'Follow Ollama service logs in real-time',                          section:'ollama',   safe:true  },
+    { cmd:'journalctl -u ollama -n 120 --no-pager', desc:'Show last 120 lines of Ollama log without paging',           section:'ollama',   safe:true  },
+    { cmd:'ss -tulpn | grep 11434',            desc:'Confirm what interface Ollama is bound to (11434)',                section:'ollama',   safe:true  },
+
+    // ── TAILSCALE ────────────────────────────────────────────────────────
+    { cmd:'curl -fsSL https://tailscale.com/install.sh | sh', desc:'Install Tailscale on Ubuntu/Debian — verify URL, supply-chain risk', section:'tailscale', safe:false },
+    { cmd:'sudo tailscale up',                 desc:'Bring this device onto the Tailscale mesh — opens login URL on first run', section:'tailscale', safe:false },
+    { cmd:'tailscale status',                  desc:'Show all mesh peers, IPs, status, and connection state',                  section:'tailscale', safe:true  },
+    { cmd:'tailscale ip -4',                   desc:'Print this machines Tailscale IPv4 address',                              section:'tailscale', safe:true  },
+    { cmd:'tailscale ip -6',                   desc:'Print this machines Tailscale IPv6 address',                              section:'tailscale', safe:true  },
+    { cmd:'sudo tailscale up --ssh',           desc:'Enable Tailscale SSH — allows mesh peers to SSH via Tailscale auth',      section:'tailscale', safe:false },
+    { cmd:'sudo tailscale up --advertise-exit-node', desc:'Advertise this machine as an exit node for internet routing',      section:'tailscale', safe:false },
+    { cmd:'sudo tailscale up --accept-routes', desc:'Accept subnet routes advertised by other mesh peers',                    section:'tailscale', safe:false },
+    { cmd:'tailscale ping <HOST>',             desc:'Ping a Tailscale peer by hostname or IP to test mesh connectivity',       section:'tailscale', safe:true  },
+    { cmd:'tailscale netcheck',                desc:'Run network diagnostics: NAT type, latency, relay usage',                 section:'tailscale', safe:true  },
+    { cmd:'tailscale bugreport',               desc:'Generate a diagnostic bug report for Tailscale support',                  section:'tailscale', safe:true  },
+    { cmd:'tailscale logout',                  desc:'Disconnect and deregister this device from your Tailscale account',       section:'tailscale', safe:false },
+    { cmd:'systemctl status tailscaled',       desc:'Check Tailscale daemon status and recent log entries',                    section:'tailscale', safe:true  },
+    { cmd:'systemctl restart tailscaled',      desc:'Restart the Tailscale daemon',                                            section:'tailscale', safe:false },
+    { cmd:'journalctl -u tailscaled -f',       desc:'Follow Tailscale daemon logs in real-time',                               section:'tailscale', safe:true  },
+    { cmd:'journalctl -u tailscaled -n 80 --no-pager', desc:'Show last 80 lines of Tailscale log without paging',             section:'tailscale', safe:true  },
+    { cmd:'curl -s http://100.x.ooo.ooo.o:11434/api/tags', desc:'Test connectivity to home Ollama API over Tailscale mesh',   section:'tailscale', safe:true  },
+    { cmd:'curl -I http://100.x.ooo.ooo.o:11434/', desc:'Check HTTP response from home Ollama endpoint over Tailscale',       section:'tailscale', safe:true  },
+
+    // ── AIDER ────────────────────────────────────────────────────────────
+    { cmd:'sudo apt install -y pipx',          desc:'Install pipx — recommended way to install Python CLI tools in isolation', section:'aider',    safe:false },
+    { cmd:'pipx ensurepath',                   desc:'Add pipx binary path to shell PATH — re-open terminal after running',     section:'aider',    safe:true  },
+    { cmd:'pipx install aider-chat',           desc:'Install aider-chat into an isolated pipx environment',                   section:'aider',    safe:false },
+    { cmd:'pipx upgrade aider-chat',           desc:'Upgrade aider to the latest available version via pipx',                 section:'aider',    safe:false },
+    { cmd:'aider --version',                   desc:'Show the installed aider version',                                       section:'aider',    safe:true  },
+    { cmd:'aider --model ollama/qwen2.5-coder:14b', desc:'Start aider with qwen2.5-coder:14b via Ollama — fast daily driver', section:'aider',   safe:true  },
+    { cmd:'aider --model ollama/deepseek-coder:33b', desc:'Start aider with deepseek-coder:33b — heavier architecture and review tasks', section:'aider', safe:true },
+    { cmd:'aider --model ollama/qwen2.5-coder:14b --no-auto-commits', desc:'Run aider without auto-committing changes to git', section:'aider',   safe:true  },
+    { cmd:'aider --model ollama/qwen2.5-coder:14b --dry-run', desc:'Preview what aider would change without writing any files', section:'aider', safe:true  },
+    { cmd:'aider <FILE1> <FILE2>',             desc:'Start aider with specific files added to the chat context',               section:'aider',    safe:true  },
+    { cmd:'export OLLAMA_HOST="http://127.0.0.1:11434"', desc:'Point aider to local Ollama instance explicitly',              section:'aider',    safe:true  },
+    { cmd:'export OLLAMA_HOST="http://100.x.ooo.ooo.o:11434"', desc:'Point aider to home GPU box over Tailscale mesh',        section:'aider',   safe:true  },
+    { cmd:'aider --list-models ollama/',       desc:'List all Ollama models aider can see and use',                            section:'aider',    safe:true  },
+    { cmd:'aider --help',                      desc:'Show all aider command-line flags and options',                           section:'aider',    safe:true  },
+
+    // ── N8N ──────────────────────────────────────────────────────────────
+    { cmd:'mkdir -p ~/docker/n8n && cd ~/docker/n8n', desc:'Create and navigate to the n8n compose working directory', section:'n8n',     safe:true  },
+    { cmd:'docker compose up -d',              desc:'Start the n8n stack in the background (run from compose dir)',      section:'n8n',      safe:false },
+    { cmd:'docker compose down',               desc:'Stop and remove the n8n stack containers',                          section:'n8n',      safe:false },
+    { cmd:'docker compose logs n8n -f',        desc:'Follow n8n container logs in real-time',                            section:'n8n',      safe:true  },
+    { cmd:'docker logs <N8N_CONTAINER> --tail 100', desc:'View last 100 lines of n8n container output',                 section:'n8n',      safe:true  },
+    { cmd:'lsof -i :5678',                     desc:'Check if port 5678 (default n8n port) is listening',               section:'n8n',      safe:true  },
+    { cmd:'ss -tulpn | grep 5678',             desc:'Check what process is listening on port 5678',                     section:'n8n',      safe:true  },
+    { cmd:'docker exec -it <N8N_CONTAINER> sh',desc:'Open a shell inside the n8n container',                            section:'n8n',      safe:true  },
+    { cmd:'docker compose pull && docker compose up -d', desc:'Update n8n to latest image and restart',                section:'n8n',      safe:false },
+
+    // ── TERRAFORM ────────────────────────────────────────────────────────
+    { cmd:'terraform login',                   desc:'Authenticate with Terraform Cloud or HCP Terraform',                section:'terraform', safe:true  },
+    { cmd:'terraform init',                    desc:'Initialize a Terraform working directory and download providers',   section:'terraform', safe:true  },
+    { cmd:'terraform plan',                    desc:'Preview all changes Terraform will make without applying them',     section:'terraform', safe:true  },
+    { cmd:'terraform apply',                   desc:'Apply the planned changes to provision or update infrastructure',   section:'terraform', safe:false },
+    { cmd:'terraform apply -auto-approve',     desc:'Apply changes without interactive confirmation prompt',             section:'terraform', safe:false },
+    { cmd:'terraform destroy',                 desc:'Destroy all infrastructure managed by this Terraform config',      section:'terraform', safe:false },
+    { cmd:'terraform output',                  desc:'Show output values from the most recent apply',                    section:'terraform', safe:true  },
+    { cmd:'terraform validate',                desc:'Check configuration files for syntax and logic errors',            section:'terraform', safe:true  },
+    { cmd:'terraform fmt',                     desc:'Reformat all Terraform files to canonical style',                  section:'terraform', safe:true  },
+    { cmd:'terraform state list',              desc:'List all resources currently in the Terraform state file',         section:'terraform', safe:true  },
+    { cmd:'terraform state show <RESOURCE>',   desc:'Show detailed state info for a specific managed resource',         section:'terraform', safe:true  },
+    { cmd:'terraform import <ADDR> <ID>',      desc:'Import an existing resource into Terraform state',                 section:'terraform', safe:false },
+    { cmd:'terraform workspace list',          desc:'List all Terraform workspaces',                                    section:'terraform', safe:true  },
+    { cmd:'terraform workspace new <NAME>',    desc:'Create a new Terraform workspace',                                  section:'terraform', safe:true  },
+
+    // ── DNS / BIND9 ──────────────────────────────────────────────────────
+    { cmd:'sudo apt install -y bind9 bind9utils bind9-doc', desc:'Install BIND9 DNS server and utilities', section:'dns', safe:false },
+    { cmd:'named-checkconf',                   desc:'Validate BIND9 named.conf for syntax errors',                      section:'dns',      safe:true  },
+    { cmd:'named-checkzone <DOMAIN> /etc/bind/zones/db.<DOMAIN>', desc:'Validate a DNS zone file for syntax errors',   section:'dns',      safe:true  },
+    { cmd:'rndc reload',                       desc:'Reload all DNS zone files without restarting BIND',               section:'dns',      safe:false },
+    { cmd:'rndc status',                       desc:'Show the current status of the BIND name server',                 section:'dns',      safe:true  },
+    { cmd:'rndc flush',                        desc:'Flush all DNS cache entries from the resolver',                   section:'dns',      safe:false },
+    { cmd:'dig @127.0.0.1 NS <DOMAIN>',        desc:'Query local DNS server for NS records',                           section:'dns',      safe:true  },
+    { cmd:'dig @127.0.0.1 A <DOMAIN>',         desc:'Query local DNS server for A record (IPv4)',                      section:'dns',      safe:true  },
+    { cmd:'dig @127.0.0.1 AAAA <DOMAIN>',      desc:'Query local DNS server for AAAA record (IPv6)',                   section:'dns',      safe:true  },
+    { cmd:'dig @127.0.0.1 MX <DOMAIN>',        desc:'Query local DNS for MX (mail exchange) records',                  section:'dns',      safe:true  },
+    { cmd:'dig @127.0.0.1 TXT <DOMAIN>',       desc:'Query local DNS for TXT records (SPF, DMARC, etc.)',              section:'dns',      safe:true  },
+    { cmd:'dig +short A <DOMAIN>',             desc:'Quick DNS lookup returning only the IP address',                  section:'dns',      safe:true  },
+    { cmd:'dig +trace <DOMAIN>',               desc:'Trace full DNS resolution path from root servers',                section:'dns',      safe:true  },
+    { cmd:'systemctl restart bind9',           desc:'Restart the BIND9 DNS service',                                   section:'dns',      safe:false },
+    { cmd:'systemctl status bind9',            desc:'Check if BIND9 is running and review recent log entries',         section:'dns',      safe:true  },
+    { cmd:'journalctl -u bind9 -f',            desc:'Follow BIND9 service logs in real-time',                          section:'dns',      safe:true  },
+    { cmd:'tail -f /var/log/named/default',    desc:'Follow BIND9 query and error log',                                section:'dns',      safe:true  },
+
+    // ── MAIL / POSTFIX ───────────────────────────────────────────────────
+    { cmd:'sudo apt install -y postfix mailutils', desc:'Install Postfix SMTP server and mail command-line utilities', section:'mail',    safe:false },
+    { cmd:'postfix check',                     desc:'Validate Postfix configuration for errors',                        section:'mail',     safe:true  },
+    { cmd:'postqueue -p',                      desc:'Show all messages currently waiting in the Postfix mail queue',    section:'mail',     safe:true  },
+    { cmd:'mailq',                             desc:'Alias for postqueue -p — display the mail queue',                  section:'mail',     safe:true  },
+    { cmd:'postqueue -f',                      desc:'Flush the mail queue — attempt immediate delivery of queued mail', section:'mail',    safe:false },
+    { cmd:'postsuper -d ALL',                  desc:'Delete ALL messages from the mail queue — irreversible',           section:'mail',     safe:false },
+    { cmd:'postsuper -d <QUEUE_ID>',           desc:'Delete a specific message from the mail queue by its ID',          section:'mail',     safe:false },
+    { cmd:'sudo postconf -e "home_mailbox = Maildir/"', desc:'Configure Postfix to deliver mail to Maildir format',    section:'mail',     safe:false },
+    { cmd:'systemctl restart postfix',         desc:'Restart the Postfix SMTP service',                                 section:'mail',     safe:false },
+    { cmd:'systemctl status postfix',          desc:'Check Postfix service status and recent log entries',              section:'mail',     safe:true  },
+    { cmd:'tail -f /var/log/mail.log',         desc:'Follow the Postfix mail log in real-time',                         section:'mail',     safe:true  },
+    { cmd:'tail -f /var/log/mail.err',         desc:'Follow the Postfix error log',                                     section:'mail',     safe:true  },
+    { cmd:'mkdir -p ~/Maildir/{cur,new,tmp} && chmod -R 700 ~/Maildir', desc:'Create Maildir folder structure for a user', section:'mail', safe:true },
+    { cmd:'echo "test mail" | mail -s "subject" <USER>@<DOMAIN>', desc:'Send a test email from the command line',      section:'mail',     safe:true  },
+
+    // ── APT PACKAGE MANAGEMENT ───────────────────────────────────────────
+    { cmd:'apt update',                        desc:'Refresh the list of available packages from all repositories',     section:'files',    safe:true  },
+    { cmd:'apt upgrade',                       desc:'Upgrade all installed packages to their latest versions',          section:'files',    safe:false },
+    { cmd:'apt install <PACKAGE>',             desc:'Install a new package from the repository',                        section:'files',    safe:false },
+    { cmd:'apt remove <PACKAGE>',              desc:'Uninstall a package but keep its configuration files',             section:'files',    safe:false },
+    { cmd:'apt purge <PACKAGE>',               desc:'Uninstall a package and remove all its configuration files',       section:'files',    safe:false },
+    { cmd:'apt autoremove',                    desc:'Remove packages installed as dependencies that are no longer needed', section:'files', safe:false },
+    { cmd:'apt list --installed',              desc:'List all currently installed packages',                            section:'files',    safe:true  },
+    { cmd:'apt show <PACKAGE>',                desc:'Show detailed info about a package: version, dependencies',        section:'files',    safe:true  },
+    { cmd:'dpkg -l | grep <PATTERN>',          desc:'Search the list of installed packages for a pattern',              section:'files',    safe:true  },
+
+    // ── ARCHIVES & TRANSFERS ─────────────────────────────────────────────
+    { cmd:'tar -czvf backup.tar.gz folder/',   desc:'Create a gzip-compressed archive of a folder',                     section:'files',    safe:true  },
+    { cmd:'tar -xzvf backup.tar.gz',           desc:'Extract a gzip-compressed tar archive into the current directory', section:'files',   safe:true  },
+    { cmd:'tar -cjvf backup.tar.bz2 folder/', desc:'Create a bzip2-compressed archive (smaller but slower)',            section:'files',    safe:true  },
+    { cmd:'zip -r archive.zip folder/',        desc:'Create a zip archive of a folder',                                  section:'files',    safe:true  },
+    { cmd:'unzip archive.zip -d <DIR>',        desc:'Extract a zip file into a specific directory',                      section:'files',    safe:true  },
+    { cmd:'scp <FILE> <USER>@<HOST>:<PATH>',   desc:'Securely copy a file to a remote server over SSH',                  section:'files',    safe:true  },
+    { cmd:'scp -r <DIR> <USER>@<HOST>:<PATH>', desc:'Recursively copy a directory to a remote server',                   section:'files',    safe:true  },
+    { cmd:'rsync -avz src/ dest/',             desc:'Sync directories locally — verbose, archive mode, compressed',     section:'files',    safe:true  },
+    { cmd:'rsync -avz -e ssh src/ <USER>@<HOST>:<PATH>/', desc:'Sync a local directory to a remote server over SSH',   section:'files',    safe:true  },
+    { cmd:'rsync --dry-run -avz src/ dest/',   desc:'Preview what rsync would sync without actually transferring',      section:'files',    safe:true  },
+
+    // ── SHORTCUTS / ONE-LINERS ───────────────────────────────────────────
+    { cmd:'pushd /var/www',                    desc:'Save current directory to stack and jump to /var/www',              section:'shortcuts', safe:true },
+    { cmd:'popd',                              desc:'Return to the directory saved by pushd',                            section:'shortcuts', safe:true },
+    { cmd:'history | grep <TERM>',             desc:'Search your command history for a specific term',                   section:'shortcuts', safe:true },
+    { cmd:'!!',                                desc:'Repeat the last command exactly as typed',                          section:'shortcuts', safe:true },
+    { cmd:'!$',                                desc:'Use the last argument from the previous command',                   section:'shortcuts', safe:true },
+    { cmd:'df -h | grep -v tmpfs',             desc:'Show disk usage excluding temporary filesystems',                   section:'shortcuts', safe:true },
+    { cmd:'ps aux | grep nginx',               desc:'Find all nginx-related processes in the process list',              section:'shortcuts', safe:true },
+    { cmd:'du -sh */ | sort -rh | head -10',   desc:'Show the 10 largest subdirectories, sorted by size',               section:'shortcuts', safe:true },
+    { cmd:'watch -n 5 "df -h"',                desc:'Refresh disk usage display every 5 seconds',                       section:'shortcuts', safe:true },
+    { cmd:'while true; do clear; df -h; sleep 10; done', desc:'Loop to refresh disk usage every 10 seconds',           section:'shortcuts', safe:true },
+    { cmd:'netstat -tulpn | grep :80',         desc:'Check what is listening on port 80',                               section:'shortcuts', safe:true },
+    { cmd:'ss -tulpn | grep LISTEN',           desc:'Show all listening sockets',                                       section:'shortcuts', safe:true },
+    { cmd:'cat /var/log/auth.log | grep "Failed"', desc:'Find all failed authentication attempts in auth log',          section:'shortcuts', safe:true },
+    { cmd:'grep -c "Failed password" /var/log/auth.log', desc:'Count total failed SSH login attempts',                 section:'shortcuts', safe:true },
+    { cmd:'openssl s_client -connect <DOMAIN>:443', desc:'Test SSL/TLS connection to a domain and inspect certificate', section:'shortcuts', safe:true },
+    { cmd:'openssl x509 -noout -dates -in cert.pem', desc:'Check certificate validity dates from a PEM file',          section:'shortcuts', safe:true },
+  ];
+
+  // ── CATEGORY DISPLAY CONTENT ──────────────────────────────────────────
+  const categories = {
+    filesystem: `<span class="comment"># Linux Filesystem Hierarchy Standard (FHS)</span>
+
+<div class="tree">
+<span class="tree-path">/</span>
+├── <span class="tree-path">bin/</span>        <span class="tree-desc">→ Essential user commands (ls, cp, mv, cat)</span>
+├── <span class="tree-path">sbin/</span>       <span class="tree-desc">→ Essential system commands (ip, mount, reboot)</span>
+├── <span class="tree-path">boot/</span>       <span class="tree-desc">→ Kernel + bootloader files</span>
+├── <span class="tree-path">dev/</span>        <span class="tree-desc">→ Device files (disks, tty, null)</span>
+├── <span class="tree-path">etc/</span>        <span class="tree-desc">→ System configuration (MOST IMPORTANT)</span>
+├── <span class="tree-path">home/</span>       <span class="tree-desc">→ User home directories</span>
+├── <span class="tree-path">lib/ lib64/</span> <span class="tree-desc">→ Shared libraries</span>
+├── <span class="tree-path">media/ mnt/</span> <span class="tree-desc">→ Mount points</span>
+├── <span class="tree-path">opt/</span>        <span class="tree-desc">→ Optional third-party software</span>
+├── <span class="tree-path">proc/</span>       <span class="tree-desc">→ Kernel + process info (virtual FS)</span>
+├── <span class="tree-path">root/</span>       <span class="tree-desc">→ Root user's home directory</span>
+├── <span class="tree-path">run/</span>        <span class="tree-desc">→ Runtime state (PID files, sockets)</span>
+├── <span class="tree-path">srv/</span>        <span class="tree-desc">→ Data served by services</span>
+├── <span class="tree-path">sys/</span>        <span class="tree-desc">→ Kernel interfaces (hardware info)</span>
+├── <span class="tree-path">tmp/</span>        <span class="tree-desc">→ Temporary files (cleared on reboot)</span>
+├── <span class="tree-path">usr/</span>        <span class="tree-desc">→ Userland programs & data</span>
+└── <span class="tree-path">var/</span>        <span class="tree-desc">→ Variable data (logs, websites, mail)</span>
+</div>
+<span class="syntax-path">/etc</span> = config  |  <span class="syntax-path">/var</span> = changing data  |  <span class="syntax-path">/usr</span> = software  |  <span class="syntax-path">/home</span> = users`,
+
+    system: `<span class="comment"># System Information</span>
+<span class="syntax-command">whoami</span>                       <span class="comment"># Current user</span>
+<span class="syntax-command">id</span>                           <span class="comment"># UID / GID / groups</span>
+<span class="syntax-command">hostnamectl</span>                  <span class="comment"># Hostname, OS, kernel</span>
+<span class="syntax-command">uname -a</span>                     <span class="comment"># Full kernel version</span>
+<span class="syntax-command">uptime</span>                       <span class="comment"># Uptime + load averages</span>
+<span class="syntax-command">timedatectl</span>                  <span class="comment"># Date, time, timezone</span>
+<span class="syntax-command">free -h</span>                      <span class="comment"># RAM / swap usage</span>
+<span class="syntax-command">lscpu</span>                        <span class="comment"># CPU architecture</span>
+<span class="syntax-command">lsblk -f</span>                     <span class="comment"># Block devices + FS type</span>
+<span class="syntax-command">cat /etc/os-release</span>          <span class="comment"># Distro info</span>
+<span class="syntax-command">cat /proc/meminfo</span>            <span class="comment"># Detailed memory stats</span>
+<span class="syntax-command">env</span>                          <span class="comment"># All environment variables</span>`,
+
+    files: `<span class="comment"># Files & Directories</span>
+<span class="syntax-command">ls -lah</span>                      <span class="comment"># All files, human-readable</span>
+<span class="syntax-command">ls -lt</span>                       <span class="comment"># Sort by modification time</span>
+<span class="syntax-command">tree -L 2</span>                    <span class="comment"># Directory tree (2 levels)</span>
+<span class="syntax-command">df -hT</span>                       <span class="comment"># Disk usage by filesystem</span>
+<span class="syntax-command">du -sh */</span>                    <span class="comment"># Size of subdirectories</span>
+<span class="syntax-command">du -h --max-depth=1</span> <span class="syntax-path">/var</span>     <span class="comment"># Sizes inside /var</span>
+<span class="syntax-command">find /var -type f -size +500M</span> <span class="comment"># Files > 500MB</span>
+<span class="syntax-command">find /var -mtime -7</span>          <span class="comment"># Modified last 7 days</span>
+<span class="syntax-command">chmod 644</span> <span class="syntax-path">file</span>              <span class="comment"># rw-r--r--</span>
+<span class="syntax-command">chmod 600</span> <span class="syntax-path">~/.ssh/id_ed25519</span> <span class="comment"># SSH key permissions</span>
+<span class="syntax-command">chmod +x</span> <span class="syntax-path">script.sh</span>          <span class="comment"># Make executable</span>
+<span class="syntax-command">chown user:group</span> <span class="syntax-path">file</span>       <span class="comment"># Change ownership</span>
+<span class="syntax-command">stat</span> <span class="syntax-path">file</span>                   <span class="comment"># File metadata</span>
+<span class="syntax-command">grep -R "text"</span> <span class="syntax-path">/etc/nginx</span>   <span class="comment"># Recursive search</span>`,
+
+    network: `<span class="comment"># Networking</span>
+<span class="syntax-command">ip -br a</span>                     <span class="comment"># Brief interface list</span>
+<span class="syntax-command">ip a show</span> <span class="syntax-path">eth0</span>              <span class="comment"># Interface details</span>
+<span class="syntax-command">ip r</span>                         <span class="comment"># Routing table</span>
+<span class="syntax-command">ss -tulpn</span>                    <span class="comment"># All listening sockets</span>
+<span class="syntax-command">lsof -i :&lt;PORT&gt;</span>             <span class="comment"># What's on a port</span>
+<span class="syntax-command">resolvectl status</span>            <span class="comment"># DNS config per interface</span>
+<span class="syntax-command">dig +short A</span> <span class="syntax-string">example.com</span>   <span class="comment"># DNS lookup</span>
+<span class="syntax-command">ping -c 3</span> <span class="syntax-string">1.1.1.1</span>           <span class="comment"># Test connectivity</span>
+<span class="syntax-command">traceroute</span> <span class="syntax-string">8.8.8.8</span>          <span class="comment"># Route tracing</span>
+<span class="syntax-command">curl -I</span> <span class="syntax-string">https://example.com</span> <span class="comment"># HTTP headers</span>
+<span class="syntax-command">netstat -tulpn | grep :80</span>   <span class="comment"># What's on port 80</span>`,
+
+    services: `<span class="comment"># Services / systemd</span>
+<span class="syntax-command">systemctl status</span> <span class="syntax-path">&lt;SERVICE&gt;</span>   <span class="comment"># Check status</span>
+<span class="syntax-command">systemctl start</span> <span class="syntax-path">&lt;SERVICE&gt;</span>    <span class="comment"># Start service</span>
+<span class="syntax-command">systemctl stop</span> <span class="syntax-path">&lt;SERVICE&gt;</span>     <span class="comment"># Stop service</span>
+<span class="syntax-command">systemctl restart</span> <span class="syntax-path">&lt;SERVICE&gt;</span>  <span class="comment"># Restart (brief downtime)</span>
+<span class="syntax-command">systemctl reload</span> <span class="syntax-path">&lt;SERVICE&gt;</span>   <span class="comment"># Reload config, no downtime</span>
+<span class="syntax-command">systemctl enable</span> <span class="syntax-path">&lt;SERVICE&gt;</span>   <span class="comment"># Enable at boot</span>
+<span class="syntax-command">systemctl disable</span> <span class="syntax-path">&lt;SERVICE&gt;</span>  <span class="comment"># Disable at boot</span>
+<span class="syntax-command">systemctl daemon-reload</span>      <span class="comment"># Reload unit files</span>
+<span class="syntax-command">systemctl --failed</span>           <span class="comment"># Show failed services</span>
+<span class="syntax-command">systemctl cat</span> <span class="syntax-path">&lt;SERVICE&gt;</span>      <span class="comment"># View unit file</span>
+<span class="tree-path">/etc/systemd/system/</span>        <span class="tree-desc">→ custom service units</span>
+<span class="tree-path">/lib/systemd/system/</span>        <span class="tree-desc">→ packaged service units</span>`,
+
+    logs: `<span class="comment"># Logs & Monitoring</span>
+<span class="syntax-command">journalctl -b</span>                <span class="comment"># Current boot logs</span>
+<span class="syntax-command">journalctl -u nginx -f</span>       <span class="comment"># Follow nginx logs</span>
+<span class="syntax-command">journalctl -p err</span>            <span class="comment"># Errors only</span>
+<span class="syntax-command">journalctl --disk-usage</span>      <span class="comment"># Log disk usage</span>
+<span class="syntax-command">journalctl --vacuum-size=500M</span> <span class="comment"># Trim logs</span>
+<span class="syntax-command">tail -f</span> <span class="syntax-path">/var/log/syslog</span>     <span class="comment"># Follow syslog</span>
+<span class="syntax-command">tail -f</span> <span class="syntax-path">/var/log/auth.log</span>   <span class="comment"># Follow auth log</span>
+<span class="syntax-command">htop</span>                         <span class="comment"># Interactive process viewer</span>
+<span class="syntax-command">ps aux --sort=-%mem | head</span>   <span class="comment"># Top memory users</span>
+<span class="syntax-command">ps aux --sort=-%cpu | head</span>   <span class="comment"># Top CPU users</span>
+<span class="syntax-command">vmstat 1 5</span>                   <span class="comment"># CPU/mem/IO stats</span>
+<span class="tree-path">/var/log/syslog</span>   <span class="tree-desc">→ general  | </span><span class="tree-path">/var/log/auth.log</span>  <span class="tree-desc">→ SSH/sudo</span>
+<span class="tree-path">/var/log/kern.log</span> <span class="tree-desc">→ kernel   | </span><span class="tree-path">/var/log/mail.log</span>  <span class="tree-desc">→ postfix</span>`,
+
+    security: `<span class="comment"># Security & Users</span>
+<span class="syntax-command">useradd -m -s /bin/bash</span> <span class="syntax-path">user</span>  <span class="comment"># Create user</span>
+<span class="syntax-command">usermod -aG sudo</span> <span class="syntax-path">user</span>         <span class="comment"># Grant sudo</span>
+<span class="syntax-command">userdel -r</span> <span class="syntax-path">user</span>               <span class="comment"># Delete user + home</span>
+<span class="syntax-command">last -a | head -n 30</span>          <span class="comment"># Recent logins</span>
+<span class="syntax-command">ssh-keygen -t ed25519 -C "label"</span> <span class="comment"># Generate key</span>
+<span class="syntax-command">ssh-copy-id</span> <span class="syntax-string">user@host</span>        <span class="comment"># Deploy public key</span>
+<span class="syntax-command">ufw status verbose</span>            <span class="comment"># Firewall status</span>
+<span class="syntax-command">ufw allow 22/tcp</span>              <span class="comment"># Allow SSH</span>
+<span class="syntax-command">ufw enable</span>                    <span class="comment"># Activate firewall</span>
+<span class="syntax-command">fail2ban-client status sshd</span>   <span class="comment"># View SSH jail</span>
+<span class="syntax-command">fail2ban-client set sshd unbanip &lt;IP&gt;</span> <span class="comment"># Unban IP</span>
+<span class="tree-path">/etc/ssh/sshd_config</span>  <span class="tree-desc">→ SSH daemon config</span>
+<span class="tree-path">/etc/sudoers</span>          <span class="tree-desc">→ sudo permissions (use visudo)</span>`,
+
+    nginx: `<span class="comment"># Nginx + Certbot</span>
+<span class="syntax-command">nginx -t</span>                      <span class="comment"># Test config syntax</span>
+<span class="syntax-command">systemctl reload nginx</span>        <span class="comment"># Reload (no downtime)</span>
+<span class="syntax-command">systemctl restart nginx</span>       <span class="comment"># Full restart</span>
+<span class="syntax-command">systemctl status nginx</span>        <span class="comment"># Check status</span>
+<span class="syntax-command">certbot --nginx -d &lt;DOMAIN&gt;</span>  <span class="comment"># Issue SSL cert</span>
+<span class="syntax-command">certbot renew --dry-run</span>       <span class="comment"># Test renewal</span>
+<span class="syntax-command">certbot certificates</span>          <span class="comment"># List certs + expiry</span>
+<span class="syntax-command">grep -R "server_name" /etc/nginx</span> <span class="comment"># Find vhosts</span>
+<span class="syntax-command">tail -f</span> <span class="syntax-path">/var/log/nginx/error.log</span>
+<span class="tree-path">/etc/nginx/sites-available/</span>  <span class="tree-desc">→ vhost configs</span>
+<span class="tree-path">/etc/nginx/sites-enabled/</span>    <span class="tree-desc">→ symlinks to active</span>
+<span class="tree-path">/etc/letsencrypt/live/</span>       <span class="tree-desc">→ SSL certificates</span>`,
+
+    docker: `<span class="comment"># Docker</span>
+<span class="syntax-command">docker ps -a</span>                  <span class="comment"># All containers</span>
+<span class="syntax-command">docker logs -f &lt;CONTAINER&gt;</span>   <span class="comment"># Follow logs</span>
+<span class="syntax-command">docker exec -it &lt;CONTAINER&gt; bash</span> <span class="comment"># Shell in container</span>
+<span class="syntax-command">docker stats</span>                  <span class="comment"># Live resource usage</span>
+<span class="syntax-command">docker system df</span>              <span class="comment"># Disk usage by type</span>
+<span class="syntax-command">docker compose up -d</span>          <span class="comment"># Start stack</span>
+<span class="syntax-command">docker compose down</span>           <span class="comment"># Stop + remove</span>
+<span class="syntax-command">docker compose logs -f</span>        <span class="comment"># Follow all services</span>
+<span class="syntax-command">docker compose pull && docker compose up -d --build</span>
+<span class="syntax-command">docker system prune -a</span>        <span class="comment"># Clean all unused</span>
+<span class="tree-path">/var/lib/docker/</span>             <span class="tree-desc">→ containers, images, volumes</span>
+<span class="tree-path">/etc/docker/daemon.json</span>      <span class="tree-desc">→ daemon config</span>`,
+
+    git: `<span class="comment"># Git + SSH Keys</span>
+<span class="syntax-command">git status</span>                    <span class="comment"># Working tree status</span>
+<span class="syntax-command">git log --oneline --graph --all</span> <span class="comment"># Full branch graph</span>
+<span class="syntax-command">git add . && git commit -m "msg"</span>
+<span class="syntax-command">git push -u origin &lt;BRANCH&gt;</span>  <span class="comment"># Push + set upstream</span>
+<span class="syntax-command">git pull --rebase</span>             <span class="comment"># Pull, replay on top</span>
+<span class="syntax-command">git checkout -b &lt;BRANCH&gt;</span>     <span class="comment"># Create + switch branch</span>
+<span class="syntax-command">git stash && git stash pop</span>    <span class="comment"># Temp save/restore</span>
+<span class="syntax-command">git reset --hard HEAD</span>         <span class="syntax-risky"># DANGER: discard all changes</span>
+<span class="syntax-command">ssh-keygen -t ed25519 -C "label" -f ~/.ssh/id_ed25519_label</span>
+<span class="syntax-command">eval "$(ssh-agent -s)" && ssh-add ~/.ssh/id_ed25519_label</span>`,
+
+    python: `<span class="comment"># Python / pip / venv</span>
+<span class="syntax-command">python3 -m venv venv</span>          <span class="comment"># Create venv</span>
+<span class="syntax-command">source venv/bin/activate</span>      <span class="comment"># Activate venv</span>
+<span class="syntax-command">deactivate</span>                    <span class="comment"># Deactivate venv</span>
+<span class="syntax-command">pip install &lt;PACKAGE&gt;</span>         <span class="comment"># Install into venv</span>
+<span class="syntax-command">pip install -r requirements.txt</span>
+<span class="syntax-command">pip freeze > requirements.txt</span> <span class="comment"># Save packages</span>
+<span class="syntax-command">pip list</span>                      <span class="comment"># List installed</span>
+<span class="syntax-command">pip show &lt;PACKAGE&gt;</span>            <span class="comment"># Package metadata</span>
+<span class="syntax-command">python3 -m pip install --upgrade pip</span>`,
+
+    node: `<span class="comment"># Node / npm / nvm / pnpm</span>
+<span class="syntax-command">nvm install --lts</span>             <span class="comment"># Install latest LTS</span>
+<span class="syntax-command">nvm use &lt;VERSION&gt;</span>             <span class="comment"># Switch Node version</span>
+<span class="syntax-command">nvm ls</span>                        <span class="comment"># List installed versions</span>
+<span class="syntax-command">node --version</span>                <span class="comment"># Check Node version</span>
+<span class="syntax-command">npm install</span>                   <span class="comment"># Install from package.json</span>
+<span class="syntax-command">npm ci</span>                        <span class="comment"># Clean install from lock file</span>
+<span class="syntax-command">npm install -g &lt;PACKAGE&gt;</span>      <span class="comment"># Global install</span>
+<span class="syntax-command">npm run dev</span>                   <span class="comment"># Start dev server</span>
+<span class="syntax-command">npm run build</span>                 <span class="comment"># Production build</span>
+<span class="syntax-command">npm outdated</span>                  <span class="comment"># Check for updates</span>
+<span class="syntax-command">npx &lt;COMMAND&gt;</span>                 <span class="comment"># Run without global install</span>
+<span class="syntax-command">pnpm install</span>                  <span class="comment"># pnpm install (disk-efficient)</span>
+<span class="syntax-command">pnpm dev / pnpm build</span>         <span class="comment"># Dev / build with pnpm</span>`,
+
+    // ── NEW: RUST ──────────────────────────────────────────────────────
+    rust: `<span class="comment"># Rust / rustup — Toolchain Management</span>
+<span class="syntax-command">curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh</span>
+<span class="syntax-command">rustup update</span>                 <span class="comment"># Update all toolchains</span>
+<span class="syntax-command">rustup update stable</span>          <span class="comment"># Update stable only</span>
+<span class="syntax-command">rustup self update</span>            <span class="comment"># Update rustup itself</span>
+<span class="syntax-command">rustup show</span>                   <span class="comment"># Active toolchain + targets</span>
+<span class="syntax-command">rustup toolchain list</span>         <span class="comment"># All installed toolchains</span>
+<span class="syntax-command">rustup toolchain install nightly</span>
+<span class="syntax-command">rustup default stable</span>         <span class="comment"># Set default toolchain</span>
+<span class="syntax-command">rustup override set nightly</span>   <span class="comment"># Override for current dir</span>
+<span class="syntax-command">rustup target add wasm32-unknown-unknown</span>  <span class="comment"># WASM target</span>
+<span class="syntax-command">rustup target add aarch64-unknown-linux-gnu</span>
+<span class="syntax-command">rustup target add x86_64-unknown-linux-musl</span>
+<span class="syntax-command">rustup component add rustfmt clippy rust-analyzer rust-src</span>
+<span class="syntax-command">rustc --version</span>               <span class="comment"># Compiler version</span>
+<span class="tree-path">~/.rustup/</span>                   <span class="tree-desc">→ toolchains and components</span>
+<span class="tree-path">~/.cargo/bin/</span>                <span class="tree-desc">→ installed binaries</span>`,
+
+    // ── NEW: CARGO ─────────────────────────────────────────────────────
+    cargo: `<span class="comment"># Cargo — Build, Test, Manage</span>
+<span class="syntax-command">cargo new my_project</span>          <span class="comment"># New binary project</span>
+<span class="syntax-command">cargo new my_lib --lib</span>        <span class="comment"># New library project</span>
+<span class="syntax-command">cargo build</span>                   <span class="comment"># Debug build</span>
+<span class="syntax-command">cargo build --release</span>         <span class="comment"># Optimized release build</span>
+<span class="syntax-command">cargo run</span>                     <span class="comment"># Build + run</span>
+<span class="syntax-command">cargo run -- &lt;ARGS&gt;</span>           <span class="comment"># Run with arguments</span>
+<span class="syntax-command">cargo check</span>                   <span class="comment"># Fast error check (no binary)</span>
+<span class="syntax-command">cargo test</span>                    <span class="comment"># Run all tests</span>
+<span class="syntax-command">cargo test -- --nocapture</span>     <span class="comment"># Show stdout during tests</span>
+<span class="syntax-command">cargo clippy</span>                  <span class="comment"># Linter</span>
+<span class="syntax-command">cargo fmt</span>                     <span class="comment"># Format code</span>
+<span class="syntax-command">cargo doc --open</span>              <span class="comment"># Generate + open docs</span>
+<span class="syntax-command">cargo add &lt;CRATE&gt;</span>             <span class="comment"># Add dependency</span>
+<span class="syntax-command">cargo add &lt;CRATE&gt; --dev</span>       <span class="comment"># Add dev dependency</span>
+<span class="syntax-command">cargo remove &lt;CRATE&gt;</span>          <span class="comment"># Remove dependency</span>
+<span class="syntax-command">cargo tree</span>                    <span class="comment"># Dependency tree</span>
+<span class="syntax-command">cargo update</span>                  <span class="comment"># Update lock file</span>
+<span class="syntax-command">cargo clean</span>                   <span class="comment"># Remove build artifacts</span>
+<span class="syntax-command">cargo publish</span>                 <span class="comment"># Publish to crates.io</span>
+<span class="syntax-command">cargo watch -x run</span>            <span class="comment"># Re-run on file changes</span>
+<span class="syntax-command">cargo audit</span>                   <span class="comment"># Security vulnerability check</span>
+<span class="syntax-command">cargo nextest run</span>             <span class="comment"># Faster test runner</span>
+<span class="syntax-command">RUST_BACKTRACE=1 cargo run</span>    <span class="comment"># Enable panic backtraces</span>
+<span class="tree-path">Cargo.toml</span>  <span class="tree-desc">→ manifest  |  </span><span class="tree-path">Cargo.lock</span>  <span class="tree-desc">→ lock file</span>
+<span class="tree-path">src/main.rs</span> <span class="tree-desc">→ binary    |  </span><span class="tree-path">src/lib.rs</span>  <span class="tree-desc">→ library</span>
+<span class="tree-path">target/debug/</span>  <span class="tree-desc">→ debug builds  |  </span><span class="tree-path">target/release/</span>  <span class="tree-desc">→ optimized</span>`,
+
+    // ── NEW: TAURI ─────────────────────────────────────────────────────
+    tauri: `<span class="comment"># Tauri v2 — Desktop App Development</span>
+
+<span class="comment"># Prerequisites (Ubuntu/Debian)</span>
+<span class="syntax-command">sudo apt install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev</span>
+
+<span class="comment"># CLI install</span>
+<span class="syntax-command">npm install --save-dev @tauri-apps/cli</span>
+<span class="syntax-command">cargo install tauri-cli</span>
+
+<span class="comment"># Scaffold & dev</span>
+<span class="syntax-command">npm create tauri-app@latest</span>   <span class="comment"># Create new Tauri app</span>
+<span class="syntax-command">npx tauri init</span>                <span class="comment"># Add Tauri to existing project</span>
+<span class="syntax-command">npx tauri dev</span>                 <span class="comment"># Start dev server + window</span>
+<span class="syntax-command">npx tauri dev --verbose</span>       <span class="comment"># Verbose dev output</span>
+<span class="syntax-command">npx tauri build</span>               <span class="comment"># Build production installer</span>
+<span class="syntax-command">npx tauri build --debug</span>       <span class="comment"># Build with debug symbols</span>
+<span class="syntax-command">npx tauri info</span>                <span class="comment"># Environment info</span>
+<span class="syntax-command">npx tauri icon ./icon.png</span>     <span class="comment"># Generate all icon sizes</span>
+<span class="syntax-command">npx tauri migrate</span>             <span class="comment"># Migrate v1 → v2</span>
+
+<span class="comment"># Plugins (npx tauri add &lt;plugin&gt;)</span>
+<span class="syntax-command">npx tauri add fs</span>              <span class="comment"># Filesystem</span>
+<span class="syntax-command">npx tauri add shell</span>           <span class="comment"># Shell commands</span>
+<span class="syntax-command">npx tauri add dialog</span>          <span class="comment"># Native dialogs</span>
+<span class="syntax-command">npx tauri add http</span>            <span class="comment"># HTTP client</span>
+<span class="syntax-command">npx tauri add store</span>           <span class="comment"># Persistent storage</span>
+<span class="syntax-command">npx tauri add updater</span>         <span class="comment"># Auto-updater</span>
+<span class="syntax-command">npx tauri add notification</span>    <span class="comment"># System notifications</span>
+<span class="syntax-command">npx tauri add window-state</span>    <span class="comment"># Remember window size/pos</span>
+<span class="syntax-command">npx tauri add clipboard-manager</span>
+
+<span class="comment"># Common Cargo deps for Tauri backend</span>
+<span class="syntax-command">cargo add tauri --features default</span>
+<span class="syntax-command">cargo add tauri-build --build</span>
+<span class="syntax-command">cargo add serde --features derive</span>
+<span class="syntax-command">cargo add serde_json</span>
+<span class="syntax-command">cargo add tokio --features full</span>
+
+<span class="comment"># Troubleshooting</span>
+<span class="syntax-command">RUST_LOG=tauri=debug npx tauri dev</span>
+<span class="syntax-command">WEBKIT_DISABLE_COMPOSITING_MODE=1 npx tauri dev</span>
+
+<span class="tree-path">src-tauri/</span>             <span class="tree-desc">→ Rust backend</span>
+<span class="tree-path">src-tauri/tauri.conf.json</span>  <span class="tree-desc">→ app configuration</span>
+<span class="tree-path">src-tauri/src/main.rs</span>  <span class="tree-desc">→ Rust entry point</span>
+<span class="tree-path">src-tauri/Cargo.toml</span>   <span class="tree-desc">→ Rust dependencies</span>
+<span class="tree-path">src/</span>                   <span class="tree-desc">→ Frontend (React/Vue/Svelte)</span>`,
+
+    ollama: `<span class="comment"># Ollama — Local LLM</span>
+<span class="comment"># Stack: qwen2.5-coder:14b (fast) | deepseek-coder:33b (heavy)</span>
+<span class="syntax-command">ollama list</span>                   <span class="comment"># Installed models</span>
+<span class="syntax-command">ollama pull qwen2.5-coder:14b</span> <span class="comment"># Fast daily driver</span>
+<span class="syntax-command">ollama pull deepseek-coder:33b</span> <span class="comment"># Heavy reasoning</span>
+<span class="syntax-command">ollama run qwen2.5-coder:14b</span>  <span class="comment"># Interactive chat</span>
+<span class="syntax-command">ollama ps</span>                     <span class="comment"># Models in memory</span>
+<span class="syntax-command">ollama show &lt;MODEL&gt;</span>           <span class="comment"># Model metadata</span>
+<span class="syntax-command">ollama serve</span>                  <span class="comment"># Start API server (localhost:11434)</span>
+<span class="syntax-command">OLLAMA_HOST=0.0.0.0:11434 ollama serve</span>  <span class="syntax-risky"># Expose to network (firewall!)</span>
+<span class="syntax-command">ss -tulpn | grep 11434</span>        <span class="comment"># Confirm interface binding</span>
+<span class="syntax-command">systemctl edit ollama</span>         <span class="comment"># Set OLLAMA_HOST to Tailscale IP</span>
+<span class="syntax-command">curl http://localhost:11434/api/tags</span>
+<span class="syntax-command">journalctl -u ollama -n 120 --no-pager</span>`,
+
+    tailscale: `<span class="comment"># Tailscale — Zero-Config Mesh VPN</span>
+<span class="comment"># Stack: arynwood-workstation (100.x.ooo.ooo.o) ↔ n8n (100.104.25.99)</span>
+<span class="syntax-command">curl -fsSL https://tailscale.com/install.sh | sh</span>  <span class="syntax-risky"># Install (verify URL)</span>
+<span class="syntax-command">sudo tailscale up</span>             <span class="comment"># Join mesh (login URL on first run)</span>
+<span class="syntax-command">sudo tailscale up --ssh</span>       <span class="comment"># Enable Tailscale SSH</span>
+<span class="syntax-command">tailscale status</span>              <span class="comment"># All peers + connection state</span>
+<span class="syntax-command">tailscale ip -4</span>               <span class="comment"># This machine's mesh IPv4</span>
+<span class="syntax-command">tailscale ping &lt;HOST&gt;</span>         <span class="comment"># Test connectivity to peer</span>
+<span class="syntax-command">tailscale netcheck</span>            <span class="comment"># NAT type, latency, relay usage</span>
+<span class="syntax-command">systemctl status tailscaled</span>   <span class="comment"># Daemon status</span>
+<span class="syntax-command">systemctl restart tailscaled</span>  <span class="comment"># Restart daemon</span>
+<span class="syntax-command">journalctl -u tailscaled -f</span>   <span class="comment"># Follow logs</span>
+<span class="comment"># Test Ollama over mesh from n8n server:</span>
+<span class="syntax-command">curl -s http://100.x.ooo.ooo.o:11434/api/tags</span>
+<span class="comment"># Harden Ollama to Tailscale IP only:</span>
+<span class="syntax-command">sudo systemctl edit ollama</span>    <span class="comment"># Set OLLAMA_HOST=100.x.ooo.ooo.o:11434</span>
+<span class="syntax-command">sudo systemctl daemon-reload && sudo systemctl restart ollama</span>`,
+
+    aider: `<span class="comment"># Aider — AI Pair Programmer (local Ollama)</span>
+<span class="comment"># Models: qwen2.5-coder:14b (fast) | deepseek-coder:33b (heavy)</span>
+<span class="syntax-command">sudo apt install -y pipx</span>
+<span class="syntax-command">pipx ensurepath</span>               <span class="comment"># Add to PATH, then reopen shell</span>
+<span class="syntax-command">pipx install aider-chat</span>       <span class="comment"># Install aider</span>
+<span class="syntax-command">pipx upgrade aider-chat</span>       <span class="comment"># Upgrade aider</span>
+<span class="syntax-command">aider --version</span>               <span class="comment"># Verify install</span>
+<span class="comment"># Run inside a git repo — use local Ollama models:</span>
+<span class="syntax-command">aider --model ollama/qwen2.5-coder:14b</span>   <span class="comment"># Fast daily driver</span>
+<span class="syntax-command">aider --model ollama/deepseek-coder:33b</span>   <span class="comment"># Architecture / review</span>
+<span class="syntax-command">aider --model ollama/qwen2.5-coder:14b --no-auto-commits</span>
+<span class="syntax-command">aider --model ollama/qwen2.5-coder:14b --dry-run</span>
+<span class="syntax-command">aider --list-models ollama/</span>   <span class="comment"># See available models</span>
+<span class="comment"># Point to Ollama endpoint (local or over Tailscale):</span>
+<span class="syntax-command">export OLLAMA_HOST="http://127.0.0.1:11434"</span>
+<span class="syntax-command">export OLLAMA_HOST="http://100.x.ooo.ooo.o:11434"</span>  <span class="comment"># Tailscale mesh</span>`,
+
+    n8n: `<span class="comment"># n8n — Workflow Automation (Docker)</span>
+<span class="comment"># n8n Ollama creds: Base URL = http://100.x.ooo.ooo.o:11434</span>
+<span class="syntax-command">mkdir -p ~/docker/n8n && cd ~/docker/n8n</span>
+<span class="syntax-command">docker compose up -d</span>          <span class="comment"># Start stack</span>
+<span class="syntax-command">docker compose down</span>           <span class="comment"># Stop stack</span>
+<span class="syntax-command">docker compose logs n8n -f</span>    <span class="comment"># Follow logs</span>
+<span class="syntax-command">lsof -i :5678</span>                 <span class="comment"># Check if port 5678 is open</span>
+<span class="syntax-command">ss -tulpn | grep 5678</span>         <span class="comment"># Verify port listener</span>
+<span class="syntax-command">docker exec -it &lt;N8N_CONTAINER&gt; sh</span> <span class="comment"># Shell inside</span>
+<span class="syntax-command">docker compose pull && docker compose up -d</span> <span class="comment"># Update n8n</span>
+<span class="comment"># Default port: 5678 | Data: docker volume</span>`,
+
+    terraform: `<span class="comment"># Terraform</span>
+<span class="syntax-command">terraform login</span>               <span class="comment"># Auth with Terraform Cloud</span>
+<span class="syntax-command">terraform init</span>                <span class="comment"># Init + download providers</span>
+<span class="syntax-command">terraform validate</span>            <span class="comment"># Check syntax</span>
+<span class="syntax-command">terraform fmt</span>                 <span class="comment"># Format all .tf files</span>
+<span class="syntax-command">terraform plan</span>                <span class="comment"># Preview changes</span>
+<span class="syntax-command">terraform apply</span>               <span class="comment"># Apply changes</span>
+<span class="syntax-command">terraform apply -auto-approve</span> <span class="syntax-risky"># Apply without prompt</span>
+<span class="syntax-command">terraform destroy</span>             <span class="syntax-risky"># Destroy all infrastructure</span>
+<span class="syntax-command">terraform state list</span>          <span class="comment"># List managed resources</span>
+<span class="syntax-command">terraform state show &lt;RESOURCE&gt;</span>
+<span class="syntax-command">terraform output</span>              <span class="comment"># Show output values</span>
+<span class="syntax-command">terraform workspace list</span>      <span class="comment"># List workspaces</span>`,
+
+    dns: `<span class="comment"># DNS / BIND9</span>
+<span class="syntax-command">named-checkconf</span>               <span class="comment"># Validate named.conf</span>
+<span class="syntax-command">named-checkzone &lt;DOMAIN&gt; db.&lt;DOMAIN&gt;</span>
+<span class="syntax-command">rndc reload</span>                   <span class="comment"># Reload zone files</span>
+<span class="syntax-command">rndc flush</span>                    <span class="comment"># Flush DNS cache</span>
+<span class="syntax-command">rndc status</span>                   <span class="comment"># BIND status</span>
+<span class="syntax-command">dig @127.0.0.1 A &lt;DOMAIN&gt;</span>    <span class="comment"># Query A record</span>
+<span class="syntax-command">dig @127.0.0.1 MX &lt;DOMAIN&gt;</span>   <span class="comment"># Query MX record</span>
+<span class="syntax-command">dig @127.0.0.1 TXT &lt;DOMAIN&gt;</span>  <span class="comment"># Query TXT record</span>
+<span class="syntax-command">dig +trace &lt;DOMAIN&gt;</span>           <span class="comment"># Full resolution trace</span>
+<span class="syntax-command">systemctl status bind9</span>
+<span class="syntax-command">journalctl -u bind9 -f</span>
+<span class="tree-path">/etc/bind/named.conf</span>         <span class="tree-desc">→ main config</span>
+<span class="tree-path">/etc/bind/zones/</span>             <span class="tree-desc">→ zone files</span>`,
+
+    mail: `<span class="comment"># Mail / Postfix + Maildir</span>
+<span class="syntax-command">postfix check</span>                 <span class="comment"># Validate config</span>
+<span class="syntax-command">postqueue -p</span>                  <span class="comment"># View mail queue</span>
+<span class="syntax-command">mailq</span>                         <span class="comment"># Queue status</span>
+<span class="syntax-command">postqueue -f</span>                  <span class="comment"># Flush queue</span>
+<span class="syntax-command">postsuper -d ALL</span>              <span class="syntax-risky"># Delete entire queue</span>
+<span class="syntax-command">systemctl restart postfix</span>
+<span class="syntax-command">tail -f</span> <span class="syntax-path">/var/log/mail.log</span>    <span class="comment"># Follow mail log</span>
+<span class="syntax-command">mkdir -p ~/Maildir/{cur,new,tmp} && chmod -R 700 ~/Maildir</span>
+<span class="tree-path">/etc/postfix/main.cf</span>         <span class="tree-desc">→ main config</span>
+<span class="tree-path">/etc/postfix/master.cf</span>       <span class="tree-desc">→ service definitions</span>
+<span class="tree-path">/var/mail/</span>                   <span class="tree-desc">→ mbox storage</span>
+<span class="tree-path">/home/*/Maildir/</span>             <span class="tree-desc">→ Maildir storage</span>`,
+
+    shortcuts: `<span class="comment"># High-Value Shortcuts & One-Liners</span>
+<span class="syntax-command">cd -</span>                          <span class="comment"># Previous directory</span>
+<span class="syntax-command">pushd /var/www</span>                <span class="comment"># Save dir + jump</span>
+<span class="syntax-command">!!</span>                            <span class="comment"># Repeat last command</span>
+<span class="syntax-command">history | grep &lt;TERM&gt;</span>        <span class="comment"># Search history</span>
+<span class="syntax-command">df -h | grep -v tmpfs</span>        <span class="comment"># Disk (no tmpfs)</span>
+<span class="syntax-command">du -sh */ | sort -rh | head -10</span> <span class="comment"># 10 largest dirs</span>
+<span class="syntax-command">ps aux | grep nginx</span>           <span class="comment"># Find nginx procs</span>
+<span class="syntax-command">watch -n 5 "df -h"</span>           <span class="comment"># Refresh disk every 5s</span>
+<span class="syntax-command">netstat -tulpn | grep :80</span>    <span class="comment"># What's on port 80</span>
+<span class="syntax-command">cat /var/log/auth.log | grep "Failed"</span>
+<span class="syntax-command">grep -c "Failed password" /var/log/auth.log</span>
+<span class="syntax-command">openssl s_client -connect &lt;DOMAIN&gt;:443</span>
+<span class="syntax-command">tar -czvf backup.tar.gz folder/</span>
+<span class="syntax-command">rsync -avz src/ dest/</span>         <span class="comment"># Sync dirs</span>
+<span class="syntax-command">scp file user@host:/path</span>      <span class="comment"># Secure copy</span>`,
+
+    help: `<span class="comment"># Available Categories:</span>
+<span class="syntax-command">filesystem</span>  filesystem hierarchy (FHS)
+<span class="syntax-command">system</span>      kernel, hostname, hardware info
+<span class="syntax-command">files</span>       navigation, permissions, disk
+<span class="syntax-command">network</span>     interfaces, ports, DNS
+<span class="syntax-command">services</span>    systemd service management
+<span class="syntax-command">logs</span>        journalctl, htop, process monitoring
+<span class="syntax-command">security</span>    users, SSH, firewall, fail2ban
+<span class="syntax-command">nginx</span>       nginx + certbot + apache
+<span class="syntax-command">docker</span>      containers, images, compose
+<span class="syntax-command">git</span>         repo workflow + SSH keys
+<span class="syntax-command">python</span>      venv, pip, packages
+<span class="syntax-command">node</span>        npm, nvm, pnpm, JS tooling
+<span class="syntax-command">rust</span>        rustup, toolchains, targets
+<span class="syntax-command">cargo</span>       build, test, deps, plugins, watch
+<span class="syntax-command">tauri</span>       desktop app dev, plugins, icons
+<span class="syntax-command">ollama</span>      local LLM models + API
+<span class="syntax-command">tailscale</span>   mesh VPN, peer connectivity
+<span class="syntax-command">aider</span>       AI pair programmer + Ollama
+<span class="syntax-command">n8n</span>         workflow automation in Docker
+<span class="syntax-command">terraform</span>   IaC lifecycle
+<span class="syntax-command">dns</span>         BIND9, zones, dig
+<span class="syntax-command">mail</span>        Postfix + Maildir
+<span class="syntax-command">shortcuts</span>   one-liners and power moves
+<span class="syntax-command">rules</span>       sysadmin rules of thumb
+<span class="comment"># Tip: Use the search bar above to find commands by description!</span>`,
+
+    rules: `<span class="comment"># Sysadmin Rules of Thumb</span>
+<span class="syntax-string">If it won't start</span>     → <span class="syntax-command">systemctl status &lt;service&gt;</span>
+<span class="syntax-string">If it started but broken</span> → check the logs
+<span class="syntax-string">If it can't connect</span>   → firewall + ss -tulpn
+<span class="syntax-string">If it worked yesterday</span> → config change? git diff
+<span class="syntax-string">If breaks as root</span>     → permissions
+<span class="syntax-string">If disk is full</span>       → <span class="syntax-command">du -sh */ | sort -rh | head</span>
+<span class="syntax-string">If Rust build fails</span>   → <span class="syntax-command">cargo check</span> then <span class="syntax-command">cargo clippy</span>
+<span class="syntax-string">If Tauri won't start</span>  → <span class="syntax-command">npx tauri info</span> + check prereqs
+
+<span class="comment"># Debug Order:</span>
+1. systemctl status
+2. journalctl -u &lt;service&gt; -f
+3. ss -tulpn (ports)
+4. ufw status (firewall)
+5. nginx -t / apache2ctl -t (config)
+6. Review recent changes
+
+<span class="comment"># Safety Rules:</span>
+• Test configs before reload (nginx -t)
+• Keep backups of working /etc configs
+• <span class="syntax-safe">safe</span> = read-only, informational
+• <span class="syntax-risky">risky</span> = changes state, use with care`,
+
+    clear: ''
+  };
+
+  // ── SEARCH ENGINE ─────────────────────────────────────────────────────
+  const searchInput  = document.getElementById('searchInput');
+  const searchResults = document.getElementById('searchResults');
+  const resultsList  = document.getElementById('searchResultsList');
+  const resultsTitle = document.getElementById('searchResultsTitle');
+  let activeIndex = -1;
+  let currentResults = [];
+
+  function escapeHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function highlight(text, query) {
+    if (!query) return escapeHtml(text);
+    const escaped = escapeHtml(text);
+    const re = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+    return escaped.replace(re, m => `<span class="result-highlight">${m}</span>`);
+  }
+
+  function doSearch(query) {
+    query = query.trim();
+    if (!query) {
+      searchResults.classList.remove('active');
+      activeIndex = -1;
+      currentResults = [];
+      return;
+    }
+    const q = query.toLowerCase();
+    const matches = DB.filter(entry =>
+      entry.cmd.toLowerCase().includes(q) ||
+      entry.desc.toLowerCase().includes(q) ||
+      entry.section.toLowerCase().includes(q)
+    );
+    currentResults = matches;
+    activeIndex = -1;
+    renderResults(matches, query);
+  }
+
+  function renderResults(matches, query) {
+    if (matches.length === 0) {
+      resultsTitle.textContent = 'No results';
+      resultsList.innerHTML = `<div class="no-results">No commands found for "${escapeHtml(query)}" — try a different keyword</div>`;
+    } else {
+      resultsTitle.textContent = `${matches.length} result${matches.length !== 1 ? 's' : ''} for "${query}"`;
+      resultsList.innerHTML = matches.map((m, i) => `
+        <div class="result-item" data-index="${i}">
+          <div class="result-cmd">${highlight(m.cmd, query)}</div>
+          <div class="result-desc">${highlight(m.desc, query)}</div>
+          <div class="result-meta">
+            <span class="result-tag section-tag">${m.section}</span>
+            ${m.safe === true  ? '<span class="result-tag safe">safe</span>'  : ''}
+            ${m.safe === false ? '<span class="result-tag risky">risky</span>' : ''}
+          </div>
+        </div>
+      `).join('');
+      resultsList.querySelectorAll('.result-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const idx = parseInt(item.dataset.index);
+          runFromSearch(currentResults[idx]);
+        });
+      });
+    }
+    searchResults.classList.add('active');
+  }
+
+  function runFromSearch(entry) {
+    searchInput.value = '';
+    searchResults.classList.remove('active');
+    const terminal = document.getElementById('terminal');
+    const inputLine = document.querySelector('.input-line');
+    const echo = document.createElement('div');
+    echo.className = 'output';
+    echo.innerHTML = `<span class="prompt">$</span> <span class="command">${escapeHtml(entry.cmd)}</span>`;
+    terminal.insertBefore(echo, inputLine);
+    const desc = document.createElement('div');
+    desc.className = 'output';
+    const safeLabel = entry.safe === true  ? `<span class="syntax-safe">[safe]</span>  ` :
+                      entry.safe === false ? `<span class="syntax-risky">[risky]</span> ` : '';
+    desc.innerHTML = `${safeLabel}<span class="comment"># ${escapeHtml(entry.desc)}</span>\n<span class="comment"># Section: ${entry.section}</span>`;
+    terminal.insertBefore(desc, inputLine);
+    terminal.scrollTop = terminal.scrollHeight;
+  }
+
+  searchInput.addEventListener('input', e => doSearch(e.target.value));
+  searchInput.addEventListener('keydown', e => {
+    const items = resultsList.querySelectorAll('.result-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, items.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, 0);
+    } else if (e.key === 'Enter' && activeIndex >= 0 && currentResults[activeIndex]) {
+      e.preventDefault();
+      runFromSearch(currentResults[activeIndex]);
+      return;
+    } else if (e.key === 'Escape') {
+      searchInput.value = '';
+      searchResults.classList.remove('active');
+      activeIndex = -1;
+      currentResults = [];
+      return;
+    }
+    items.forEach((el, i) => {
+      el.style.background = i === activeIndex ? 'rgba(94,234,212,.12)' : '';
+      el.style.borderColor = i === activeIndex ? 'var(--teal-bright)' : '';
+      if (i === activeIndex) el.scrollIntoView({ block:'nearest' });
+    });
+  });
+
+  // ── TERMINAL COMMAND HANDLER ──────────────────────────────────────────
+  const termInput = document.getElementById('command');
+  const terminal  = document.getElementById('terminal');
+
+  function handleCommand(cmd) {
+    cmd = cmd.trim();
+    const lc = cmd.toLowerCase();
+
+    if (lc === 'clear') {
+      terminal.innerHTML = `
+        <div class="input-line">
+          <span class="prompt">$</span>
+          <input class="command-input" id="command" type="text"
+            placeholder="Type a category name or any Linux command…" autofocus />
+        </div>`;
+      setTimeout(() => {
+        const ni = document.getElementById('command');
+        if (ni) { ni.addEventListener('keydown', handleKeydown); ni.focus(); }
+      }, 10);
+      return;
+    }
+
+    let response = categories[lc];
+
+    if (response === undefined) {
+      const hits = DB.filter(e =>
+        e.cmd.toLowerCase().includes(lc) ||
+        lc.includes(e.cmd.split(' ')[0].toLowerCase())
+      );
+      if (hits.length > 0) {
+        response = hits.slice(0, 8).map(h => {
+          const sl = h.safe === true  ? `<span class="syntax-safe">[safe]</span>  ` :
+                     h.safe === false ? `<span class="syntax-risky">[risky]</span> ` : '';
+          return `${sl}<span class="syntax-command">${escapeHtml(h.cmd)}</span>\n  <span class="syntax-comment"># ${escapeHtml(h.desc)}</span>`;
+        }).join('\n');
+        if (hits.length > 8) response += `\n<span class="comment"># … and ${hits.length-8} more — try searching above</span>`;
+      } else {
+        response = `<span class="comment"># Not found. Type 'help' for categories, or use the search bar above.</span>`;
+      }
+    }
+
+    const echo = document.createElement('div');
+    echo.className = 'output';
+    echo.innerHTML = `<span class="prompt">$</span> <span class="command">${escapeHtml(cmd)}</span>`;
+    terminal.insertBefore(echo, termInput.parentElement);
+
+    if (response) {
+      const out = document.createElement('div');
+      out.className = 'output';
+      out.innerHTML = response;
+      terminal.insertBefore(out, termInput.parentElement);
+    }
+
+    setTimeout(() => {
+      terminal.scrollTop = terminal.scrollHeight;
+      document.getElementById('command')?.focus();
+    }, 10);
+  }
+
+  function handleKeydown(e) {
+    if (e.key === 'Enter') {
+      const cmd = e.target.value;
+      handleCommand(cmd);
+      e.target.value = '';
+    }
+  }
+
+  if (termInput) termInput.addEventListener('keydown', handleKeydown);
+
+  document.querySelectorAll('.category-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const cat = card.getAttribute('data-category');
+      handleCommand(cat);
+    });
+  });
+  </script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+services:
+  a1111:
+    image: sd-auto:78
+    container_name: a1111
+    ports:
+      - "7860:7860"
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  tortoise:
+    build: ./models/tortoise
+    container_name: tortoise-tts
+    volumes:
+      # Only mount the model cache — do NOT mount /app or it overwrites the cloned repo
+      - tortoise-data:/root/.cache/tortoise
+    ports:
+      - "5003:5003"
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  tortoise-data:

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Arynwood MCP
+Comment=Local AI Creative Studio
+Exec=bash -c 'cd /path/to/arynwood-mcp && ./start.sh'
+Icon=/path/to/arynwood-mcp/frontend/public/arynwood.svg
+Terminal=true
+Categories=Utility;Development;
+StartupNotify=true
