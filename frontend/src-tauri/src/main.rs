@@ -180,10 +180,39 @@ fn start_backend_sidecar(app: &tauri::AppHandle) {
         Ok((mut rx, child)) => {
             println!("[arynwood] Backend sidecar started (pid {})", child.pid());
             SIDECAR_BACKEND.get_or_init(|| Mutex::new(Some(child)));
-            // Drain stdout/stderr so the sidecar's pipe never fills and blocks it —
-            // we don't otherwise care about this output in a packaged build.
+            // Drain stdout/stderr to a log file — a prior version of this just threw
+            // the output away entirely, which meant a real sidecar-side failure (e.g.
+            // an unhandled exception, a startup error) was completely invisible: the
+            // window would open, but any feature depending on that failed request
+            // would just look empty with no way to tell why. /tmp/arynwood-sidecar.log
+            // matches the naming pattern the other launch scripts already use for
+            // their own logs.
             tauri::async_runtime::spawn(async move {
-                while rx.recv().await.is_some() {}
+                use std::io::Write;
+                use tauri_plugin_shell::process::CommandEvent;
+                let log_path = std::env::temp_dir().join("arynwood-sidecar.log");
+                let mut log = std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(&log_path)
+                    .ok();
+                while let Some(event) = rx.recv().await {
+                    if let Some(f) = log.as_mut() {
+                        let line = match &event {
+                            CommandEvent::Stdout(bytes) => Some(bytes.clone()),
+                            CommandEvent::Stderr(bytes) => Some(bytes.clone()),
+                            CommandEvent::Error(msg) => Some(format!("[error] {msg}\n").into_bytes()),
+                            CommandEvent::Terminated(payload) => {
+                                Some(format!("[terminated] {:?}\n", payload).into_bytes())
+                            }
+                            _ => None,
+                        };
+                        if let Some(bytes) = line {
+                            let _ = f.write_all(&bytes);
+                            let _ = f.flush();
+                        }
+                    }
+                }
             });
         }
         Err(e) => {
@@ -260,6 +289,22 @@ fn allow_media_permissions(window: &tauri::WebviewWindow) {
 }
 
 fn main() {
+    // WebKitGTK's DMA-BUF renderer produces a blank/gray window on a real chunk of
+    // Linux GPU+driver combinations (a well-known upstream WebKitGTK issue, not
+    // something wrong with this app's own code) — confirmed happening on a real
+    // installed packaged build, not just in theory. arynwood-desktop.sh already set
+    // WEBKIT_DISABLE_DMABUF_RENDERER=1 as a shell wrapper for `tauri dev`, but that
+    // only helped when launched through that exact script — anyone opening the
+    // installed AppImage/.deb from their app menu or desktop icon got no such
+    // protection. Set it here instead, unconditionally, so every launch path gets it
+    // regardless of how the binary is started. Must happen before the webview is
+    // created (WebKitGTK reads this at its own init time, not at process start), so
+    // this has to run before tauri::Builder below, not just before start_backend().
+    #[cfg(target_os = "linux")]
+    {
+        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    }
+
     // Dev builds (tauri dev / arynwood-desktop.sh) use the live venv; production
     // builds (tauri build's AppImage/.deb) use the packaged sidecar instead, spawned
     // below from inside .setup() once an AppHandle exists.
