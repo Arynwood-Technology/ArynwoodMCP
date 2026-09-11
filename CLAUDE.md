@@ -27,6 +27,11 @@ cd frontend && npm run dev
 
 URLs: App → http://localhost:5180 | API → http://localhost:8010 | API docs → http://localhost:8010/docs
 
+This is the source-checkout dev workflow. The packaged Linux desktop build
+(AppImage/`.deb`, what actually ships to users) is a separate path — see
+`docs/installation.md` for end-user instructions and the "Tauri packaging" gotcha
+below for how it's built and its packaged-build-only failure modes.
+
 > **Port mismatch fixed 2026-09-10.** `start.sh` and `arynwood-desktop.sh` used to
 > launch uvicorn on `:8000` while `frontend/vite.config.ts` pins the dev server to
 > `5180` (`strictPort: true`) and proxies `/api` — and the chat WebSocket — to
@@ -233,7 +238,7 @@ All mounted under `/api/<domain>` by `backend/api.py`.
 
 | Domain | Router | Endpoint prefix | What it does |
 |---|---|---|---|
-| **Core** | `chat.py` | `/api/chat` | Multi-persona (7) LLM chat with WebSocket streaming (`/ws`) — token-budgeted system prompt (memory/history/project-tree trimmed to fit the model's real context window, not Ollama's silent 2048 default), native tool-calling + approval gating for `central`, relevance-ranked memory retrieval, web search / knowledge-base injection, per-conversation history summarization |
+| **Core** | `chat.py` | `/api/chat` | Multi-persona (5) LLM chat with WebSocket streaming (`/ws`) — token-budgeted system prompt (memory/history/project-tree trimmed to fit the model's real context window, not Ollama's silent 2048 default), native tool-calling + approval gating for `central`, relevance-ranked memory retrieval, web search / knowledge-base injection, per-conversation history summarization |
 | | `ollama.py` | `/api/ollama` | Ollama model management — list, pull (SSE stream), delete, show, ping |
 | | `servers.py` | `/api/servers` | Ollama server registry with live connectivity ping |
 | | `system.py` | `/api/system` | Health check, GPU info (nvidia-smi), backend restart, and `GET /gpu-queue` — a read-only view of `gpu_jobs.gpu_queue` (`running`, `depth`, `waiting`) so the UI's status drawer can explain *why* a generate is waiting rather than looking hung |
@@ -342,8 +347,86 @@ Seen 2026-08-08: the endpoint threw `AttributeError: 'NoneType' object has no at
 ### Ollama remote host
 Remote Ollama is at whatever host is configured for it (see the Servers page / `servers` table). The local instance is at `localhost:11434`. Both are seeded into `config/arynwood.db` on first `init_db()`. Chat's server picker sends `server_host`/`server_port` per request.
 
-### Tauri packaging is incomplete
-`frontend/src-tauri/` is present (Rust, Tauri v2) but packaging is a later phase. The app runs as a web app today; Tauri shell is not used in development.
+### Tauri packaging (Linux desktop) — how it actually works, and what broke the first time
+
+`frontend/src-tauri/` (Rust, Tauri v2) is the real desktop shell as of v0.4.x —
+published as an AppImage and `.deb` (see `docs/installation.md`), not a later phase.
+The backend ships as a PyInstaller onefile binary (`arynwood-backend.spec` →
+`frontend/src-tauri/binaries/arynwood-backend-x86_64-unknown-linux-gnu`), spawned by
+Tauri's Rust shell as an `externalBin` sidecar (`start_backend_sidecar()` in
+`main.rs`) rather than the app trying to invoke `python3` directly. `backend/_frozen.py`
+splits bundled read-only payload (`app_base_dir()` — `static/`, `mcp/config/`) from
+writable state (`user_data_dir()` — DB, generated media — the XDG data dir when
+frozen, since an AppImage mounts read-only and a `.deb` installs to a
+non-user-writable path).
+
+**The CORS trap that broke every `/api/*` call in the packaged build (fixed
+2026-09-11).** The packaged webview's real `Origin` header on Linux is
+`tauri://localhost` — a raw custom URI scheme, *not* remapped to `http://` the way
+Windows/Android do it (WebView2/WKWebView can't navigate a non-http(s) scheme;
+WebKitGTK on Linux has no such limitation and keeps the scheme as-is). This is
+documented directly in the vendored `tauri` crate source
+(`tauri-2.10.3/src/app.rs`, its doc comment on custom-protocol origin format) — an
+earlier fix pass misread a *different* part of that same file (`get_for_scheme`,
+which only affects CSP header text, not the runtime origin) and shipped a CORS
+`allow_origin_regex` that required `https?://`, which can never match
+`tauri://localhost`. The result: **100% of `/api/*` preflight requests failed with a
+real HTTP 400** from `CORSMiddleware` — confirmed via a live traffic capture, not
+guessed — while every curl-simulated preflight against the same backend succeeded,
+because curl never triggers a real preflight the way a browser does. A 100%-vs-0%
+split across every router, with zero exceptions, is the signature of this exact bug
+class: a categorical origin/scheme mismatch, not an edge case. Fix:
+`backend/api.py`'s `CORSMiddleware.allow_origins` includes `"tauri://localhost"` as
+an exact string (not the regex — it's a fixed non-http(s) scheme, not a variable
+one).
+
+**Same root cause hit the CSP too.** Tauri's IPC channel itself uses the URI
+`ipc://localhost/{cmd}` (confirmed in `tauri-2.10.3/src/ipc/protocol.rs`), which
+needs to be in `connect-src` in `frontend/src-tauri/tauri.conf.json`'s `app.security.csp`
+or internal plugin calls (e.g. the notification-permission check) get silently
+blocked. Separately, `style-src` needs its own explicit directive listing
+`https://fonts.googleapis.com` — CSP only falls back a specific directive (e.g.
+`style-src`) to `default-src` when that directive is *entirely absent*, so an
+unrelated `default-src` that doesn't list a host doesn't help once `style-src`
+exists at all elsewhere. A Tauri plugin's JS-side call can also be blocked by a
+*third*, unrelated gate — its ACL/capabilities system
+(`frontend/src-tauri/capabilities/default.json`) — independent of CSP; the
+notification plugin needed `"notification:default"` added there too, on top of the
+CSP fix, before it actually worked.
+
+**Other real packaged-build-only bugs worth knowing about, all fixed:**
+- **WebKitGTK's DMA-BUF renderer bug** produced a blank gray window on launch —
+  fixed by setting `WEBKIT_DISABLE_DMABUF_RENDERER=1` at the very top of `main()`
+  (Linux-only).
+- **WebKitGTK keeps its own persistent on-disk HTTP cache**
+  (`~/.local/share/<tauri-identifier>/WebKitCache`) that kept serving stale
+  `/api/*` responses across app relaunches even after the backend itself was
+  already returning current data — a backend-side `Cache-Control: no-store` fix on
+  every `/api/*` response (see `_no_cache_api_responses` in `backend/api.py`) was
+  necessary but not sufficient on its own; the existing on-disk cache from earlier
+  debugging had to be cleared once by hand too.
+- **`DesignCenter.tsx`'s iframe `src` must be absolute** in a packaged build
+  (`http://localhost:8010/html-tools/...`), not the relative path that works in dev
+  via Vite's proxy — there's no such proxy once the frontend is served from Tauri's
+  own origin, so a relative URL 404s inside Tauri's asset protocol and the iframe
+  never loads at all.
+- **A stale dev backend can "port-squat" `:8010`.** `start_backend_sidecar()`
+  checks `port_open()` and skips spawning its own sidecar if something's already
+  listening there — correct behavior for "don't double-launch," but it means a
+  leftover `uvicorn --reload` process from source-checkout dev work (or, during
+  debugging, a manually-started backend instance) will make the packaged app
+  silently talk to the wrong backend instead of its own bundled one. Always confirm
+  `lsof -i :8010` is clear of unrelated processes before treating a packaged-app
+  bug report as reproduced.
+
+**Diagnosing the packaged app when something's wrong:** WebKitGTK devtools can be
+enabled temporarily via the `"devtools"` Cargo feature on `tauri` plus
+`window.open_devtools()` in `main.rs`'s `.setup()` — deliberately not left on by
+default in a release build (stripped before v0.4.2 shipped), so re-add both
+deliberately, rebuild, and remove them again before the next real release. A
+`Monitor`-tail on a manually-launched instance of the exact bundled binary is
+another way to capture real request traffic live (see the git history around
+2026-09-11 for how that live-capture setup found the CORS bug above).
 
 ### mcp-kdenlive service must be running for Kdenlive chat features
 `mcp_tool_agent.gather_context_for_message` silently skips a server (returns `""`, no context injected, no error surfaced to the user) if `mcp/config/mcp_servers.json` has no entry for it, or it isn't reachable — by design, so a down tool server never breaks normal chat. If Kdenlive questions to Arynwood stop producing live results, check `systemctl --user status mcp-kdenlive` first before assuming a code bug.

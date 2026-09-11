@@ -75,5 +75,5 @@ source venv/bin/activate && pip install pip-licenses
 pip-licenses --format=markdown --with-urls --order=license
 
 # Frontend (production dependencies only)
-cd frontend && npx license-checker --production --excludePackages "frontend@0.4.0" --json
+cd frontend && npx license-checker --production --excludePackages "frontend@$(node -p "require('./package.json').version")" --json
 ```

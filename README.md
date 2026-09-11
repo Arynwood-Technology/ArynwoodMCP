@@ -513,7 +513,7 @@ SSH/SFTP file manager for deploying content to remote servers.
 |-------|------|
 | Backend | FastAPI + aiosqlite (port 8010) |
 | Frontend | React 19 + Vite + Tailwind v4 + Zustand (port 5180) |
-| Desktop | Tauri (native window, wraps dev server) |
+| Desktop | Tauri (native window; wraps the dev server in dev mode, a bundled sidecar backend in the packaged AppImage/`.deb`) |
 | LLMs | Ollama (local + remote, port 11434) |
 | GPU tools | Stable Diffusion A1111 (7860), TortoiseTTS (5003) |
 | Monitoring | Prometheus (9090) |

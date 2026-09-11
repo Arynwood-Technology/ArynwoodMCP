@@ -47,7 +47,7 @@ frontend/src/
 ├── components/studio/     — EffectsRack, StemSeparator, VoiceConversion, InstrumentGenerator, JamWithAI, MusicAssetCard
 └── pages/
     ├── Dashboard.tsx      — Home hub: service health, embedded Arynwood chat, quick links
-    ├── Chat.tsx           — WebSocket streaming chat, 7 personas, conversation history, file upload
+    ├── Chat.tsx           — WebSocket streaming chat, 5 personas, conversation history, file upload
     ├── ModelManager.tsx   — Browse/pull/delete Ollama models across servers
     ├── Servers.tsx        — Register LLM server endpoints, health check
     ├── ToolLibrary.tsx    — GPU tool browser — image/audio/video/vision/data/scraping
