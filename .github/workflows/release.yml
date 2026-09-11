@@ -40,7 +40,7 @@ jobs:
       - name: Install Tauri Linux build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libfuse2
 
       # Backend sidecar: bundled as a standalone binary and placed where Tauri's
       # `externalBin` config (frontend/src-tauri/tauri.conf.json) expects it. See
@@ -65,6 +65,14 @@ jobs:
 
       - name: Build Tauri bundles (AppImage + .deb)
         uses: tauri-apps/tauri-action@v0
+        env:
+          # linuxdeploy/appimagetool (which AppImage bundling shells out to) are
+          # themselves distributed as AppImages that need to mount via FUSE to
+          # run — GitHub's runners often can't load the FUSE kernel module even
+          # with libfuse2 installed (containerized/sandboxed), so this makes them
+          # self-extract and run instead of mounting. Standard fix for this exact
+          # failure mode, not specific to anything in this repo.
+          APPIMAGE_EXTRACT_AND_RUN: "1"
         with:
           projectPath: frontend
           args: --bundles appimage,deb
