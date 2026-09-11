@@ -125,7 +125,7 @@ outline, so keyboard users previously had no focus indicator anywhere.
 | Path | Purpose |
 |---|---|
 | `config/arynwood.db` | SQLite runtime state (all tables) |
-| `mcp/config/models.json` | Persona definitions (Arynwood, Doc, Kona, Glyph, Estra, PersonaA, PersonaB — see Personas below) — loaded at runtime by `chat.py` |
+| `mcp/config/models.json` | Persona definitions (Arynwood, Doc, Kona, Glyph, Estra — see Personas below) — loaded at runtime by `chat.py` |
 | `mcp/config/mcp_servers.json` | External MCP tool server registry (name → HTTP URL, currently configured for just `kdenlive` when present), read by `mcp_proxy.py`. Gitignored/personal — not tracked in git, shared across branches on this machine, and **not guaranteed to exist** on a given checkout (its absence silently disables all MCP tool dispatch — see gotcha below) |
 | `mcp/config/local_agent/` | Config + instructions for the local tool-calling model (see below) — `config.json` (`model`, `ollama_url`, `max_tool_rounds`, optional `fallback_model` for stall escalation), `AGENT.md` (shared rules: tool-call discipline, untrusted-tool-result framing, pre/post-action self-check), `gates.json` (one entry per server — `hints` are descriptive context for the LLM classifier now, not a substring allowlist), `<server>.md` per registered server (currently `kdenlive.md`, includes worked example call sequences) |
 
@@ -159,7 +159,7 @@ prose lead-in sentence* — confirmed live, not just in theory). Because of that
 `_stream_reply` fully buffers a tools-enabled round before deciding whether it's a
 tool call or a real answer, then delivers a real answer as a progressive reveal
 (`_deliver_complete_text`) rather than a true live network stream. Every other
-persona (Doc, Kona, Glyph, Estra, PersonaA, PersonaB) has no native tools and streams truly
+persona (Doc, Kona, Glyph, Estra) has no native tools and streams truly
 live from the first token, exactly as before this existed — only `central` pays the
 buffering trade, and only on tool-enabled rounds.
 
@@ -289,9 +289,7 @@ Personas live in `mcp/config/models.json`, keyed by id:
 
 The frontend does **not** hardcode this list — `GET /api/chat/personas` (see `backend/routers/chat.py`) reads `mcp/config/models.json` fresh on every call and the Chat page renders whatever comes back, so adding/editing a persona in that file takes effect immediately with no frontend change and no restart.
 
-`persona_a` and `persona_b` are deliberately the same character/craft knowledge on two different models: `custom-model:v1` is voice-matched to the author's actual prose (see the training README) but its fine-tuning on *Example Novel*'s "restraint, nothing explicit" style measurably pulls it away from fully explicit content even when the system prompt authorizes it; `persona_b` runs the same system prompt on unmodified `hermes3:8b`, which has no such bias, for when a scene needs to go all the way there.
-
-Only `central` has native tool-calling, relevance-ranked memory, and MCP tool-server access (Kdenlive etc.) — the other six run on system-prompt-plus-history plus (as of recently) knowledge-base injection, which is now on for every persona by default (`knowledge_enabled: false` in a persona's `models.json` entry opts out). See "Tool-calling: two distinct mechanisms" above.
+Only `central` has native tool-calling, relevance-ranked memory, and MCP tool-server access (Kdenlive etc.) — the other four run on system-prompt-plus-history plus (as of recently) knowledge-base injection, which is now on for every persona by default (`knowledge_enabled: false` in a persona's `models.json` entry opts out). See "Tool-calling: two distinct mechanisms" above.
 
 ## Database
 
@@ -339,7 +337,7 @@ a request to unload immediately after - the hook a real fix would use, mirroring
 `_free_sd_vram_for_job`. Not built yet (task #14 in the improvement backlog).
 
 ### A1111 `/sdapi/v1/unload-checkpoint` can 500 with VRAM still held
-Seen 2026-08-08: the endpoint threw `AttributeError: 'NoneType' object has no attribute 'lowvram'` in `send_model_to_cpu` (A1111's own internal state got into `sd_model = None` while the checkpoint's VRAM was still allocated — `/sdapi/v1/memory` showed ~7GB still active). This isn't the same as the checkpoint-corruption bug `gpu_queue` was built for; it's a wedged A1111 process. Fix: `docker restart a1111` (check `/sdapi/v1/progress` first to confirm nothing is mid-render), wait for `/sdapi/v1/options` to return 200 again, then retry. `training/writer/train.py`'s `_free_a1111_vram()` will hard-fail with this exact traceback if it hits A1111 in this state.
+Seen 2026-08-08: the endpoint threw `AttributeError: 'NoneType' object has no attribute 'lowvram'` in `send_model_to_cpu` (A1111's own internal state got into `sd_model = None` while the checkpoint's VRAM was still allocated — `/sdapi/v1/memory` showed ~7GB still active). This isn't the same as the checkpoint-corruption bug `gpu_queue` was built for; it's a wedged A1111 process. Fix: `docker restart a1111` (check `/sdapi/v1/progress` first to confirm nothing is mid-render), wait for `/sdapi/v1/options` to return 200 again, then retry. Any script that frees A1111 VRAM before its own job (mirroring `_free_sd_vram_for_job`) will hard-fail with this exact traceback if it hits A1111 in this state.
 
 ### Ollama remote host
 Remote Ollama is at whatever host is configured for it (see the Servers page / `servers` table). The local instance is at `localhost:11434`. Both are seeded into `config/arynwood.db` on first `init_db()`. Chat's server picker sends `server_host`/`server_port` per request.

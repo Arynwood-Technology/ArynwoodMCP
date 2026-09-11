@@ -8,18 +8,18 @@ from backend.routers.chat import ensure_conversation
 
 
 def test_create_list_update_delete_project(client):
-    r = client.post("/api/projects", json={"name": "Example Novel novel", "description": "The manuscript"})
+    r = client.post("/api/projects", json={"name": "Nightglass novel", "description": "The manuscript"})
     assert r.status_code == 200
     project = r.json()
-    assert project["name"] == "Example Novel novel"
+    assert project["name"] == "Nightglass novel"
     assert project["description"] == "The manuscript"
 
     r = client.get("/api/projects")
     assert any(p["id"] == project["id"] for p in r.json())
 
-    r = client.put(f"/api/projects/{project['id']}", json={"name": "Example Novel", "description": "updated"})
+    r = client.put(f"/api/projects/{project['id']}", json={"name": "Nightglass", "description": "updated"})
     assert r.status_code == 200
-    assert r.json()["name"] == "Example Novel"
+    assert r.json()["name"] == "Nightglass"
 
     r = client.delete(f"/api/projects/{project['id']}")
     assert r.status_code == 200

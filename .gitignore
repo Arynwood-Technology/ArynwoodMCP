@@ -29,10 +29,9 @@ venv/
 frontend/src-tauri/binaries/
 frontend/src-tauri/target/
 
-# Fine-tuning datasets/checkpoints — corpus text and model weights live outside
-# the repo (~/Desktop/writer-training-corpus/), but this catches anything
-# accidentally written under training/ locally too (unpublished manuscripts,
-# multi-GB checkpoints — neither belongs in a repo with a real GitHub remote).
+# Fine-tuning datasets/checkpoints — corpus text and model weights don't belong
+# in a repo with a real GitHub remote regardless of where a given pipeline puts
+# them, so this catches anything accidentally written under training/ locally.
 training/*/*.jsonl
 training/*/checkpoints/
 

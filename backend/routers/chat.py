@@ -645,9 +645,10 @@ def _should_search(message: str) -> bool:
 #
 # Scoped to central only for now: it's the one persona whose configured model
 # (qwen2.5-coder:14b) is the same model mcp_tool_agent's side-loop already relies on
-# for reliable tool-calling — the other personas' models (plain qwen2.5, hermes3:8b,
-# custom-model:v1) haven't been verified to call tools as reliably, per this
-# codebase's own existing note on why mcp_tool_agent uses a fixed model at all.
+# for reliable tool-calling — the other personas' models (plain qwen2.5, and
+# whatever else gets configured in models.json) haven't been verified to call
+# tools as reliably, per this codebase's own existing note on why
+# mcp_tool_agent uses a fixed model at all.
 NATIVE_TOOLS_PERSONAS = {"central"}
 NATIVE_TOOLS_MAX_ROUNDS = 4
 
@@ -791,9 +792,9 @@ async def _stream_reply(
         if not tools:
             # No ambiguity possible with no tools attached — stream live truly,
             # exactly as this looked before native tool-calling existed. This is
-            # also what every non-native-tools persona (Doc, Kona, Glyph, Estra,
-            # PersonaA, PersonaB) always takes; only central's own toolset ever reaches
-            # the buffer-first branch below.
+            # also what every non-native-tools persona (Doc, Kona, Glyph, Estra)
+            # always takes; only central's own toolset ever reaches the
+            # buffer-first branch below.
             full = ""
             async for chunk in ollama_client.chat_stream(
                 model=model, messages=messages, host=host, port=port, options={"num_ctx": num_ctx},
@@ -1131,8 +1132,8 @@ async def chat_ws(websocket: WebSocket):
             # Auto-inject relevant learned knowledge (semantic search over what's
             # been taught via !learn / the Knowledge page). Used to be Arynwood-only;
             # every persona gets it now unless explicitly opted out in models.json
-            # (knowledge_enabled: false) — Doc/Kona/Estra/PersonaA/PersonaB could never see
-            # anything learned even when it was squarely on-topic for them.
+            # (knowledge_enabled: false) — the non-central personas could never
+            # see anything learned even when it was squarely on-topic for them.
             if persona.get("knowledge_enabled", True):
                 await websocket.send_json({"type": "status", "label": "Checking your knowledge base…"})
                 kb_hits = await knowledge.search(_retrieval_query(message, history))

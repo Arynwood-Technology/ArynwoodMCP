@@ -3,9 +3,8 @@ Hands-off YouTube publish pipeline: drop a video into a project's `incoming/`
 folder and it gets titled, tagged, thumbnailed, and published with no further
 clicks.
 
-Multiple projects share this one watcher — Arynwood Technology, Terminal
-Pulse, Apothecary After Dark, the kids' education channel, and any future
-series/sub-channel each get a row in `content_projects` (slug, name, base_dir,
+Multiple projects share this one watcher — any number of independent series or
+sub-channels, each getting a row in `content_projects` (slug, name, base_dir,
 youtube_account_id). Each project has its own incoming/published/failed/
 metadata tree under its own base_dir, and publishes to whichever connected
 YouTube channel it's linked to — so different projects really can post to

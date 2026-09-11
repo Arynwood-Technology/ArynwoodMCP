@@ -95,13 +95,9 @@ cp .env.example .env
 ```bash
 ollama pull qwen2.5-coder:14b   # central (Arynwood) - also the fixed tool-calling model
 ollama pull qwen2.5             # doc, kona, glyph, estra
-ollama pull hermes3:8b          # persona_b
 ollama pull nomic-embed-text    # knowledge base + memory retrieval embeddings
 ```
-`persona_a` uses a locally fine-tuned model (`custom-model:v1`) that isn't a plain
-`ollama pull` - see [`training/writer/README.md`](training/writer/README.md) if
-you want to build it; `persona_b` runs the same character on stock `hermes3:8b` in the
-meantime. Swap any of these for whatever you'd rather run by editing
+Swap any of these for whatever you'd rather run by editing
 `mcp/config/models.json` - it hot-reloads, no restart needed.
 
 ### 4. Start
@@ -214,7 +210,7 @@ Streaming WebSocket chat with Arynwood and the other personas. Each conversation
 | `glyph` | Glyph | Automation |
 | `estra` | Estra | Writer |
 
-Each persona has its own model in `mcp/config/models.json` (`persona_a` and `persona_b` run local Ollama models fine-tuned/selected for fiction writing; the rest default to a general-purpose model). Switch models per conversation from the model dropdown.
+Each persona has its own model in `mcp/config/models.json` (defaults to a general-purpose model; swap any entry for whatever you'd rather run). Switch models per conversation from the model dropdown.
 
 **Features:**
 - File upload - attach files to provide context to the current message

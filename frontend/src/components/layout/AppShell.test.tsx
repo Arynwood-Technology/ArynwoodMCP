@@ -16,7 +16,7 @@ function Page({ title }: { title?: string }) {
 }
 
 function DynamicTitlePage() {
-  usePageTitle('Chat · PersonaA')
+  usePageTitle('Chat · Doc')
   return <p>chat body</p>
 }
 
@@ -51,7 +51,7 @@ describe('AppShell', () => {
 
   it('lets a page override the route title via usePageTitle', () => {
     renderAt('/chat', true)
-    expect(screen.getByRole('heading', { name: 'Chat · PersonaA' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Chat · Doc' })).toBeInTheDocument()
   })
 
   it('falls back to a default title for an unmapped route', () => {
@@ -80,7 +80,7 @@ describe('AppShell', () => {
 
   it('clears the title override when the overriding page unmounts', () => {
     const { unmount } = renderAt('/chat', true)
-    expect(useAppStore.getState().pageTitle).toBe('Chat · PersonaA')
+    expect(useAppStore.getState().pageTitle).toBe('Chat · Doc')
     unmount()
     expect(useAppStore.getState().pageTitle).toBeNull()
   })

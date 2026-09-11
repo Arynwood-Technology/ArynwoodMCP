@@ -325,9 +325,9 @@ async def _refresh_google_token(refresh_token: str) -> str:
 
 
 # ── YouTube channel analytics ─────────────────────────────────────────────────
-# Multiple channels can be connected at once (Arynwood Technology, Example Novel,
-# Apothecary After Dark, the kids' channel, ...) — each project links to one of them
-# via content_projects.youtube_account_id. Analytics are fetched per-account and
+# Multiple channels can be connected at once (a main brand channel plus any number
+# of project-specific or side channels) — each project links to one of them via
+# content_projects.youtube_account_id. Analytics are fetched per-account and
 # returned as a list so the frontend can show one card per connected channel.
 
 @router.get("/youtube/analytics")
@@ -477,8 +477,8 @@ async def youtube_upload_log(project: Optional[str] = None, db=Depends(get_db)):
 
 # ── Content projects (multi-channel/multi-series pipeline) ───────────────────
 # One project = one folder tree (incoming/published/failed/metadata) + one linked
-# YouTube channel. Lets Arynwood Technology, Example Novel, Apothecary After Dark,
-# the kids' channel, and any future series/sub-channel share the same watcher.
+# YouTube channel. Lets any number of independent series or sub-channels share
+# the same watcher, each with its own project entry.
 
 @router.get("/projects")
 async def list_projects(db=Depends(get_db)):
