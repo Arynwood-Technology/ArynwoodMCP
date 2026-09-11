@@ -5,12 +5,8 @@ only, GPU features need an NVIDIA card.
 
 ## Packaged build (AppImage / .deb)
 
-> **Status:** `make package` (or `npm run tauri:build` in `frontend/`) produces a
-> working AppImage and `.deb` locally — verified end-to-end, see
-> [`docs/release-readiness-audit.md`](release-readiness-audit.md) §3. No tagged
-> release has been published yet, though — don't trust a downloaded artifact link
-> until one actually exists on the repo's Releases page (`.github/workflows/release.yml`
-> publishes one on a `v*.*.*` tag push). Once a release is published:
+> **Status:** published. Download from the repo's Releases page — get the latest
+> `v*.*.*` tag, not an older one; each release lists what changed in that version.
 
 ```bash
 # AppImage — download the .AppImage asset from the release, then:
@@ -21,8 +17,8 @@ chmod +x arynwood-mcp_*.AppImage
 sudo apt install ./arynwood-mcp_*.deb
 ```
 
-(Real filenames as of this writing: `arynwood-mcp_0.4.0_amd64.AppImage` and
-`arynwood-mcp_0.4.0_amd64.deb` — no spaces, confirmed against an actual local
+(Real filenames as of this writing: `arynwood-mcp_0.4.2_amd64.AppImage` and
+`arynwood-mcp_0.4.2_amd64.deb` — no spaces, confirmed against an actual local
 build; the glob above just tolerates the version number changing between releases.)
 
 Both bundle the frontend and a packaged backend — no separate `venv`/`npm install`
@@ -48,7 +44,7 @@ explaining why, not a crash, but they don't work either way:
   (it lists the packaged bundle's internal temp directory instead of erroring —
   harmless, but not useful either).
 
-Everything else — chat across all 7 personas, memory, knowledge base (needs
+Everything else — chat across all 5 personas, memory, knowledge base (needs
 Qdrant + Ollama reachable), social publishing — works the same as running from
 source. See `docs/release-readiness-audit.md` §3 for the technical reason (these
 features assume a live git checkout + `venv`, which packaging doesn't change).
