@@ -58,6 +58,24 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Arynwood MCP", version="0.4.0", lifespan=lifespan)
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
+# No endpoint under /api/* set any Cache-Control header, which left every dynamic
+# response (persona list, LoRA list, tool list, etc.) eligible for WebKitGTK's
+# heuristic HTTP caching — confirmed as a real cause of packaged-app bugs, not just a
+# theoretical one: WebKitCache/ (the packaged app's persistent on-disk cache,
+# ~/.local/share/com.arynwood.mcp/WebKitCache) had accumulated stale responses from
+# earlier in this app's debugging, and kept serving them across app relaunches even
+# after the backend itself was already returning correct, current data — so a
+# backend-side fix alone wasn't enough; both the header (this) and the actual stale
+# cache had to be cleared. /html-tools below already had its own explicit no-cache
+# headers for a similar iframe-reload reason; this generalizes the same protection to
+# every /api/* response instead of leaving it to be rediscovered endpoint by endpoint.
+@app.middleware("http")
+async def _no_cache_api_responses(request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
 app.add_middleware(ApiKeyMiddleware)  # no-op unless ARYNWOOD_API_KEY is set — see backend/services/auth.py
 
 # Wildcard allow_origins is a real risk with auth opt-in/off by default (see
@@ -65,18 +83,34 @@ app.add_middleware(ApiKeyMiddleware)  # no-op unless ARYNWOOD_API_KEY is set —
 # machine, can otherwise read responses from this API — filesystem, deploy/SFTP,
 # chat/memory — purely because the victim's own browser can reach localhost,
 # regardless of the backend's bind address (see CLAUDE.md's network-binding note;
-# loopback binding doesn't stop this class of attack). Narrowed to the two origins
-# a browser actually loads this app's frontend from: the Vite dev server, and the
-# packaged Tauri webview's default custom-protocol origin (confirmed against the
-# tauri crate's own source — get_for_scheme() in tauri-2.10.3/src/app.rs, `http://`
-# unless `use_https_scheme` is explicitly configured, which it isn't here).
-# LAN/remote API access for non-browser clients (curl, scripts, another service) is
-# unaffected — CORS is a browser same-origin-policy mechanism, not an API gate;
-# ARYNWOOD_API_KEY is what actually gates LAN exposure once ARYNWOOD_BIND_HOST is
-# opened up.
+# loopback binding doesn't stop this class of attack). Narrowed to the origins a
+# browser actually loads this app's frontend from.
+#
+# An exact single guess at the packaged Tauri webview's origin (`http://tauri.localhost`,
+# based on a misread of the tauri crate's own source) broke the real packaged app on a
+# real machine — curl testing with that Origin header "confirmed" it, but curl doesn't
+# enforce CORS the way an actual browser does, so that test never proved the real
+# webview sends exactly that string; the actual fetches were being silently blocked
+# client-side (empty persona list, empty tool list — every /api/* call failing the
+# same way, not a backend problem, since the same backend answered curl fine).
+#
+# Root cause (confirmed via live capture: every single /api/* OPTIONS preflight came
+# back 400, with zero exceptions across every router — a categorical mismatch, not an
+# edge case) traced to tauri-2.10.3/src/app.rs's own doc comment on its custom-protocol
+# origin format: "macOS, iOS and Linux: <scheme_name>://localhost/<path>" versus
+# "Windows and Android: http://<scheme_name>.localhost/<path>" — the http(s) remap only
+# happens on Windows/Android because WebView2 can't navigate a non-http(s) scheme.
+# Tauri's built-in scheme name is "tauri", so on this Linux build the webview's real
+# Origin is `tauri://localhost` — a scheme our old `https?://` regex could never match,
+# hence the 100% failure rate. allow_origin_regex still covers the realistic http(s)
+# dev-server variants (scheme, optional port); tauri://localhost is added as an exact
+# origin since it's a fixed non-http(s) string, not something a regex needs to vary.
+# ARYNWOOD_API_KEY remains what actually gates LAN/remote exposure once
+# ARYNWOOD_BIND_HOST is opened up, not this list.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5180", "http://tauri.localhost"],
+    allow_origins=["http://localhost:5180", "tauri://localhost", "null"],
+    allow_origin_regex=r"https?://(tauri\.localhost|localhost:5180)(:\d+)?",
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
