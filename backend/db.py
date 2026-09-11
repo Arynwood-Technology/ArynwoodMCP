@@ -248,8 +248,8 @@ _MIGRATIONS = [
     # Project linkage (roadmap 4.1): conversations, memories, and knowledge sources
     # previously had no way to connect to each other or to the app's other,
     # already-existing per-domain project concepts (lora_projects, content_projects,
-    # music_assets.project_id) — a chat about the novelist LoRA had no link to the
-    # lora_projects row it was discussing. This is deliberately additive and
+    # music_assets.project_id) — a chat about a LoRA training run had no link to
+    # the lora_projects row it was discussing. This is deliberately additive and
     # narrow: a new, minimal projects table plus nullable FK columns on the three
     # tables that had none, not a migration merging the existing per-domain project
     # tables into it — those already work, and merging them is a separate,

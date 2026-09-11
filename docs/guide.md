@@ -143,8 +143,6 @@ Defined in `mcp/config/models.json`, hot-reloaded on every `GET /api/chat/person
 | `kona` | Kona | Creative, exploratory | `qwen2.5` |
 | `glyph` | Glyph | Automation specialist | `qwen2.5` |
 | `estra` | Estra | Writer, editor | `qwen2.5` |
-| `shai` | Shai | Novelist & creative co-writer | `shai-novelist:v1` (local fine-tune) |
-| `chai` | Chai | Same co-writer role, no fine-tuning bias | `hermes3:8b` |
 
 Only `central` has native tool-calling and MCP tool-server access (Kdenlive etc.) — see
 below. To change a persona's model, edit `mcp/config/models.json`.

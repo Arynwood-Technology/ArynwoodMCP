@@ -7,6 +7,30 @@ Entries before this file existed (everything under "0.4.0" and earlier) are
 reconstructed from git history for context, not a line-by-line commit log — treat
 them as a summary, not a precise record.
 
+## [0.4.2] — 2026-09-11
+
+### Removed
+
+- **Novelist co-writer personas** (Shai, Chai) and their LoRA fine-tuning
+  pipeline. Both were tuned specifically for one author's own manuscript
+  rather than being a generalized creative-writing tool, so they weren't a
+  good fit for a general public release.
+
+## [0.4.1] — 2026-09-11
+
+### Fixed
+
+- **Packaged Linux app couldn't reach its own backend.** Every `/api/*` request
+  failed CORS preflight in the AppImage/`.deb` build — the desktop window's real
+  origin on Linux is `tauri://localhost`, not the `http://tauri.localhost` the
+  CORS policy was written for. Chat, tool lists, personas, and every other
+  panel now load correctly in the packaged app.
+- Two related content-security-policy gaps fixed in the same pass: the
+  notification permission check and the Inter font stylesheet were both being
+  silently blocked in the packaged build.
+- Removed the temporary developer-tools access used to diagnose the above —
+  not part of the release build.
+
 ## [0.4.0] — 2026-09-10
 
 First Linux desktop alpha.
@@ -20,8 +44,6 @@ First Linux desktop alpha.
   Vital, and other Linux audio production tools.
 - **AI Music Lab** — instrument generation and "Jam with AI," plus a stem
   library.
-- **Novelist co-writer personas** (`shai`, `chai`) with a LoRA fine-tuning
-  pipeline for building your own voice-matched model.
 - **GPU model manager** — browse installed Stable Diffusion checkpoints and
   LoRAs.
 - **MCP tool-calling** generalized beyond Kdenlive to any registered tool

@@ -29,9 +29,9 @@ async def _add_messages(db, conversation_id, n):
 
 def test_history_summary_rendered_in_system_prompt():
     persona = {"name": "Arynwood", "role": "Coordinator", "personality": "direct"}
-    prompt = build_system_prompt(persona, "", [], "", history_summary="User is writing a novel called Terminal Pulse.")
+    prompt = build_system_prompt(persona, "", [], "", history_summary="User is writing a novel called Nightglass.")
     assert "## Earlier in this conversation" in prompt
-    assert "Terminal Pulse" in prompt
+    assert "Nightglass" in prompt
 
 
 def test_history_summary_absent_when_empty():

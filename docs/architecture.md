@@ -352,8 +352,6 @@ Defined in `mcp/config/models.json`. Loaded at chat time and injected into the s
 | `kona` | **Kona** | Creative | `qwen2.5` |
 | `glyph` | **Glyph** | Automation | `qwen2.5` |
 | `estra` | **Estra** | Writer | `qwen2.5` |
-| `shai` | **Shai** | Novelist & creative co-writer | `shai-novelist:v1` (local fine-tune) |
-| `chai` | **Chai** | Same co-writer role, unmodified base model | `hermes3:8b` |
 
 Only `central` gets native tool-calling, relevance-ranked memory, and MCP
 tool-server access — see "Tool-Calling Architecture" below.

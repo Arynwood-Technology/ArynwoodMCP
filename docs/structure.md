@@ -267,8 +267,6 @@ Seven personas available in the chat interface:
 | `kona` | Kona | Creative, exploratory | `qwen2.5` |
 | `glyph` | Glyph | Automation, workflows | `qwen2.5` |
 | `estra` | Estra | Writer, editor | `qwen2.5` |
-| `shai` | Shai | Novelist & creative co-writer | `shai-novelist:v1` (local fine-tune) |
-| `chai` | Chai | Same co-writer role, unmodified base model | `hermes3:8b` |
 
 Corrected: the frontend does **not** hardcode this list in a `PERSONAS` constant —
 `GET /api/chat/personas` reads `mcp/config/models.json` fresh on every call (filtering

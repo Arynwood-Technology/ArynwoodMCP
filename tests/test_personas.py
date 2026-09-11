@@ -18,17 +18,3 @@ def test_central_persona_has_its_configured_model(client):
     r = client.get("/api/chat/personas")
     central = next(p for p in r.json() if p["id"] == "central")
     assert central["model"] == "qwen2.5-coder:14b"
-
-
-def test_shai_novelist_persona_is_registered(client):
-    r = client.get("/api/chat/personas")
-    shai = next(p for p in r.json() if p["id"] == "shai")
-    assert shai["name"] == "Shai"
-    assert shai["model"] == "shai-novelist:v1"
-
-
-def test_chai_persona_is_registered(client):
-    r = client.get("/api/chat/personas")
-    chai = next(p for p in r.json() if p["id"] == "chai")
-    assert chai["name"] == "Chai"
-    assert chai["model"] == "hermes3:8b"
