@@ -62,6 +62,13 @@ jobs:
             found{print}
           ' CHANGELOG.md > release-notes.md
           echo "Extracted notes:"; cat release-notes.md
+          # tauri-action@v0 has no releaseBodyFile input (only releaseBody, a plain
+          # string) — pass the extracted notes through a GITHUB_OUTPUT multiline
+          # value instead of a file path.
+          delimiter="$(openssl rand -hex 8)"
+          echo "body<<$delimiter" >> "$GITHUB_OUTPUT"
+          cat release-notes.md >> "$GITHUB_OUTPUT"
+          echo "$delimiter" >> "$GITHUB_OUTPUT"
 
       - name: Build Tauri bundles (AppImage + .deb)
         uses: tauri-apps/tauri-action@v0
@@ -77,8 +84,7 @@ jobs:
           projectPath: frontend
           args: --bundles appimage,deb
           releaseDraft: true
-          releaseBody: ""
-          releaseBodyFile: release-notes.md
+          releaseBody: ${{ steps.notes.outputs.body }}
 
       - name: Generate SHA-256 checksums
         run: |
