@@ -296,6 +296,27 @@ The frontend does **not** hardcode this list — `GET /api/chat/personas` (see `
 
 Only `central` has native tool-calling, relevance-ranked memory, and MCP tool-server access (Kdenlive etc.) — the other four run on system-prompt-plus-history plus (as of recently) knowledge-base injection, which is now on for every persona by default (`knowledge_enabled: false` in a persona's `models.json` entry opts out). See "Tool-calling: two distinct mechanisms" above.
 
+Two more optional per-persona `models.json` fields, both consumed by `build_system_prompt`
+in `backend/routers/chat.py`:
+
+- **`app_aware`** (default `true`) — set `false` for a persona built entirely around its
+  own `system` instructions with no real access to any of this app's features (no native
+  tools, no MCP/Kdenlive gate). `true` unconditionally tells a persona it has GPU tools,
+  web scraping, and Kdenlive control — accurate only for `central` (`NATIVE_TOOLS_PERSONAS`,
+  `is_aryn` gate) — which measurably pulls a persona with no such access toward generic
+  "capable assistant" behavior instead of staying in whatever voice its own instructions
+  establish. `false` drops the Environment/Available-capabilities/Project-layout sections
+  but keeps the "Handling external content" security instruction, since web search and
+  knowledge-base injection still apply regardless of `app_aware`.
+- **`llm.num_ctx`** — overrides `MAX_NUM_CTX` (currently 8192, a deliberate ceiling below
+  any model's native max — see that constant's comment for the single-12GB-GPU VRAM
+  tradeoff) for one persona specifically. Meant for a persona whose own `system` prompt is
+  an unusually large fraction of the default ceiling — enough that conversation history
+  and the reply itself can get squeezed and truncated even though nothing looks wrong at
+  the request level. Still clamped to the model's real native context by the `min()` at
+  each call site; this only raises the ceiling below that, at the same VRAM cost as raising
+  `MAX_NUM_CTX` itself, so use it only for a persona that actually needs the headroom.
+
 ## Database
 
 SQLite at `config/arynwood.db`. Key tables: `servers`, `conversations`, `messages`,

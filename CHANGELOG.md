@@ -9,6 +9,18 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Added
+
+- Two optional per-persona `models.json` fields: `app_aware: false` lets a
+  persona built entirely around its own system instructions skip the
+  app-environment preamble (GPU tools, Kdenlive control, etc.) it has no
+  real access to — every persona was claiming those capabilities
+  unconditionally before this, which measurably pulled a persona with no
+  such access toward generic "capable assistant" behavior instead of its
+  own established voice. `llm.num_ctx` lets a persona with an unusually
+  large system prompt override the app-wide context ceiling so its own
+  instructions don't crowd out conversation history and the reply itself.
+
 ### Fixed
 
 - **Kdenlive tool-calling was completely dark in every build**, packaged app
