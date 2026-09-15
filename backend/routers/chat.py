@@ -35,6 +35,19 @@ MAX_HISTORY = 30
 # num_ctx drives Ollama's KV-cache size — doubling it roughly doubles that VRAM cost.
 # Raise this if VRAM contention with A1111 hasn't been a problem in practice.
 MAX_NUM_CTX = 8192
+
+
+def _persona_num_ctx(persona: dict) -> int:
+    """A persona's own models.json entry can set llm.num_ctx to override
+    MAX_NUM_CTX — for a persona whose system prompt alone is a large fraction of
+    the global cap (a full character bible, say), the default ceiling can leave
+    too little room for conversation history plus a real reply, truncating
+    mid-generation even though nothing looks wrong at the request level. Still
+    clamped against the model's actual native max by the min() at each call site;
+    this only raises the ceiling below that, so it costs more VRAM (same KV-cache
+    tradeoff as MAX_NUM_CTX itself) only for personas that opt in.
+    """
+    return persona.get("llm", {}).get("num_ctx", MAX_NUM_CTX)
 RESPONSE_RESERVE_TOKENS = 1024   # headroom left in the budget for the model's own reply
 MIN_BUDGET_TOKENS = 512
 
@@ -1014,7 +1027,7 @@ async def chat_complete(req: ChatRequest, db=Depends(get_db)):
         native_ctx = await ollama_client.context_length(model, req.server_host, req.server_port)
         result = await ollama_client.chat(
             model=model, messages=messages, host=req.server_host, port=req.server_port, timeout=120.0,
-            options={"num_ctx": min(native_ctx, MAX_NUM_CTX)},
+            options={"num_ctx": min(native_ctx, _persona_num_ctx(persona))},
         )
         return {"response": result["output"]}
     except ConnectionError:
@@ -1055,7 +1068,7 @@ async def chat_ws(websocket: WebSocket):
             # leaving every call at Ollama's silent 2048-token default, and derive a
             # token budget from it so the prompt we build actually fits inside it.
             native_ctx   = await ollama_client.context_length(model, server_host, server_port)
-            num_ctx      = min(native_ctx, MAX_NUM_CTX)
+            num_ctx      = min(native_ctx, _persona_num_ctx(persona))
             total_budget = max(MIN_BUDGET_TOKENS, num_ctx - RESPONSE_RESERVE_TOKENS)
 
             # Create conversation if new — done before building the system prompt so
