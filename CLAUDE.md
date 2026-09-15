@@ -418,6 +418,27 @@ CSP fix, before it actually worked.
   silently talk to the wrong backend instead of its own bundled one. Always confirm
   `lsof -i :8010` is clear of unrelated processes before treating a packaged-app
   bug report as reproduced.
+- **A hand-rolled `__file__`-relative path chain silently broke `mcp_servers.json`
+  in a packaged build** (fixed 2026-09-15). `mcp_proxy.py`'s `_CONFIG_PATH` used to
+  compute its location via `dirname(dirname(dirname(__file__)))` instead of the
+  `app_base_dir()`/`user_data_dir()` split `_frozen.py` exists specifically to
+  replace (its own docstring warns this exact pattern "doesn't reliably land on the
+  same place" once PyInstaller repacks the module tree) — nobody had migrated this
+  one call site. Worse, `app_base_dir()` alone wouldn't have been the right fix
+  either: unlike `models.json`/`local_agent/*` (real bundled app payload),
+  `mcp_servers.json` is personal/gitignored per-install config (bearer tokens,
+  host-specific URLs) — mutable state, not something baked into a build, so it
+  needed the same split `db.py`'s `_default_db_path()` already uses for the DB.
+  Fixed: source checkout keeps `mcp/config/mcp_servers.json` under the repo root
+  unchanged; a packaged build now reads/writes it straight from `user_data_dir()`
+  (`~/.local/share/arynwood-mcp/mcp_servers.json` by default) since a packaged
+  install's own directory isn't writable anyway. **The same hand-rolled
+  `dirname(dirname(dirname(__file__)))` pattern still exists, unaudited, in**
+  `backend/routers/music.py`, `lora.py`, `tools.py`, `system.py`, and
+  `backend/services/gpu_jobs.py` (`BASE_DIR = ...`) — each needs the same
+  app_base_dir()-vs-user_data_dir() judgment call (is what it's locating bundled
+  payload or mutable per-install state?) before packaged-build correctness there
+  can be trusted; none of the five has been checked yet.
 
 **Diagnosing the packaged app when something's wrong:** WebKitGTK devtools can be
 enabled temporarily via the `"devtools"` Cargo feature on `tauri` plus
@@ -431,19 +452,34 @@ another way to capture real request traffic live (see the git history around
 ### mcp-kdenlive service must be running for Kdenlive chat features
 `mcp_tool_agent.gather_context_for_message` silently skips a server (returns `""`, no context injected, no error surfaced to the user) if `mcp/config/mcp_servers.json` has no entry for it, or it isn't reachable — by design, so a down tool server never breaks normal chat. If Kdenlive questions to Arynwood stop producing live results, check `systemctl --user status mcp-kdenlive` first before assuming a code bug.
 
-Verified 2026-09-04: on this checkout, `mcp/config/mcp_servers.json` doesn't exist at
-all (not just "kdenlive unreachable" — there's no file, so `_load_servers()` returns
-`{}` and every gate is skipped before it even runs the classifier). That's a
-different, more basic failure mode than the service being down, and it also means
-the tool-permission-tier/approval-gate work in `mcp_tool_agent.py` has only ever been
-exercised through mocked tests, not a real end-to-end approve/deny click against a
-live Kdenlive session — worth doing once the registration file exists.
+Verified 2026-09-04: on that checkout, `mcp/config/mcp_servers.json` didn't exist at
+all (not just "kdenlive unreachable" — there was no file, so `_load_servers()`
+returned `{}` and every gate was skipped before it even ran the classifier) — a more
+basic failure mode than the service being down. Registered as of 2026-09-15 (see the
+Tauri packaging section above for a related path-resolution bug this surfaced); gate
+classification and a real read-only tool round-trip against a live Kdenlive session
+are now confirmed working end-to-end, in both the source checkout and the packaged
+build. Still open: the tool-permission-tier/approval-gate path in `mcp_tool_agent.py`
+(destructive/external-publish tiers, the approval round-trip over the chat
+WebSocket) has only ever been exercised through mocked tests, never a real
+approve/deny click against a live Kdenlive session — that still needs doing.
 
 ### `mcp` name collision
 This repo's own top-level `mcp/` directory (`mcp/config/...`) shadows the real `mcp` PyPI package for anything run from the repo root. Never `pip install mcp` into this venv expecting `import mcp` to resolve to the SDK — it won't.
 
 ### `mcp/config/mcp_servers.json` is gitignored and shared across branches
 It's personal/per-install config (contains bearer tokens for some server registrations), never committed. Because git branches share one working directory, editing it affects whatever instance of this app is currently running from this checkout — not just this branch. Don't assume switching branches changes its contents.
+
+Location differs by build (see the Tauri packaging section's path-resolution bugfix
+above): a source checkout keeps it at `mcp/config/mcp_servers.json` under the repo
+root, unchanged; a packaged build reads/writes it from `user_data_dir()` instead
+(`~/.local/share/arynwood-mcp/mcp_servers.json` by default) since the install
+location itself isn't writable. Required shape either way —
+`backend/routers/mcp_proxy.py`'s `_load_servers()` reads a top-level `"mcpServers"`
+key, not a bare `{"kdenlive": {...}}` object:
+```json
+{ "mcpServers": { "kdenlive": { "url": "http://127.0.0.1:8420/mcp" } } }
+```
 
 ### PDF learning depends on a sibling repo's venv, not anything in this one
 `POST /api/knowledge/sycamore/jobs` shells out to `~/GitHub/sycamore/lib/sycamore/.venv/bin/python3` (hardcoded path in `backend/routers/knowledge.py`) — a separate checkout of the Sycamore document-parsing project, not part of this repo and not in `requirements.txt`. Its local-inference path (torch/transformers/timm/easyocr/paddleocr) is heavy enough that it deliberately isn't installed into the main venv, same reasoning as `scripts/run_whisper.py`'s dedicated `whisper-venv`. If that sibling checkout is missing or its venv isn't set up, PDF learning hard-fails with a 404 pointing at `docs/sycamore-integration-plan.md` — it does not silently fall back to the plain pdfminer/pypdf extraction non-PDF files use. Non-PDF files (text, code, `.docx`) are unaffected either way.

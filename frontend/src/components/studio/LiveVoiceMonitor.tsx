@@ -123,8 +123,9 @@ export function LiveVoiceMonitor({ chain }: { chain: ActiveEffect[] }) {
   }
   useEffect(() => () => stop(), [])
   useEffect(() => {
-    if (active) void start()
     // Rebuild the Web Audio graph whenever a slider changes so monitoring matches the chain.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (active) void start()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chain])
   const renderedOnly: string[] = []

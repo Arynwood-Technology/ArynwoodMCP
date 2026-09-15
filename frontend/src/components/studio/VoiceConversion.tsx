@@ -46,10 +46,17 @@ export function VoiceConversion({ sidecarReady, externalFile, onExternalFileCons
     finally { setModelsLoading(false) }
   }
 
+  // Fetch whenever the sidecar comes online (loadModels itself no-ops if not
+  // ready) — intentionally not re-run on other state loadModels reads.
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => { void loadModels() }, [sidecarReady])
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
   useEffect(() => {
     if (!externalFile) return
+    // Notifies the parent (onExternalFileConsumed) once the file's adopted —
+    // has to run as an effect, not during render, to avoid updating the
+    // parent's state synchronously while this component is rendering.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFile(new File([externalFile], 'booth-take.wav', { type: 'audio/wav' }))
     setStatus('idle'); setJobId(null); setError('')
     onExternalFileConsumed?.()

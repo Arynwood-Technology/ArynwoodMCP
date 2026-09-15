@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { LiveVoiceMonitor, makeLiveGraph } from './LiveVoiceMonitor'
 
 interface EffectParam {
@@ -110,21 +110,38 @@ export function EffectsRack({ sidecarReady, externalFile, onExternalFileConsumed
   const previewCtxRef = useRef<AudioContext | null>(null)
   const previewSourceRef = useRef<MediaElementAudioSourceNode | null>(null)
 
+  const rebuildPreviewGraph = useCallback(() => {
+    const ctx = previewCtxRef.current
+    const source = previewSourceRef.current
+    if (!ctx || !source) return
+    try { source.disconnect() } catch { /* no active preview connection */ }
+    const { tail } = makeLiveGraph(ctx, source, chain)
+    tail.connect(ctx.destination)
+  }, [chain])
+
   useEffect(() => {
     if (!externalFile) return
+    // Notifies the parent (onExternalFileConsumed) once the file's adopted, so
+    // this has to run as an effect, not during render — calling a parent
+    // callback synchronously during render risks "setState while rendering a
+    // different component" if the parent clears externalFile in response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFile(new File([externalFile], 'recording.wav', { type: 'audio/wav' }))
     setResultUrl(null)
     onExternalFileConsumed?.()
-  }, [externalFile])
+  }, [externalFile, onExternalFileConsumed])
 
   useEffect(() => {
+    // Creating/revoking a blob URL is real resource-lifecycle synchronization,
+    // not derived state — doing this during render would leak a URL every render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!file) { setPreviewUrl(null); return }
     const url = URL.createObjectURL(file)
     setPreviewUrl(url)
     return () => URL.revokeObjectURL(url)
   }, [file])
 
-  useEffect(() => { rebuildPreviewGraph() }, [chain])
+  useEffect(() => { rebuildPreviewGraph() }, [chain, rebuildPreviewGraph])
   useEffect(() => () => {
     previewAudioRef.current?.pause()
     try { previewSourceRef.current?.disconnect() } catch { /* already disconnected */ }
@@ -141,15 +158,6 @@ export function EffectsRack({ sidecarReady, externalFile, onExternalFileConsumed
 
   function updateParam(i: number, name: string, value: number | string) {
     setChain(c => c.map((e, idx) => idx === i ? { ...e, params: { ...e.params, [name]: value } } : e))
-  }
-
-  function rebuildPreviewGraph() {
-    const ctx = previewCtxRef.current
-    const source = previewSourceRef.current
-    if (!ctx || !source) return
-    try { source.disconnect() } catch { /* no active preview connection */ }
-    const { tail } = makeLiveGraph(ctx, source, chain)
-    tail.connect(ctx.destination)
   }
 
   async function togglePreview() {

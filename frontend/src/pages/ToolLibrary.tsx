@@ -906,6 +906,7 @@ function GpuLoadsCard() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh()
     const t = setInterval(refresh, 8000)
     return () => clearInterval(t)
@@ -1061,19 +1062,22 @@ export function ToolLibrary() {
   const location = useLocation()
 
   const load = async () => {
-    try { setTools(await getTools()) } catch {}
+    try { setTools(await getTools()) } catch (err) { console.warn('Failed to load tools:', err) }
   }
 
+  // Fetch-on-mount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load() }, [])
 
   // Auto-open a tool if navigated here with { state: { openTool: 'id' } }
   useEffect(() => {
     const openToolId = (location.state as any)?.openTool
     if (openToolId && tools.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelected(openToolId)
       setTimeout(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100)
     }
-  }, [location.state, tools.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.state, tools.length])
 
   const selectedTool = tools.find(t => t.id === selected)
   const categories = ['all', ...Object.keys(CATEGORY_META).filter(c => tools.some(t => t.category === c))]

@@ -71,6 +71,7 @@ function ServerBanner({ srv, onStartLocal }: {
     }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => { check() }, [srv.host, srv.port])
 
   const startLocal = async () => {
@@ -172,7 +173,7 @@ function PullProgress({ name, srv, onDone, onError }: {
               setLog(status)
               if (j.total && j.completed) setPct(Math.round((j.completed / j.total) * 100))
               if (status === 'success') { setDone(true); onDone(); return }
-            } catch {}
+            } catch { /* streamed NDJSON line split mid-chunk — wait for the rest */ }
           }
         }
       } catch (e: any) {
@@ -181,6 +182,9 @@ function PullProgress({ name, srv, onDone, onError }: {
     }
     run()
     return () => { cancelled = true }
+    // Mount-only: each PullProgress instance tracks one specific pull (keyed by
+    // tag at the call site), so its target props aren't expected to change mid-pull.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
@@ -232,6 +236,7 @@ export function ModelManager() {
     }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => { load() }, [srv.host, srv.port])
 
   const loadGpuModels = async () => {
@@ -247,15 +252,19 @@ export function ModelManager() {
       setGpuLoading(false)
     }
   }
+  // checkpoints/gpuLoading deliberately left out — they're read only as a
+  // "don't refetch if already loaded/loading" guard, not a trigger.
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => { if (tab === 'gpu' && !checkpoints && !gpuLoading) loadGpuModels() }, [tab])
 
   // Auto-select remote server if servers are loaded and local is likely offline
   useEffect(() => {
     if (servers.length > 0 && !selectedServer) {
       const remote = servers.find(s => s.type === 'ollama' && s.host !== 'localhost' && s.host !== '127.0.0.1')
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (remote) setSelectedServer(remote)
     }
-  }, [servers])
+  }, [servers, selectedServer])
 
   const installedNames = new Set(models.map(m => m.name.split(':')[0]))
 
@@ -279,7 +288,7 @@ export function ModelManager() {
     load()
   }
 
-  const useInChat = (modelName: string) => {
+  const selectModelForChat = (modelName: string) => {
     setActiveModel(modelName)
     setActiveConversationId(null)
     navigate('/chat')
@@ -381,7 +390,7 @@ export function ModelManager() {
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => useInChat(m.name)} style={{ background: isActive ? 'var(--accent)' : 'var(--surface)', border: `1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}`, color: isActive ? '#fff' : 'var(--text)', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <button onClick={() => selectModelForChat(m.name)} style={{ background: isActive ? 'var(--accent)' : 'var(--surface)', border: `1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}`, color: isActive ? '#fff' : 'var(--text)', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
                           <MessageSquare size={12} /> Chat
                         </button>
                         <button onClick={() => del(m.name)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '5px 6px' }}>
@@ -453,7 +462,7 @@ export function ModelManager() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--success)' }}>
                               <Check size={12} /> Installed
                             </div>
-                            <button onClick={() => useInChat(m.tag)} style={{ marginLeft: 'auto', background: 'var(--accent)', border: 'none', color: '#fff', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <button onClick={() => selectModelForChat(m.tag)} style={{ marginLeft: 'auto', background: 'var(--accent)', border: 'none', color: '#fff', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
                               <MessageSquare size={11} /> Chat
                             </button>
                           </>

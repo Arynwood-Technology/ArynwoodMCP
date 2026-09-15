@@ -22,6 +22,9 @@ export function Servers() {
     setPings(map)
   }
 
+  // Fetch-on-mount only — intentionally not re-run when load's own closed-over
+  // state changes later.
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => { load() }, [])
 
   const add = async () => {

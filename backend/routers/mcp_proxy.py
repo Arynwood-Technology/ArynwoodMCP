@@ -4,18 +4,33 @@ Config loaded from mcp/config/mcp_servers.json.
 """
 import json
 import os
+import sys
 from typing import Any, Optional
 
 import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from backend._frozen import user_data_dir
+
 router = APIRouter()
 
-_CONFIG_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "mcp", "config", "mcp_servers.json"
-)
+
+def _config_path() -> str:
+    # Unlike models.json/local_agent/* (bundled app payload, read via
+    # app_base_dir()), mcp_servers.json is personal/gitignored per-install
+    # config (bearer tokens, host-specific URLs) — mutable state, not
+    # something baked into a build. Same split as db.py's _default_db_path():
+    # source checkout keeps the existing mcp/config/ path under the repo
+    # root; a packaged build's install location is read-only (AppImage
+    # squashfs mount, or a non-writable .deb path), so it goes straight in
+    # the writable XDG data dir instead, with no meaningful "mcp/config"
+    # subdir once you're already in a per-app data directory.
+    d = user_data_dir() if getattr(sys, "frozen", False) else os.path.join(user_data_dir(), "mcp", "config")
+    return os.path.join(d, "mcp_servers.json")
+
+
+_CONFIG_PATH = _config_path()
 
 
 def _load_servers() -> dict:

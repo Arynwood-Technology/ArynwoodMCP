@@ -43,9 +43,20 @@ lsof -i :5180
 `mcp/config/mcp_servers.json` (gitignored, personal config) has to actually exist and
 list a reachable Kdenlive MCP server, or every Kdenlive-related question is silently
 skipped with no error message — by design, so a down tool server never breaks normal
-chat. If it's supposed to be configured and isn't working:
+chat. If it's supposed to be configured and isn't working, first confirm the service
+is up:
 ```bash
 systemctl --user status mcp-kdenlive
+```
+then confirm the config file exists with the right shape — the top-level
+`"mcpServers"` key is required, a bare `{"kdenlive": {...}}` object is silently
+read as empty:
+```bash
+cat mcp/config/mcp_servers.json   # source checkout
+cat ~/.local/share/arynwood-mcp/mcp_servers.json   # packaged build
+```
+```json
+{ "mcpServers": { "kdenlive": { "url": "http://127.0.0.1:8420/mcp" } } }
 ```
 
 ## Knowledge base / `!learn` fails

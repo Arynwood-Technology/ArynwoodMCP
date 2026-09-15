@@ -70,6 +70,8 @@ export function JamWithAI({ sidecarReady }: JamWithAIProps) {
     try { setAssets(await getMusicAssets()) }
     catch (e) { setError(e instanceof Error ? e.message : 'Could not load asset library') }
   }
+  // Fetch-on-mount: load the provider list + asset library once.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void loadCapabilities(); void loadAssets() }, [])
 
   // Jam mode only makes sense with a provider that actually listens to the
@@ -81,10 +83,17 @@ export function JamWithAI({ sidecarReady }: JamWithAIProps) {
     [capabilities],
   )
   useEffect(() => {
+    // Picks a default provider once the filtered list arrives; guarded by
+    // !provider so it only fires once and never overrides a user's own pick.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!provider && jamProviders.length) setProvider(jamProviders.find(p => p.installed)?.id ?? jamProviders[0].id)
   }, [jamProviders, provider])
 
+  // Job completion is driven by useMusicJobPoll's background interval, which
+  // writes into useMusicJobStore — this just reacts once one of our own jobs
+  // lands on 'done' and refreshes the library so the new result appears.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (myJobIds.some(id => jobs[id]?.status === 'done')) void loadAssets()
   }, [jobs, myJobIds])
 

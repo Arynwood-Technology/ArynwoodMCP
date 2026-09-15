@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Wand2, Scissors, Captions, Clapperboard, type LucideIcon } from 'lucide-react'
 import { GeneratePanel } from '../components/video/GeneratePanel'
 import { TimelineEditor } from '../components/video/TimelineEditor'
@@ -34,14 +34,14 @@ export function Video() {
 
   const newClipCount = library.filter(item => item.created_at > lastSeenAt).length
   const activeTab = TABS.find(item => item.id === tab)!
-  function openTab(next: Tab) {
+  const openTab = useCallback((next: Tab) => {
     setTab(next)
     if (next === 'editor') {
       const now = Date.now() / 1000
       setLastSeenAt(now)
       localStorage.setItem(LAST_SEEN_KEY, String(now))
     }
-  }
+  }, [])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)' }}>

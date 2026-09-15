@@ -421,6 +421,15 @@ export function Chat() {
   const activeConvRef = useRef<number | null>(null)
   useEffect(() => { activeConvRef.current = activeConversationId }, [activeConversationId])
 
+  const loadConversations = useCallback(async () => {
+    try { setConversations(await getConversations()) } catch (err) { console.warn('Failed to load conversations:', err) }
+  }, [setConversations])
+
+  const loadMessages = useCallback(async (id: number | null) => {
+    if (!id) return
+    try { setMessages(await getMessages(id)) } catch (err) { console.warn('Failed to load messages:', err) }
+  }, [])
+
   // Init WebSocket
   useEffect(() => {
     const ws = new ChatSocket(
@@ -500,19 +509,19 @@ export function Chat() {
     ws.connect()
     wsRef.current = ws
     return () => ws.disconnect()
+    // Deliberately mount-only — reconnecting the WS on every activeConversationId
+    // change would drop the live stream when switching chats. The handler reads
+    // the latest id via activeConvRef instead (see the ref-sync effect above).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const loadConversations = useCallback(async () => {
-    try { setConversations(await getConversations()) } catch {}
-  }, [setConversations])
-
-  const loadMessages = useCallback(async (id: number | null) => {
-    if (!id) return
-    try { setMessages(await getMessages(id)) } catch {}
-  }, [])
-
-  useEffect(() => { loadConversations() }, [loadConversations])
-  useEffect(() => { loadMessages(activeConversationId) }, [activeConversationId, loadMessages])
+  useEffect(() => {
+    loadConversations()
+  }, [loadConversations])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadMessages(activeConversationId)
+  }, [activeConversationId, loadMessages])
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, streamBuffer])
 
   const pickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -433,6 +433,7 @@ export function Social() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAll()
 
     // Listen for OAuth popup completing
@@ -445,6 +446,9 @@ export function Social() {
     }
     window.addEventListener('message', handler)
     return () => window.removeEventListener('message', handler)
+    // Mount-only: fetchAll is intentionally not a dep so this doesn't tear
+    // down and re-subscribe the OAuth-popup message listener every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function connectPlatform(platform: Platform) {

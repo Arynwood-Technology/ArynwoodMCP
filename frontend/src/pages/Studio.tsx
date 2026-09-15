@@ -47,6 +47,7 @@ export function Studio() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchSidecars()
     const t = setInterval(fetchSidecars, 5000)
     return () => clearInterval(t)

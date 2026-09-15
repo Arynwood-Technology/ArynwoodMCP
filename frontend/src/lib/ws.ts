@@ -50,7 +50,9 @@ export class ChatSocket {
     this.ws.onmessage = (e) => {
       try {
         this.onMessage(JSON.parse(e.data))
-      } catch {}
+      } catch (err) {
+        console.warn('Failed to parse chat WS message:', err, e.data)
+      }
     }
   }
 

@@ -260,7 +260,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
       while (next.length < needed) next.push({ type: 'cut', duration: 0.5 })
       return next
     })
-  }, [clips.length])
+  }, [clips.length, setTransitions])
 
   // Captions arrive as a one-shot push from the Captions tab ("Send to
   // Editor") via a prop, not a persisted store — land them on the caption
@@ -322,7 +322,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
         setClips(cur => cur.map(x => x.key === c.key ? { ...x, duration: dur, trimEnd: x.trimEnd ?? dur } : x))
       }
     })
-  }, [clips])
+  }, [clips, setClips])
 
   // Decode each new audio track's real duration + waveform peaks once.
   // Recording pre-seeds peaksByKey/duration itself, so this skips it.
@@ -459,7 +459,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
-  }, [dragKey, pxPerSec])
+  }, [dragKey, pxPerSec, setClips])
 
   // ── Drag-to-reposition (audio tracks — horizontal = offset, vertical = layer order) ─
   function onAudioBlockMouseDown(e: React.MouseEvent, track: AudioTrack) {
@@ -507,7 +507,11 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
-  }, [audioDragKey, pxPerSec])
+    // getSnapPoints/snapSeconds are plain (non-memoized) component functions —
+    // deliberately left out so this drag listener doesn't re-subscribe on
+    // every unrelated render (e.g. playhead advancing during playback).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioDragKey, pxPerSec, setAudioTracks])
 
   // ── Caption-cue drag-to-reposition (both edges move together) ───────────
   function onCaptionBlockMouseDown(e: React.MouseEvent, cue: CaptionCue) {
@@ -537,7 +541,9 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
-  }, [captionDragKey, pxPerSec])
+    // getSnapPoints/snapSeconds deliberately omitted — see the audio-drag effect above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [captionDragKey, pxPerSec, setCaptions])
 
   // ── Trim by dragging clip/audio-track edges ──────────────────────────────
   function onClipHandleMouseDown(e: React.MouseEvent, clip: Clip, edge: 'start' | 'end') {
@@ -640,7 +646,9 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
-  }, [trimDrag, pxPerSec])
+    // getSnapPoints/snapSeconds deliberately omitted — see the audio-drag effect above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trimDrag, pxPerSec, setClips, setAudioTracks, setCaptions])
 
   // ── Razor / split ─────────────────────────────────────────────────────────
   function splitClipAt(clip: Clip, splitPoint: number) {
@@ -1047,6 +1055,8 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
   }
 
   useEffect(() => {
+    // Fetch-on-mount: populate the input-device list once.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshMicDevices()
   }, [])
 

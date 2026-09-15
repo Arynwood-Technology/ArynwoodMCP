@@ -379,8 +379,10 @@ persona has no native tools and streams truly live, unaffected.
 
 ```
 Config file: mcp/config/mcp_servers.json (gitignored, per-install, not guaranteed
-             to exist — its absence silently disables everything below)
-    { "kdenlive": { "url": "http://127.0.0.1:8420/mcp" } }
+             to exist — its absence silently disables everything below. In a
+             packaged build this lives under the XDG data dir instead — see
+             CLAUDE.md's "mcp_servers.json is gitignored" gotcha)
+    { "mcpServers": { "kdenlive": { "url": "http://127.0.0.1:8420/mcp" } } }
 
 GET  /api/mcp/servers              — list configured MCP servers
 GET  /api/mcp/servers/{name}/tools — list tools from that server

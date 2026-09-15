@@ -49,11 +49,16 @@ export function Knowledge() {
     setLoading(false)
   }
 
+  // Fetch-on-mount.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [])
 
   // Re-fetch the source list once this specific job lands, not on every render while
   // it stays 'saved' — keyed on jobId so a later job's completion re-triggers it too.
-  useEffect(() => { if (pdfJob.status === 'saved') load() }, [pdfJob.status, pdfJob.jobId])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (pdfJob.status === 'saved') load()
+  }, [pdfJob.status, pdfJob.jobId])
 
   // Ticks the elapsed-time readout while a parse is in flight; Sycamore doesn't expose
   // real page-level progress (see docs/sycamore-integration-plan.md Phase 4), so an
@@ -220,6 +225,10 @@ export function Knowledge() {
                   {pdfJob.status === 'queued' && `Queued: ${pdfJob.filename}…`}
                   {pdfJob.status === 'running' && (
                     <>Parsing "{pdfJob.filename}" (layout{pdfIsScanned ? ', OCR' : ''}, tables) — {
+                      // Deliberately reads the wall clock each render; the forceTick interval
+                      // above exists specifically to re-render this every second so the
+                      // elapsed count is live.
+                      // eslint-disable-next-line react-hooks/purity
                       pdfJob.startedAt ? Math.round((Date.now() - pdfJob.startedAt) / 1000) : 0
                     }s elapsed…</>
                   )}

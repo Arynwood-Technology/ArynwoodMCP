@@ -57,10 +57,15 @@ export function InstrumentGenerator({ sidecarReady }: InstrumentGeneratorProps) 
     catch (e) { setError(e instanceof Error ? e.message : 'Could not load asset library') }
   }
 
+  // Fetch-on-mount: load the provider list + asset library once.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void loadCapabilities(); void loadAssets() }, [])
 
   useEffect(() => {
+    // Picks a default provider once capabilities arrive; guarded by !provider
+    // so it only fires once and never overrides a user's own selection.
     const provs = capabilities?.providers ?? []
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!provider && provs.length) setProvider(provs.find(p => p.installed)?.id ?? provs[0].id)
   }, [capabilities, provider])
 
@@ -68,6 +73,7 @@ export function InstrumentGenerator({ sidecarReady }: InstrumentGeneratorProps) 
   // writes into useMusicJobStore — this just reacts once one of our own jobs
   // lands on 'done' and refreshes the library so the new result appears.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (myJobIds.some(id => jobs[id]?.status === 'done')) void loadAssets()
   }, [jobs, myJobIds])
 

@@ -7,6 +7,33 @@ Entries before this file existed (everything under "0.4.0" and earlier) are
 reconstructed from git history for context, not a line-by-line commit log — treat
 them as a summary, not a precise record.
 
+## [Unreleased]
+
+### Fixed
+
+- **Kdenlive tool-calling was completely dark in every build**, packaged app
+  included — `mcp/config/mcp_servers.json` didn't exist, so no chat message
+  could ever reach the MCP gate/tool-calling loop regardless of whether
+  `mcp-kdenlive.service` was running. Registered the server and confirmed a
+  live gate-dispatch + tool round-trip end-to-end.
+- **The above also uncovered a packaged-build-only path-resolution bug** in
+  `backend/routers/mcp_proxy.py`: it located its config file via a hand-rolled
+  `__file__`-relative chain that doesn't reliably survive PyInstaller's module
+  repacking (the exact anti-pattern `_frozen.py` exists to replace). Fixed to
+  use the same `app_base_dir()`/`user_data_dir()` split as the database, since
+  this file is personal per-install config, not bundled app payload — a
+  packaged build now reads/writes it from the XDG data dir instead of a
+  read-only path inside the AppImage. The same unmigrated pattern still exists
+  in `music.py`, `lora.py`, `tools.py`, `system.py`, and `gpu_jobs.py` — not
+  yet audited.
+- **59 real correctness bugs in the frontend**, found while auditing the
+  (already-red) ESLint baseline rather than assuming it was all style noise:
+  two `rules-of-hooks` violations, impure calls reachable from render,
+  use-before-declaration closures, silently swallowed errors, and effect/
+  dependency issues across 20 files. `docs/architecture.md` and
+  `docs/troubleshooting.md` also had a stale `mcp_servers.json` example
+  missing its required `mcpServers` wrapper key — fixed.
+
 ## [0.4.2] — 2026-09-11
 
 ### Removed

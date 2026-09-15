@@ -49,6 +49,9 @@ function ScriptToVoice({ onSendToEffects }: { onSendToEffects: (blob: Blob) => v
     finally { setVoicesLoading(false) }
   }
 
+  // Fetch-on-mount only — intentionally not re-run when selectedVoice (read
+  // inside loadVoices) changes later from user selection.
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
   useEffect(() => { void loadVoices() }, [])
 
   async function saveVoice() {

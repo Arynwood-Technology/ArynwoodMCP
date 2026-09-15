@@ -296,7 +296,9 @@ export function Deploy() {
         const r = await fetch(`/api/deploy/targets/${activeId}/upload`, { method: 'POST', body: fd })
         const data = await r.json()
         if (r.ok) results.push(data)
-      } catch { }
+      } catch (err) {
+        console.warn(`Failed to upload ${file.name}:`, err)
+      }
     }
     setLastUpload(results)
     setUploading(false)

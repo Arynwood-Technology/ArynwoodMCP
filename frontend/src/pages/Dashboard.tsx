@@ -100,7 +100,7 @@ function ArynwoodChat() {
       () => setWsReady(false),
     )
     ws.connect(); wsRef.current = ws; return () => ws.disconnect()
-  }, [])
+  }, [setDashConvId, setMsgs])
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -124,7 +124,7 @@ function ArynwoodChat() {
     setInput(''); setAttachment(null); setStreaming(true)
     setMsgs(p => [...p, { id: Date.now(), role: 'user', text: attachment ? `📎 ${attachment.name}${text ? ` — ${text}` : ''}` : text }])
     wsRef.current?.send({ message: fullMessage, persona: 'central', model: activeModel, server_host: activeServer?.host ?? 'localhost', server_port: activeServer?.port ?? 11434, conversation_id: convRef.current ?? undefined })
-  }, [input, attachment, streaming, wsReady, activeServer, activeModel])
+  }, [input, attachment, streaming, wsReady, activeServer, activeModel, setMsgs])
 
   const ollamaServers = servers.filter(s => s.type === 'ollama' && s.enabled)
   const canSend = wsReady && !streaming && (!!input.trim() || !!attachment)
@@ -259,7 +259,8 @@ export function Dashboard() {
       await fetch('/api/system/restart', { method: 'POST' })
       for (let i = 0; i < 30; i++) {
         await new Promise(r => setTimeout(r, 1000))
-        try { const r = await fetch('/api/system/status'); if (r.ok) { setRestarting(false); break } } catch {}
+        // Expected to fail/reject while the backend is down mid-restart — keep polling.
+        try { const r = await fetch('/api/system/status'); if (r.ok) { setRestarting(false); break } } catch { /* backend still restarting */ }
       }
     } catch { setRestarting(false) }
   }
