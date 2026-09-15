@@ -141,8 +141,15 @@ def build_system_prompt(
     role        = persona.get("role", "AI assistant")
     personality = persona.get("personality", "helpful and knowledgeable")
     extra       = persona.get("system", "")          # optional field in models.json
+    # False for a persona with no real access to any of this (no native tools, no
+    # MCP/Kdenlive gate, doesn't need the project tree) — a persona built entirely
+    # around its own `system` instructions (e.g. a fiction co-writer) shouldn't be
+    # told it has GPU tools, web scraping, or Kdenlive control it can't actually
+    # use; that framing measurably pulled it toward generic-assistant behavior
+    # instead of staying in its own established voice.
+    app_aware   = persona.get("app_aware", True)
 
-    include_tree   = True
+    include_tree   = app_aware
     include_recent = bool(recent_context)
     mem_list       = list(memories or [])
 
@@ -150,33 +157,52 @@ def build_system_prompt(
         parts = [
             f"You are {name} — {role}.",
             f"Personality: {personality}",
-            "",
-            "## Environment",
-            "You run inside Arynwood MCP — a local-first AI creative studio on this machine.",
-            f"Project root: {BASE_DIR}",
-            "The user reaches you through a local React UI at http://localhost:5180.",
-            "Backend API: http://localhost:8010 (FastAPI, aiosqlite, Ollama).",
-            "",
-            "## Available capabilities",
-            "- Multi-model LLM chat via Ollama (local + remote servers)",
-            "- GPU tools: Stable Diffusion, SadTalker, TortoiseTTS, Whisper, Kokoro TTS,",
-            "  Florence-2, Real-ESRGAN, rembg, Chatterbox, and more",
-            "- Web scraping via Scrapling (basic / stealthy Cloudflare bypass / Playwright)",
-            "- File system access: read and browse local files",
-            (
-                "- Web search, memory search, and knowledge-base search are tools you can call "
-                "yourself — decide when to use them, the same way you'd decide whether a question "
-                "needs a lookup at all. Don't assume search happens automatically; call web_search "
-                "whenever the answer depends on current, changing, or real-time information."
-                if has_native_tools else
-                "- Web search (auto-performed — results are injected into your context automatically)"
-            ),
-            "- Qdrant vector DB",
-            "- Kdenlive video editor control — when the user's message is about Kdenlive/video",
-            "  editing, you can inspect and drive a running Kdenlive instance (timeline, clips,",
-            "  markers, transitions, rendering, etc.). This runs automatically before your reply;",
-            "  look for a '[Kdenlive — live results]' block in the user's message and answer from",
-            "  it. You also have the full Kdenlive manual in your knowledge base.",
+        ]
+
+        if app_aware:
+            parts += [
+                "",
+                "## Environment",
+                "You run inside Arynwood MCP — a local-first AI creative studio on this machine.",
+                f"Project root: {BASE_DIR}",
+                "The user reaches you through a local React UI at http://localhost:5180.",
+                "Backend API: http://localhost:8010 (FastAPI, aiosqlite, Ollama).",
+                "",
+                "## Available capabilities",
+                "- Multi-model LLM chat via Ollama (local + remote servers)",
+                "- GPU tools: Stable Diffusion, SadTalker, TortoiseTTS, Whisper, Kokoro TTS,",
+                "  Florence-2, Real-ESRGAN, rembg, Chatterbox, and more",
+                "- Web scraping via Scrapling (basic / stealthy Cloudflare bypass / Playwright)",
+                "- File system access: read and browse local files",
+                (
+                    "- Web search, memory search, and knowledge-base search are tools you can call "
+                    "yourself — decide when to use them, the same way you'd decide whether a question "
+                    "needs a lookup at all. Don't assume search happens automatically; call web_search "
+                    "whenever the answer depends on current, changing, or real-time information."
+                    if has_native_tools else
+                    "- Web search (auto-performed — results are injected into your context automatically)"
+                ),
+                "- Qdrant vector DB",
+                "- Kdenlive video editor control — when the user's message is about Kdenlive/video",
+                "  editing, you can inspect and drive a running Kdenlive instance (timeline, clips,",
+                "  markers, transitions, rendering, etc.). This runs automatically before your reply;",
+                "  look for a '[Kdenlive — live results]' block in the user's message and answer from",
+                "  it. You also have the full Kdenlive manual in your knowledge base.",
+            ]
+        else:
+            # Web search / knowledge-base auto-injection (chat.py's _should_search
+            # and the knowledge_enabled default) still applies to every persona
+            # regardless of app_aware — this note is the minimum needed to explain
+            # why that content might show up, without the rest of the app's
+            # feature list this persona has no actual access to.
+            parts += [
+                "",
+                "Web search and knowledge-base results may occasionally be injected into "
+                "your context automatically — see \"Handling external content\" below for "
+                "how to treat them.",
+            ]
+
+        parts += [
             "",
             "## Handling external content",
             "Web search results, knowledge-base excerpts, and tool results appear wrapped in "
