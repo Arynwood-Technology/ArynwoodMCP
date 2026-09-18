@@ -44,7 +44,7 @@ export function Video() {
   }, [])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--bg)' }}>
 
       <div style={{ padding: '18px 24px 0', background: 'linear-gradient(180deg, var(--surface), var(--bg))', borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap', maxWidth: 1280, margin: '0 auto' }}>
@@ -65,9 +65,9 @@ export function Video() {
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: 20, maxWidth: 1320, width: '100%', margin: '0 auto' }}>
-        <div style={{ display: tab === 'generate' ? 'block' : 'none', height: '100%' }}><GeneratePanel onOpenEditor={() => openTab('editor')} /></div>
-        <div style={{ display: tab === 'editor' ? 'block' : 'none', height: '100%' }}><TimelineEditor active={tab === 'editor'} pendingCaptions={pendingCaptions} onCaptionsImported={() => setPendingCaptions(null)} onOpenCaptions={() => openTab('captions')} onOpenGenerate={() => openTab('generate')} /></div>
-        <div style={{ display: tab === 'captions' ? 'block' : 'none', height: '100%' }}><CaptionsPanel onSendToEditor={segments => { setPendingCaptions(segments); openTab('editor') }} /></div>
+        <div style={{ display: tab === 'generate' ? 'block' : 'none', minHeight: '100%' }}><GeneratePanel onOpenEditor={() => openTab('editor')} /></div>
+        <div style={{ display: tab === 'editor' ? 'flex' : 'none', flexDirection: 'column', minHeight: '100%' }}><TimelineEditor active={tab === 'editor'} pendingCaptions={pendingCaptions} onCaptionsImported={() => setPendingCaptions(null)} onOpenCaptions={() => openTab('captions')} onOpenGenerate={() => openTab('generate')} /></div>
+        <div style={{ display: tab === 'captions' ? 'block' : 'none', minHeight: '100%' }}><CaptionsPanel onSendToEditor={segments => { setPendingCaptions(segments); openTab('editor') }} /></div>
       </div>
     </div>
   )

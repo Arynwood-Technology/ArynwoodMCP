@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Scissors, Play, Pause, Mic, Square, Magnet, Trash2, Captions, Sparkles } from 'lucide-react'
+import { planVideoSync } from './previewSync'
 import { useJobPoll } from './useJobPoll'
 import { getVideoLibrary, type VideoLibraryItem } from '../../lib/api'
 import { computePeaks, drawWaveform } from '../../lib/waveform'
@@ -204,6 +205,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
   const previewImgRef = useRef<HTMLImageElement>(null)
   const audioElRefs = useRef<Map<string, HTMLAudioElement>>(new Map())
   const rafRef = useRef<number | null>(null)
+  const lastVideoSeekRef = useRef(0)      // performance.now() of the last drift-correction seek (see previewSync.ts)
   const clockRef = useRef<{ wallStart: number; playheadStart: number } | null>(null)
   const activeClipKeyRef = useRef<string | null>(null)
   const sharedAudioCtxRef = useRef<AudioContext | null>(null)
@@ -828,20 +830,52 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
     // track wasn't playing at all, even though the final render (which does
     // respect the toggle) was correct.
     video.muted = muteClipAudioRef.current
-    video.playbackRate = clip.speed
     if (activeClipKeyRef.current !== clip.key) {
       activeClipKeyRef.current = clip.key
+      video.playbackRate = clip.speed
+      if (video.getAttribute('src') === clip.previewUrl && video.readyState >= 1) {
+        // Same source file as the clip we just left (the two halves of a split, or a duplicated clip):
+        // reassigning src would tear the media down and reload it — readyState 0, a black flash and a
+        // stall at every cut. It's already loaded, so just move to the new position.
+        // The second half of a split continues exactly where the first ended, so usually no seek is needed.
+        if (Math.abs(video.currentTime - sourceTime) > 0.1) {
+          lastVideoSeekRef.current = performance.now()
+          video.currentTime = sourceTime
+        }
+        if (isPlaying && video.paused) video.play().catch(e => reportPreviewError('Video', e))
+        return
+      }
       video.src = clip.previewUrl
       const onReady = () => {
-        video.currentTime = sourceTime
+        // The metadata can arrive well after this frame; aim for where the playhead is NOW, not where it
+        // was when the clip was activated, or the video starts every clip behind and has to catch up.
+        let target = sourceTime
+        const clock = clockRef.current
+        if (isPlaying && clock) {
+          const tNow = clock.playheadStart + (performance.now() - clock.wallStart) / 1000
+          const now = clipAtTime(clipsRef.current, tNow)
+          if (now && now.clip.key === clip.key) target = now.clip.trimStart + (tNow - now.clipStart) * now.clip.speed
+        }
+        video.currentTime = target
         video.playbackRate = clip.speed
         if (isPlaying) video.play().catch(e => reportPreviewError('Video', e))
         video.removeEventListener('loadedmetadata', onReady)
       }
       video.addEventListener('loadedmetadata', onReady)
-    } else if (Math.abs(video.currentTime - sourceTime) > 0.2) {
+      return
+    }
+    // Same clip as last frame: steer toward the playhead without seeking a playing video unless far off.
+    const now = performance.now()
+    const plan = planVideoSync({
+      drift: video.currentTime - sourceTime, isPlaying, seeking: video.seeking,
+      msSinceLastSeek: now - lastVideoSeekRef.current, speed: clip.speed,
+    })
+    if (plan.seek) {
+      lastVideoSeekRef.current = now
       video.currentTime = sourceTime
-    } else if (isPlaying && video.paused) {
+    }
+    if (video.playbackRate !== plan.rate) video.playbackRate = plan.rate     // only on change: ratechange fires per write
+    if (isPlaying && video.paused) {
       video.play().catch(e => reportPreviewError('Video', e))
     } else if (!isPlaying && !video.paused) {
       video.pause()
@@ -1383,7 +1417,10 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
   const downloadFilename = `arynwood-edit-${timestampSlug()}.mp4`
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 12 }}>
+    // flex: 1 0 auto inside a column wrapper: fill the container when there's room, but never shrink below the
+    // content — the surrounding scroll area scrolls instead. A fixed height squeezed the main row and let the
+    // panels below it paint over the timeline in any window shorter than the layout needs.
+    <div style={{ display: 'flex', flexDirection: 'column', flex: '1 0 auto', gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 9, background: 'var(--surface)' }}>
         <strong style={{ fontSize: 12 }}>{clips.length === 0 ? 'Start by importing media from the left.' : 'Project controls'}</strong>
         <span style={{ color: 'var(--text-muted)', fontSize: 12, flex: 1 }}>Trim and arrange here, then add captions and generated shots when you need them.</span>

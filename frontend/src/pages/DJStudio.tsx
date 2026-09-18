@@ -253,7 +253,7 @@ export function DJStudio() {
   const grouped = CATEGORY_ORDER.map(cat => ({ cat, items: tools.filter(t => t.category === cat) })).filter(g => g.items.length > 0)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--bg)' }}>
 
       <div style={{ flex: 1, overflow: 'auto', padding: 24, maxWidth: 980 }}>
 
