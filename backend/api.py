@@ -53,6 +53,7 @@ async def lifespan(app: FastAPI):
     await init_db()
     asyncio.create_task(_backfill_memory_index())
     yield
+    studio.stop_all_sidecars()
 
 
 app = FastAPI(title="Arynwood MCP", version="0.4.2", lifespan=lifespan)

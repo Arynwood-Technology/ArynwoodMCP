@@ -12,7 +12,7 @@ import { request } from '../lib/api'
 type Tab = 'booth' | 'record' | 'generate' | 'jam' | 'stems' | 'voice' | 'effects'
 
 interface SidecarInfo {
-  id: string; label: string; port: number; status: 'running' | 'starting' | 'stopped'
+  id: string; label: string; port: number; status: 'running' | 'starting' | 'failed' | 'stopped'; error?: string
 }
 
 const TABS: { id: Tab; label: string; icon: React.FC<{ size?: number }> }[] = [
@@ -28,6 +28,7 @@ const TABS: { id: Tab; label: string; icon: React.FC<{ size?: number }> }[] = [
 const STATUS_COLOR: Record<string, string> = {
   running:  '#22c55e',
   starting: '#f59e0b',
+  failed:   '#ef4444',
   stopped:  '#6b7280',
 }
 
@@ -89,7 +90,7 @@ export function Studio() {
   const activeSidecar = activeSidecarId ? sidecars[activeSidecarId] : undefined
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--bg)' }}>
 
       {/* Sidecar status bar */}
       <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -97,7 +98,7 @@ export function Studio() {
         {Object.values(sidecars).map(sc => (
           <div key={sc.id} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--surface2)', borderRadius: 6, padding: '4px 10px' }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: STATUS_COLOR[sc.status] ?? '#6b7280', display: 'inline-block', flexShrink: 0 }} />
-            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{sc.label}</span>
+            <span title={sc.error} style={{ fontSize: 11, color: sc.status === 'failed' ? '#fca5a5' : 'var(--text-muted)' }}>{sc.label}</span>
             {loadingSidecar === sc.id ? (
               <Loader2 size={12} style={{ color: 'var(--text-muted)', animation: 'spin 1s linear infinite' }} />
             ) : sc.status === 'running' ? (
@@ -143,6 +144,11 @@ export function Studio() {
           </button>
         </div>
       )}
+      {Object.values(sidecars).filter(sc => sc.status === 'failed').map(sc => (
+        <div key={sc.id} role="alert" style={{ padding: '8px 20px', background: 'rgba(239,68,68,0.09)', borderBottom: '1px solid rgba(239,68,68,0.24)', color: '#fca5a5', fontSize: 12, whiteSpace: 'pre-wrap' }}>
+          {sc.label} stopped unexpectedly{sc.error ? `: ${sc.error}` : '.'}
+        </div>
+      ))}
       {sidecarError && (
         <div role="alert" style={{ padding: '8px 20px', background: 'rgba(239,68,68,0.09)', borderBottom: '1px solid rgba(239,68,68,0.24)', color: '#fca5a5', fontSize: 12 }}>
           Service action failed: {sidecarError}

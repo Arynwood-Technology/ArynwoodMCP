@@ -17,6 +17,7 @@ and GPU-queue-coordinated, unlike this router's stateless proxy pattern.
 import asyncio
 import os
 import subprocess
+import time
 from typing import Literal
 
 import httpx
@@ -24,6 +25,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Background
 from fastapi.responses import Response, StreamingResponse
 
 from backend import external_paths
+from backend._frozen import die_with_parent, sanitize_environ_for_children, xdg_data_dir
 
 router = APIRouter()
 
@@ -64,6 +66,32 @@ SIDECARS: dict[str, dict] = {
 
 # Running subprocess handles
 _procs: dict[str, subprocess.Popen] = {}
+# sidecar id -> {"code": exit code, "error": last log lines} for one that died. Kept until it is
+# started again or stopped, so the UI can say WHY instead of silently reverting to "stopped".
+_failures: dict[str, dict] = {}
+
+# Per-user, never inside the repo. Each sidecar's stdout+stderr go to sidecar-<id>.log here.
+LOG_DIR = os.path.join(xdg_data_dir(), "logs")
+# How long start waits to catch an instant crash (a bad interpreter, a missing import) before
+# reporting "starting". A healthy sidecar is still importing at this point and keeps running.
+STARTUP_GRACE_SECONDS = 1.5
+
+
+def _log_path(sidecar_id: str) -> str:
+    return os.path.join(LOG_DIR, f"sidecar-{sidecar_id}.log")
+
+
+def _log_tail(sidecar_id: str, lines: int = 6) -> str:
+    """The last few non-empty lines of a sidecar's log — where a crash explains itself."""
+    try:
+        with open(_log_path(sidecar_id), "rb") as f:
+            f.seek(0, os.SEEK_END)
+            f.seek(max(0, f.tell() - 4000))
+            text = f.read().decode("utf-8", "replace")
+    except OSError:
+        return ""
+    kept = [ln.rstrip() for ln in text.splitlines() if ln.strip()]
+    return "\n".join(kept[-lines:])
 
 
 def _sidecar_url(sidecar_id: str) -> str:
@@ -73,7 +101,7 @@ def _sidecar_url(sidecar_id: str) -> str:
 
 
 async def _ping(sidecar_id: str) -> str:
-    """Return 'running', 'starting', or 'stopped' for a sidecar by hitting its /health endpoint."""
+    """Return 'running', 'starting', 'failed' or 'stopped' for a sidecar by hitting its /health endpoint."""
     url = _sidecar_url(sidecar_id)
     try:
         async with httpx.AsyncClient(timeout=2.0) as client:
@@ -84,9 +112,13 @@ async def _ping(sidecar_id: str) -> str:
         pass
     # Check if we launched it (may still be starting)
     proc = _procs.get(sidecar_id)
-    if proc and proc.poll() is None:
-        return "starting"
-    return "stopped"
+    if proc:
+        code = proc.poll()
+        if code is None:
+            return "starting"
+        if code != 0 and sidecar_id not in _failures:      # died after start reported success
+            _failures[sidecar_id] = {"code": code, "error": _log_tail(sidecar_id)}
+    return "failed" if sidecar_id in _failures else "stopped"
 
 
 # ── Sidecar management ────────────────────────────────────────────────────────
@@ -97,7 +129,10 @@ async def get_sidecars():
     results = {}
     for sid, cfg in SIDECARS.items():
         status = await _ping(sid)
-        results[sid] = {"id": sid, "label": cfg["label"], "port": cfg["port"], "status": status}
+        info = {"id": sid, "label": cfg["label"], "port": cfg["port"], "status": status}
+        if status == "failed":
+            info["error"] = _failures[sid]["error"] or f"exited with code {_failures[sid]['code']}"
+        results[sid] = info
     return results
 
 
@@ -121,15 +156,32 @@ async def start_sidecar(sidecar_id: str):
         raise HTTPException(500, f"Sidecar script not found: {script}")
 
     env = os.environ.copy()
+    sanitize_environ_for_children(env)      # a packaged backend's own PYTHONHOME etc. kill a child Python
     env["PORT"] = str(cfg["port"])
-    proc = subprocess.Popen(
-        [python, script],
-        cwd=MUSICSTUDIO_DIR,
-        env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+
+    _failures.pop(sidecar_id, None)
+    os.makedirs(LOG_DIR, exist_ok=True)
+    with open(_log_path(sidecar_id), "ab") as log:
+        log.write(f"\n--- start {time.strftime('%Y-%m-%d %H:%M:%S')} ---\n".encode())
+        log.flush()
+        proc = subprocess.Popen(
+            [python, script],
+            cwd=MUSICSTUDIO_DIR,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=log,
+            stderr=subprocess.STDOUT,
+            preexec_fn=die_with_parent,     # never outlive this backend: it would keep its port and GPU memory
+        )
     _procs[sidecar_id] = proc
+
+    # Catch an instant crash and report its reason now, rather than letting the status quietly flip back.
+    await asyncio.sleep(STARTUP_GRACE_SECONDS)
+    code = proc.poll()
+    if code is not None:
+        tail = _log_tail(sidecar_id)
+        _failures[sidecar_id] = {"code": code, "error": tail}
+        raise HTTPException(500, f"{cfg['label']} exited immediately (code {code}). {tail}".strip())
     return {"status": "starting", "pid": proc.pid}
 
 
@@ -138,7 +190,16 @@ async def stop_sidecar(sidecar_id: str):
     """POST /sidecars/{id}/stop — terminate a running sidecar process."""
     if sidecar_id not in SIDECARS:
         raise HTTPException(404, "Unknown sidecar")
+    _failures.pop(sidecar_id, None)
     proc = _procs.pop(sidecar_id, None)
+    if proc is None and await _ping(sidecar_id) == "running":
+        # Answering health but not ours: started from a terminal, or by another app instance. Saying
+        # "stopped" here would be a lie — it is still running and still holding its GPU memory.
+        raise HTTPException(
+            409,
+            f"{SIDECARS[sidecar_id]['label']} is running on port {SIDECARS[sidecar_id]['port']} but wasn't started "
+            "by this app, so it can't be stopped from here. Stop that process yourself.",
+        )
     if proc and proc.poll() is None:
         proc.terminate()
         try:
@@ -146,6 +207,15 @@ async def stop_sidecar(sidecar_id: str):
         except subprocess.TimeoutExpired:
             proc.kill()
     return {"status": "stopped"}
+
+
+def stop_all_sidecars() -> None:
+    """Terminate every sidecar this process started (called on a graceful backend shutdown; a hard kill is
+    covered by die_with_parent)."""
+    for proc in list(_procs.values()):
+        if proc.poll() is None:
+            proc.terminate()
+    _procs.clear()
 
 
 # ── Stem Separation (:8004) ───────────────────────────────────────────────────

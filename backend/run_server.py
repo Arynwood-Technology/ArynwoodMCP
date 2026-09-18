@@ -17,9 +17,14 @@ import uvicorn
 # ModuleNotFoundError: No module named 'backend' from inside the built binary). A
 # plain `import` statement goes through PyInstaller's own frozen import machinery
 # instead and works fine.
+from backend._frozen import die_with_parent, sanitize_environ_for_children
 from backend.api import app
 
 if __name__ == "__main__":
+    # Before anything can spawn a child: the AppImage/PyInstaller environment is meant for this process
+    # only, and breaks every sidecar and GPU-tool subprocess (see sanitize_environ_for_children).
+    sanitize_environ_for_children()
+    die_with_parent()      # the shell hard-kills its bootloader on quit; don't be left squatting :8010
     host = os.environ.get("ARYNWOOD_BIND_HOST", "127.0.0.1")
     port = int(os.environ.get("ARYNWOOD_BACKEND_PORT", "8010"))
     uvicorn.run(app, host=host, port=port, reload=False)

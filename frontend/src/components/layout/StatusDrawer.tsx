@@ -252,8 +252,10 @@ function DrawerBody() {
                   <StatusRow
                     key={sc.id} label={sc.label}
                     state={running ? 'ok' : 'down'}
-                    detail={`port ${sc.port} · ${sc.status}`}
-                    fix="Start it here; if that fails the venv is probably missing — see MusicStudio/CLAUDE.md."
+                    detail={sc.status === 'failed' && sc.error ? `port ${sc.port} · crashed: ${sc.error.split('\n').slice(-2).join(' ')}` : `port ${sc.port} · ${sc.status}`}
+                    fix={sc.status === 'failed'
+                      ? `It crashed on start. Full log: ~/.local/share/arynwood-mcp/logs/sidecar-${sc.id}.log`
+                      : 'Start it here; if that fails the venv is probably missing — see MusicStudio/CLAUDE.md.'}
                     action={running ? undefined : (
                       <Button size="sm" variant="outline"
                         onClick={() => { startSidecar(sc.id).catch(() => {}); setTimeout(() => refresh(true), 2500) }}>

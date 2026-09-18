@@ -28,7 +28,8 @@ export interface McpServerInfo { name: string; url: string }
 export const getMcpServers = () => request<McpServerInfo[]>('/mcp/servers')
 
 // MusicStudio sidecars (stem separation, RVC, effects, song-gen)
-export interface Sidecar { id: string; label: string; port: number; status: string }
+/** `failed` = it started and died; `error` is the tail of its log, so the UI can say why. */
+export interface Sidecar { id: string; label: string; port: number; status: 'running' | 'starting' | 'failed' | 'stopped'; error?: string }
 export const getSidecars = () => request<Record<string, Sidecar>>('/studio/sidecars')
 export const startSidecar = (id: string) =>
   request<{ status: string }>(`/studio/sidecars/${id}/start`, { method: 'POST' })
