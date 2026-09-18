@@ -1,4 +1,5 @@
 import asyncio
+import math
 import json
 import os
 import shutil
@@ -12,7 +13,7 @@ from urllib.parse import urlparse
 import httpx
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 
 from backend.services.gpu_jobs import (
     APP_DIR, DATA_DIR, _jobs, gpu_queue, _new_job, _newest_file,
@@ -70,16 +71,25 @@ _LOOK_PRESETS = {
 
 def _atempo_chain(speed: float) -> str:
     """ffmpeg's atempo filter only accepts a 0.5-2.0 ratio per instance —
-    decompose an arbitrary positive speed into a chain of atempo stages
-    whose product equals it (e.g. 4.0 -> atempo=2.0,atempo=2.0)."""
+    decompose a positive, finite speed into a chain of atempo stages
+    whose product equals it (e.g. 4.0 -> atempo=2.0,atempo=2.0).
+
+    Refuses anything else: for 0, a negative or NaN speed the loops below never terminate (this runs
+    synchronously on the event loop, so one bad request froze the whole backend while the stage list
+    grew to ~19 GB). The loops are also bounded, as a second line of defence."""
+    if not math.isfinite(speed) or speed <= 0:
+        raise ValueError(f"speed must be a positive, finite number, got {speed!r}")
     stages = []
     remaining = speed
-    while remaining > 2.0:
-        stages.append(2.0)
-        remaining /= 2.0
-    while remaining < 0.5:
-        stages.append(0.5)
-        remaining /= 0.5
+    for _ in range(64):
+        if remaining > 2.0:
+            stages.append(2.0)
+            remaining /= 2.0
+        elif remaining < 0.5:
+            stages.append(0.5)
+            remaining /= 0.5
+        else:
+            break
     stages.append(remaining)
     return ",".join(f"atempo={s}" for s in stages)
 
@@ -275,27 +285,49 @@ async def music_proxy(url: str):
 
 # ── Editor (trim + stitch) ───────────────────────────────────────────────────
 
+# Bounds are generous (the UI offers 0.25x-4x and real timelines) but finite: these numbers go straight into
+# ffmpeg filter graphs and loops, so nonsense is rejected at the door with a 400 rather than discovered later.
+MIN_SPEED, MAX_SPEED = 0.1, 16.0
+MAX_SECONDS = 36_000.0     # 10 hours — a bound, not a promise
+
+
+def _seconds(default=None, *, gt=None, ge=None):
+    return Field(default, gt=gt, ge=ge, le=MAX_SECONDS, allow_inf_nan=False)
+
+
 class EditClip(BaseModel):
     source_type: str  # "job" | "upload"
     source_id: str    # job_id, or upload index (as a string) into `files`
-    trim_start: Optional[float] = None
-    trim_end: Optional[float] = None
+    trim_start: Optional[float] = _seconds(ge=0)
+    trim_end: Optional[float] = _seconds(gt=0)
     is_photo: bool = False  # static image (jpeg/png/webp) — looped to fill trim duration, never has audio
     look: str = "none"      # cinematic look preset id, see _LOOK_PRESETS
-    speed: float = 1.0      # playback rate; trim_start/trim_end stay in source time, on-timeline duration is (trim_end-trim_start)/speed
+    speed: float = Field(1.0, ge=MIN_SPEED, le=MAX_SPEED, allow_inf_nan=False)  # playback rate; trim_start/trim_end stay in source time, on-timeline duration is (trim_end-trim_start)/speed
+
+    @model_validator(mode="after")
+    def _trim_end_after_start(self):
+        if self.trim_start is not None and self.trim_end is not None and self.trim_end <= self.trim_start:
+            raise ValueError("trim_end must be greater than trim_start")
+        return self
 
 
 class EditTransition(BaseModel):
     type: str = "cut"  # "cut" | "fade" | "slideleft" | "slideup"
-    duration: float = 0.5
+    duration: float = Field(0.5, gt=0, le=30, allow_inf_nan=False)
 
 
 class EditAudioTrack(BaseModel):
     source_id: str              # index into audio_files, as a string
-    offset: float = 0.0         # seconds from timeline start
-    trim_start: Optional[float] = None
-    trim_end: Optional[float] = None
-    volume: float = 1.0
+    offset: float = Field(0.0, ge=0, le=MAX_SECONDS, allow_inf_nan=False)   # seconds from timeline start
+    trim_start: Optional[float] = _seconds(ge=0)
+    trim_end: Optional[float] = _seconds(gt=0)
+    volume: float = Field(1.0, ge=0, le=10, allow_inf_nan=False)
+
+    @model_validator(mode="after")
+    def _trim_end_after_start(self):
+        if self.trim_start is not None and self.trim_end is not None and self.trim_end <= self.trim_start:
+            raise ValueError("trim_end must be greater than trim_start")
+        return self
 
 
 @router.post("/edit/jobs")
