@@ -120,7 +120,7 @@ kept warm.
   `tools.py` referencing it, and rembg is similarly never-set-up — this "convention" is
   aspirational, not proven. The pattern that's actually real and working on this box is
   Option C's cousin: **every genuinely heavy ML tool gets its own dedicated venv**
-  (`/home/lorelei/tools/whisper-venv`, `chatterbox-venv`, `AnimateDiff`, `LTX-Video`,
+  (`~/tools/whisper-venv`, `chatterbox-venv`, `AnimateDiff`, `LTX-Video`,
   `sad-talker`), invoked by subprocess — exactly `scripts/run_whisper.py`'s shape. Sycamore
   followed that proven precedent, not the unproven one (see Phase 1).
 

@@ -25,7 +25,7 @@ import logging
 from backend.db import init_db, DB_PATH
 from backend.services.auth import ApiKeyMiddleware
 from backend.services import memory_index
-from backend.routers import chat, ollama, servers, tools, system, deploy, fs, memory, mcp_proxy, knowledge, studio, social, lora, video, models, music, dj, projects
+from backend.routers import chat, ollama, servers, tools, system, deploy, fs, memory, mcp_proxy, mcp_codebase, knowledge, studio, social, lora, video, models, music, dj, projects
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +125,11 @@ app.include_router(deploy.router, prefix="/api/deploy", tags=["deploy"])
 app.include_router(fs.router, prefix="/api/fs", tags=["fs"])
 app.include_router(memory.router, prefix="/api/memory", tags=["memory"])
 app.include_router(mcp_proxy.router, prefix="/api/mcp", tags=["mcp"])
+# Opt-in developer feature: search/read/run-tests/apply-patch over this app's own source tree.
+# The endpoint itself can't tell an approved call from a raw request (approval lives in the chat
+# tool loop), so it is off unless ARYNWOOD_ENABLE_CODEBASE_TOOLS=1 — and inert when packaged.
+if os.environ.get("ARYNWOOD_ENABLE_CODEBASE_TOOLS") == "1":
+    app.include_router(mcp_codebase.router, prefix="/api/mcp-codebase", tags=["mcp-codebase"])
 app.include_router(knowledge.router, prefix="/api/knowledge", tags=["knowledge"])
 app.include_router(studio.router,   prefix="/api/studio",    tags=["studio"])
 app.include_router(social.router,   prefix="/api/social",    tags=["social"])

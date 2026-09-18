@@ -312,7 +312,7 @@ Register multiple Ollama or OpenAI-compatible endpoints.
 
 ### Studio
 
-Audio production tools powered by the [MusicStudio](https://github.com/arynwood/MusicStudio) sidecars. The sidecars are independent FastAPI servers that live in `/home/lorelei/GitHub/MusicStudio/sidecars/` and are proxied through the Arynwood MCP backend.
+Audio production tools powered by the [MusicStudio](https://github.com/arynwood/MusicStudio) sidecars. The sidecars are independent FastAPI servers that live in `~/GitHub/MusicStudio/sidecars/` and are proxied through the Arynwood MCP backend.
 
 The Studio page shows a **sidecar status bar** at the top with live health polling every 5 seconds. Each sidecar can be started and stopped directly from the UI using the ▶ / ■ buttons.
 
@@ -549,7 +549,7 @@ SQLite at `config/arynwood.db`. Created automatically on first run.
 
 ### One-time venv setup
 
-Each sidecar needs its own Python virtual environment. These are set up once in the MusicStudio directory at `/home/lorelei/GitHub/MusicStudio`.
+Each sidecar needs its own Python virtual environment. These are set up once in the MusicStudio directory at `~/GitHub/MusicStudio`.
 
 #### audio-fx sidecar (port 8002)
 
@@ -558,7 +558,7 @@ Provides: Pedalboard effects, Matchering mastering, Basic Pitch MIDI transcripti
 > **Must use Python 3.11** - Basic Pitch requires tensorflow <2.15.1 which tops out at Python 3.11.
 
 ```bash
-cd /home/lorelei/GitHub/MusicStudio
+cd ~/GitHub/MusicStudio
 python3.11 -m venv sidecars/audio-fx/venv
 source sidecars/audio-fx/venv/bin/activate
 pip install setuptools<70
@@ -572,7 +572,7 @@ Note: install `pedalboard>=0.7.7,<0.9.0` - newer versions require AVX2 CPU instr
 Provides: Demucs v4 stem separation, Spleeter (2/4/6 stems).
 
 ```bash
-cd /home/lorelei/GitHub/MusicStudio
+cd ~/GitHub/MusicStudio
 python3 -m venv sidecars/stem-sep/venv
 source sidecars/stem-sep/venv/bin/activate
 pip install -r sidecars/stem-sep/requirements.txt
@@ -587,7 +587,7 @@ Provides: RVC v3 voice conversion.
 > **Must use Python 3.11** - rvc-python pins numpy ≤1.23.5 and fairseq == 0.12.2, neither builds on Python 3.12.
 
 ```bash
-cd /home/lorelei/GitHub/MusicStudio
+cd ~/GitHub/MusicStudio
 python3.11 -m venv sidecars/voice/venv
 source sidecars/voice/venv/bin/activate
 pip install "pip<24.1"
@@ -601,7 +601,7 @@ Voice models are not included - import your own trained RVC `.pth` checkpoints v
 Provides: faster-whisper captions, silence/auto-cut detection.
 
 ```bash
-cd /home/lorelei/GitHub/MusicStudio
+cd ~/GitHub/MusicStudio
 python3 -m venv sidecars/video-ai/venv
 source sidecars/video-ai/venv/bin/activate
 pip install -r sidecars/video-ai/requirements.txt
@@ -614,7 +614,7 @@ Provides: AI music generation - ACE-Step v1 (text-to-music, Apache-2.0) and Musi
 > **Two separate venvs, not one.** MusicGen's own torch pin (2.1.x) is incompatible with the torch 2.10.x ACE-Step needs - installing both into one venv breaks ACE-Step outright. `setup_song_gen.sh` builds `venv/` (ACE-Step) and `venv-musicgen/` (MusicGen) separately; MusicGen runs as a subprocess dispatched from the main sidecar process, not imported in-process.
 
 ```bash
-cd /home/lorelei/GitHub/MusicStudio/sidecars/song-gen
+cd ~/GitHub/MusicStudio/sidecars/song-gen
 ./setup_song_gen.sh                  # base only - sidecar starts, both providers report installed:false
 ./setup_song_gen.sh --with-acestep   # + ACE-Step v1 checkpoint (multi-GB download, confirmed before starting)
 ./setup_song_gen.sh --with-musicgen  # + MusicGen checkpoint (~1.2GB, confirmed before starting)
@@ -628,7 +628,7 @@ Neither model downloads automatically - each `--with-*` flag prints what it's ab
 
 **Manually (for debugging output):**
 ```bash
-cd /home/lorelei/GitHub/MusicStudio
+cd ~/GitHub/MusicStudio
 
 # Run each in a separate terminal with its venv active:
 source sidecars/audio-fx/venv/bin/activate && PORT=8002 python3 sidecars/audio-fx/main.py

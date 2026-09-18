@@ -162,7 +162,7 @@ export function VoiceConversion({ sidecarReady, externalFile, onExternalFileCons
       <details style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
         <summary style={{ cursor: 'pointer', color: 'var(--text-muted)', fontSize: 12, fontWeight: 600 }}>Profile Library — import a finished RVC voice model</summary>
         <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 8, background: 'rgba(124,110,247,.08)', border: '1px solid rgba(124,110,247,.2)', fontSize: 12, lineHeight: 1.5, color: 'var(--text-muted)' }}>
-          <strong style={{ color: 'var(--text)' }}>This is not the training step.</strong> Import accepts a trained RVC <code>.pth</code> checkpoint (plus its optional <code>.index</code>). A recording such as <code>lorelei1.wav</code> is used to train that model first.
+          <strong style={{ color: 'var(--text)' }}>This is not the training step.</strong> Import accepts a trained RVC <code>.pth</code> checkpoint (plus its optional <code>.index</code>). A recording of the voice (for example <code>my-voice.wav</code>) is used to train that model first.
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginTop: 12 }}>
           <input value={importName} onChange={event => setImportName(event.target.value)} placeholder="Profile name" aria-label="Profile name" style={{ width: 150 }} />
@@ -170,7 +170,7 @@ export function VoiceConversion({ sidecarReady, externalFile, onExternalFileCons
           <button type="button" style={button} onClick={() => indexRef.current?.click()}>{importIndex ? '✓ ' + importIndex.name : 'Optional .index'}</button>
           <button type="button" style={{ ...button, background: importing ? 'var(--surface2)' : 'var(--accent)', borderColor: importing ? 'var(--border)' : 'var(--accent)', color: importing ? 'var(--text-muted)' : '#fff', opacity: importReady || importing ? 1 : .55 }} disabled={importing} onClick={importModel}>{importing ? 'Importing…' : importReady ? 'Import trained profile' : 'Choose a .pth to import'}</button>
         </div>
-        <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--text-muted)' }}>To create Lorelei from your recording: train an RVC model first, then return here and select the exported <code>weights/lorelei.pth</code>.</p>
+        <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--text-muted)' }}>To create a voice profile from your own recording: train an RVC model first, then return here and select the exported <code>weights/your-voice.pth</code>.</p>
         {models.length > 0 && <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>{models.map(model => <span key={model.name} style={{ padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 11 }}>{model.name} <button type="button" onClick={() => deleteModel(model.name)} style={{ marginLeft: 5, border: 'none', background: 'none', color: 'var(--danger)', cursor: 'pointer' }}>×</button></span>)}</div>}
       </details>
     </div>

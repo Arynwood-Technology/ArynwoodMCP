@@ -37,7 +37,7 @@ def _open_sftp(target: dict) -> tuple[paramiko.SSHClient, paramiko.SFTPClient]:
         "username": target.get("username", "root"),
         "timeout": 12,
     }
-    key_path = target.get("ssh_key_path") or ""
+    key_path = os.path.expanduser(target.get("ssh_key_path") or "")
     if key_path and os.path.exists(key_path):
         kwargs["key_filename"] = key_path
     elif target.get("password"):

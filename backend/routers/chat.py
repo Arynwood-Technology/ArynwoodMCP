@@ -36,6 +36,24 @@ MAX_HISTORY = 30
 # Raise this if VRAM contention with A1111 hasn't been a problem in practice.
 MAX_NUM_CTX = 8192
 
+# When the codebase MCP server (backend/routers/mcp_codebase.py) actually fires
+# for this turn, central's own reply call gets more headroom than the default
+# ceiling — tool-result content (file contents, search hits, diffs) has already
+# been appended to the user's message by the time this applies, and 8192 can
+# squeeze that out along with the reply itself.
+#
+# Originally set to 16384, reasoning that the smaller-model personas already validated
+# that number on this exact 12GB card — wrong: their num_ctx precedent doesn't transfer
+# here, because they run much smaller models (hermes3:8b-class) than central's
+# qwen2.5-coder:14b. Confirmed live via `ollama ps`: at 16384,
+# qwen2.5-coder:14b needs ~14GB total (9GB weights + ~5GB KV-cache) — more than
+# this card has — forcing partial CPU offload (observed 80%/20% GPU/CPU) that
+# turned a routine question into a 200+ second reply. MAX_TOOL_NUM_CTX (below)
+# is the actually-proven ceiling for this specific model on this specific card —
+# already used all day for the tool-calling loop without this problem — so reuse
+# that instead of a number borrowed from a different model's VRAM math.
+CODEBASE_REPLY_NUM_CTX = mcp_tool_agent.MAX_TOOL_NUM_CTX
+
 
 def _persona_num_ctx(persona: dict) -> int:
     """A persona's own models.json entry can set llm.num_ctx to override
@@ -173,7 +191,6 @@ def build_system_prompt(
                 "- GPU tools: Stable Diffusion, SadTalker, TortoiseTTS, Whisper, Kokoro TTS,",
                 "  Florence-2, Real-ESRGAN, rembg, Chatterbox, and more",
                 "- Web scraping via Scrapling (basic / stealthy Cloudflare bypass / Playwright)",
-                "- File system access: read and browse local files",
                 (
                     "- Web search, memory search, and knowledge-base search are tools you can call "
                     "yourself — decide when to use them, the same way you'd decide whether a question "
@@ -188,6 +205,11 @@ def build_system_prompt(
                 "  markers, transitions, rendering, etc.). This runs automatically before your reply;",
                 "  look for a '[Kdenlive — live results]' block in the user's message and answer from",
                 "  it. You also have the full Kdenlive manual in your knowledge base.",
+                "- Codebase awareness — for questions about this app's own source code (a bug, how",
+                "  something's implemented, tracing a request), you can search, read, and (with",
+                "  approval) patch this repo directly. This runs automatically before your reply;",
+                "  look for a '[Codebase — live results]' block in the user's message and answer from",
+                "  it, citing real file paths and line numbers rather than guessing.",
             ]
         else:
             # Web search / knowledge-base auto-injection (chat.py's _should_search
@@ -260,7 +282,16 @@ def build_system_prompt(
                     parts.append("")
 
         if include_recent and recent_context:
-            parts += ["", "## Recent conversation context", recent_context, ""]
+            parts += [
+                "", "## Recent conversation context",
+                "For continuity awareness only — these are snippets from OTHER recent "
+                "conversations, not the one happening now. Never copy their exact "
+                "wording into your answer here just because a phrase sounded good; a "
+                "reason or explanation that fit one question can be nonsense for a "
+                "different one even if the topics feel similar. Use this to remember "
+                "what's been going on, not as a template to reuse.",
+                recent_context, "",
+            ]
 
         if custom_context:
             parts += ["", "## User notes (set in Agent Config)", custom_context]
@@ -682,13 +713,16 @@ def _should_search(message: str) -> bool:
 # "search the web" is exactly the kind of thing that should be an on-demand
 # decision rather than an always-on guess.
 #
-# Scoped to central only for now: it's the one persona whose configured model
+# Originally central-only: it's the persona whose configured model
 # (qwen2.5-coder:14b) is the same model mcp_tool_agent's side-loop already relies on
-# for reliable tool-calling — the other personas' models (plain qwen2.5, and
-# whatever else gets configured in models.json) haven't been verified to call
-# tools as reliably, per this codebase's own existing note on why
-# mcp_tool_agent uses a fixed model at all.
-NATIVE_TOOLS_PERSONAS = {"central"}
+# for reliable tool-calling — a model not verified to call tools reliably shouldn't
+# be added here regardless of whether it has a matching tool to call. glyph added on
+# that same basis: it also runs qwen2.5-coder:14b (see models.json) and now has a
+# real reason to need it (generate_spreadsheet, below). doc and estra run that same
+# model too but have no tool that does anything for them yet, so there's nothing to
+# gain by adding them — kona runs hermes3:8b, unverified for this. Add a persona here
+# only when both hold: its model is qwen2.5-coder:14b, and it has an actual reason to.
+NATIVE_TOOLS_PERSONAS = {"central", "glyph"}
 NATIVE_TOOLS_MAX_ROUNDS = 4
 
 _NATIVE_TOOLS = [
@@ -728,6 +762,45 @@ _NATIVE_TOOLS = [
                 "real-time information — you can, via this tool."
             ),
             "parameters": {"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "generate_spreadsheet",
+            "description": (
+                "Generate a real, downloadable, professionally-styled .xlsx spreadsheet "
+                "(Arynwood-branded formatting: colored header, banded rows, real number/"
+                "currency formatting, optional total row) and get back a download link. "
+                "Call this directly whenever someone wants an actual spreadsheet — don't "
+                "write openpyxl code by hand for them, this does the styling correctly "
+                "every time instead of leaving it to be regenerated (and re-broken)."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "Short title, used as the filename and sheet name."},
+                    "headers": {"type": "array", "items": {"type": "string"}, "description": "Column headers, in order."},
+                    "rows": {
+                        "type": "array",
+                        "items": {"type": "array"},
+                        "description": "Data rows — each an array of values in the same order as headers.",
+                    },
+                    "number_columns": {
+                        "type": "array", "items": {"type": "string"},
+                        "description": "Header names to format with comma-grouped numbers (e.g. 1,234).",
+                    },
+                    "currency_columns": {
+                        "type": "array", "items": {"type": "string"},
+                        "description": "Header names to format as currency (e.g. $1,234.00).",
+                    },
+                    "total_row": {
+                        "type": "boolean",
+                        "description": "Add a totals row summing every numeric/currency column. Defaults to false.",
+                    },
+                },
+                "required": ["title", "headers", "rows"],
+            },
         },
     },
 ]
@@ -780,6 +853,27 @@ async def _call_native_tool(name: str, arguments: dict, db) -> str:
     if name == "web_search":
         result = await _web_search(query)
         return result or "No web results found."
+    if name == "generate_spreadsheet":
+        from backend.services import spreadsheet_gen
+        args = arguments or {}
+        try:
+            filename, _ = spreadsheet_gen.build_spreadsheet(
+                title=args.get("title", "Spreadsheet"),
+                headers=args.get("headers") or [],
+                rows=args.get("rows") or [],
+                number_columns=args.get("number_columns"),
+                currency_columns=args.get("currency_columns"),
+                total_row=bool(args.get("total_row", False)),
+            )
+        except spreadsheet_gen.SpreadsheetError as e:
+            return f"INVALID CALL to generate_spreadsheet: {e}. Fix the arguments and call it again."
+        # Hardcoded host:port, not derived from the request — matches this app's
+        # own documented canonical pair (CLAUDE.md: App :5180 / API :8010) and the
+        # same convention already used for mcp_servers.json's self-registered
+        # codebase server; the browser resolves this against the backend's real
+        # origin regardless of how the frontend itself was reached.
+        url = f"http://localhost:8010/api/tools/spreadsheets/{filename}"
+        return f"Spreadsheet ready: [Download {args.get('title', 'Spreadsheet')}.xlsx]({url})"
     return f"Unknown tool: {name}"
 
 
@@ -1191,6 +1285,8 @@ async def chat_ws(websocket: WebSocket):
                 )
                 if tool_ctx:
                     messages[-1]["content"] = messages[-1]["content"] + "\n\n" + _untrusted_block("tool results", tool_ctx)
+                if "Codebase" in tool_servers_used:
+                    num_ctx = min(native_ctx, CODEBASE_REPLY_NUM_CTX)
 
             if used_web_search or kb_hits or tool_servers_used:
                 await websocket.send_json({

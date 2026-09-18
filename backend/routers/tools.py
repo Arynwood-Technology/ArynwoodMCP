@@ -1272,6 +1272,27 @@ async def download_job_file(job_id: str, filename: str):
     return _job_file_response(job_id, filename)
 
 
+@router.get("/spreadsheets/{filename}")
+async def download_spreadsheet(filename: str):
+    """GET /spreadsheets/{filename} — download a spreadsheet built by the
+    generate_spreadsheet native tool (backend/services/spreadsheet_gen.py). No
+    job/id indirection needed here (generation is synchronous, not GPU-queued) —
+    filename itself is the UUID-suffixed identifier, sandboxed by
+    resolve_download_path to that module's own output directory. Real filename as
+    the URL's last path segment for the same reason as download_job_file above:
+    the desktop build's native download handler names the file from that, not
+    from an anchor's `download` attribute."""
+    from backend.services.spreadsheet_gen import SpreadsheetError, resolve_download_path
+    try:
+        path = resolve_download_path(filename)
+    except SpreadsheetError:
+        raise HTTPException(404, "Spreadsheet not found")
+    return FileResponse(
+        path, filename=filename,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
 # ── SadTalker ──────────────────────────────────────────────────────────────────
 
 @router.post("/sadtalker/jobs")

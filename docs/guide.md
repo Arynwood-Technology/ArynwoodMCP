@@ -4,7 +4,7 @@
 
 ## What Is Arynwood MCP?
 
-Arynwood MCP is a **local-first AI creative studio** built and operated by lorelei / Arynwood. It combines:
+Arynwood MCP is a **local-first AI creative studio** built and operated by Arynwood. It combines:
 
 - **Multi-model LLM chat** via Ollama (local) and remote servers, with tool-calling into a running Kdenlive instance
 - **GPU tool orchestration** — Stable Diffusion, TortoiseTTS, SadTalker, Whisper, and more

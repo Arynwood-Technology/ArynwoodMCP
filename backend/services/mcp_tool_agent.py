@@ -106,12 +106,21 @@ _REVERSIBLE_PREFIXES = (
 # the exact tool name rather than forcing an awkward prefix match. Verified against
 # the real ~180-tool Kdenlive manifest (see roadmap 2.3) rather than guessed:
 # anything that fell through to the destructive catch-all below got looked up here.
-_READ_ONLY_NAMES = {"detect_scenes"}  # analysis only, returns data, touches nothing
+# read_file/search_code/find_symbol/git_status/git_diff (mcp_codebase.py) added
+# alongside detect_scenes for the same reason: analysis only, touches nothing.
+_READ_ONLY_NAMES = {"detect_scenes", "read_file", "search_code", "find_symbol", "git_status", "git_diff"}
 _REVERSIBLE_NAMES = {
     "build_timeline", "export_subtitles", "extract_zone", "fill_frame",
     "rebuild_clip_proxy", "relink_clip", "resize_composition", "resize_subtitle",
     "speech_recognition",
+    # mcp_codebase.py: don't mutate source, but write cache artifacts (__pycache__,
+    # eslint cache) — reversible, not destructive, so they auto-proceed.
+    "run_tests", "run_lint",
 }
+# mcp_codebase.py's apply_patch mutates source and gets no entry here — it falls
+# through every table above to the TIER_DESTRUCTIVE catch-all below, which is
+# correct (approval required) and self-documenting: an unrecognized name failing
+# toward "requires approval" is exactly the behavior a write tool needs.
 
 
 def classify_tool_tier(tool_name: str) -> str:

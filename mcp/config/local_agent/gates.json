@@ -7,5 +7,17 @@
       "render the video", "cross-dissolve", "crossdissolve",
       "subtitle track", "proxy clip", "b-roll"
     ]
+  },
+  "codebase": {
+    "label": "Codebase",
+    "hints": [
+      "a bug in this specific app's own backend or frontend code",
+      "how a feature in this specific app is implemented, by file and line",
+      "which file in this app's own repository handles something",
+      "tracing a request through this app's own source code",
+      "running this app's own test suite or lint",
+      "this app's own git status or git diff",
+      "NOT a match: general programming help, writing a script unrelated to this app, or questions about code in some other project"
+    ]
   }
 }

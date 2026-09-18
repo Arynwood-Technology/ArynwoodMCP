@@ -69,6 +69,57 @@ async def test_kdenlive_gate_classifies_correctly(message, expected):
     assert result == expected, f"expected {expected} for {message!r}, got {result}"
 
 
+# ── Codebase gate classification accuracy — same pattern as Kdenlive's above,
+#    for the mcp_codebase.py server (backend/routers/mcp_codebase.py). ──────────
+
+CODEBASE_GATE = {
+    "label": "Codebase",
+    "hints": [
+        "a bug in this specific app's own backend or frontend code",
+        "how a feature in this specific app is implemented, by file and line",
+        "which file in this app's own repository handles something",
+        "tracing a request through this app's own source code",
+        "running this app's own test suite or lint",
+        "this app's own git status or git diff",
+        "NOT a match: general programming help, writing a script unrelated to this app, or questions about code in some other project",
+    ],
+}
+# "Which code persists a memory?" was tried here and dropped — genuinely
+# ambiguous as a standalone message with no "in this app" anchor (a real user's
+# actual phrasing has surrounding conversation context this isolated eval
+# doesn't). Tightening the hints enough to catch it reliably reintroduced a
+# false positive on "How do I fix a merge conflict in git?" (a real regression,
+# not a hypothetical one — confirmed live), which is the more costly failure
+# mode: it triggers the same multi-round tool loop this gate exists to avoid
+# firing for unrelated questions. Kept the tighter hints, dropped the case.
+
+CODEBASE_GATE_CASES = [
+    ("Where is WebSocket reconnect handled?", True),
+    ("Trace a chat message from UI to Ollama.", True),
+    ("Explain this failing test using only evidence from source.", True),
+    ("Run the tests and tell me what's failing.", True),
+    ("What's the weather like today?", False),
+    ("Can you write me a haiku about the ocean?", False),
+    ("Generate an image of a mountain at sunset.", False),  # adversarial: this app's chat is GPU-tool-heavy, must not false-positive
+    # adversarial: generic programming help with no connection to this app's own
+    # source — confirmed live to false-positive before the hints below were
+    # tightened to explicitly anchor on "this app"/"this repository" rather than
+    # generic terms like "a bug in the backend" or "run the tests" (those phrases
+    # alone read as matching almost any coding question, not just ones about this
+    # app specifically) — a real bug, not a hypothetical one, so these stay.
+    ("I have 500 CSV files with inconsistent column names that I need to merge into one dataset with a Python script. Can you help?", False),
+    ("Can you write a quick script to rename all files in a folder?", False),
+    ("How do I fix a merge conflict in git?", False),
+]
+
+
+@skip_if_ollama_down
+@pytest.mark.parametrize("message,expected", CODEBASE_GATE_CASES)
+async def test_codebase_gate_classifies_correctly(message, expected):
+    result = await mcp_tool_agent._gate_matches(message, CODEBASE_GATE)
+    assert result == expected, f"expected {expected} for {message!r}, got {result}"
+
+
 # ── Native web_search: does the model reach for it when it should, and only then
 #    (roadmap 2.1) — the point of native tool-calling is that this is a judgment
 #    call, not a keyword match, so it's evaluated here rather than unit-tested. ──

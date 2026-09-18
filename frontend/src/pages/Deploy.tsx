@@ -121,7 +121,7 @@ function ServerModal({ initial, onSave, onClose }: {
 
         <div style={{ marginBottom: 10 }}>
           <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>SSH Key Path <span style={{ color: '#6b7280' }}>(preferred)</span></label>
-          <input value={form.ssh_key_path} placeholder="/home/lorelei/.ssh/id_rsa"
+          <input value={form.ssh_key_path} placeholder="~/.ssh/id_rsa"
             onChange={e => set('ssh_key_path', e.target.value)} style={inp} />
         </div>
 

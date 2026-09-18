@@ -47,6 +47,17 @@ const mdComponents = {
   ),
   strong: ({ children }: { children?: React.ReactNode }) => <strong className="font-bold">{children}</strong>,
   em: ({ children }: { children?: React.ReactNode }) => <em className="italic">{children}</em>,
+  a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
+    // Every other markdown element here has a custom renderer except this one
+    // was missing — react-markdown's default <a> has no target, so clicking a
+    // link (e.g. a generated spreadsheet's download link) navigated this whole
+    // single-page app away to the raw file URL instead of opening it separately,
+    // making the entire chat UI disappear. target="_blank" keeps the SPA alive.
+    <a href={href} target="_blank" rel="noopener noreferrer"
+       className="text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent">
+      {children}
+    </a>
+  ),
   hr: () => <hr className="my-2.5 border-none border-t border-border" />,
   blockquote: ({ children }: { children?: React.ReactNode }) => (
     <blockquote className="my-1.5 border-l-[3px] border-accent pl-2.5 opacity-85">{children}</blockquote>
