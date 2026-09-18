@@ -9,7 +9,8 @@ import time
 # Real checkout + its own venv (pinned torch 2.3.1 / diffusers 0.11.1 / xformers
 # 0.0.27 — deliberately isolated from the main project venv, whose torch version
 # is far newer and would conflict) — lives outside the project on this machine.
-ANIMATEDIFF_DIR = "/home/lorelei/tools/AnimateDiff"
+# Same lookup as backend/external_paths.py (this script runs standalone, so it can't import it).
+ANIMATEDIFF_DIR = os.environ.get("ARYNWOOD_ANIMATEDIFF_DIR") or os.path.join(os.environ.get("ARYNWOOD_TOOLS_DIR") or os.path.expanduser("~/tools"), "AnimateDiff")
 ANIMATEDIFF_PYTHON = os.path.join(ANIMATEDIFF_DIR, "venv", "bin", "python")
 
 DEFAULT_NEGATIVE = (

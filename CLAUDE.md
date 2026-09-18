@@ -83,7 +83,7 @@ All source in `frontend/src/`.
 - **`lib/cn.ts`** — `clsx` + `tailwind-merge`; lets a caller's `className` override a
   primitive's built-in classes instead of both landing in the output
 - **`lib/api.ts`** — typed fetch wrapper; all calls go through `request()` which prefixes `/api` (Vite proxies to `:8010`, including WebSocket)
-- **`lib/ws.ts`** — WebSocket client for streaming chat
+- **`lib/ws.ts`** — WebSocket client for streaming chat. Reconnects with 1s→10s backoff and ignores events from any socket that is no longer current (`ws.test.ts`); `Chat`/`Dashboard` reset in-flight state (and hand a failed message back to the composer) in their `onClose`. `disconnect()` is intentional teardown: no reconnect, no `onClose`
 - **`store/useAppStore.ts`** — single Zustand store: system status, active persona/model/server, conversations, tools, `pageTitle` override, `sidebarExpanded`, palette/drawer open flags, the Dashboard's embedded Arynwood chat state. Wrapped in `persist` with a `partialize` that saves **only** `sidebarExpanded` — everything else is server state or per-session and must not survive a reload
 - **`lib/useMediaQuery.ts`** — `useSyncExternalStore` over `matchMedia`, for the few places a breakpoint changes behaviour rather than styling (the sidebar forces its rail under 900px regardless of the saved preference)
 - **`frontend/src-tauri/`** — Tauri v2 Rust shell for desktop packaging
@@ -108,6 +108,12 @@ inline styles. Both idioms coexist safely — migrate a file when you're already
 in it rather than in a separate sweep. Data-driven colours (e.g. `TYPE_COLORS` in
 Chat's memory panel) legitimately stay inline; Tailwind can't generate dynamic classes.
 
+**Cascade-layer trap:** Tailwind v4 emits utilities in `@layer utilities`, and *unlayered* CSS
+beats every layered rule regardless of specificity. The global form-control reset in
+`index.css` therefore lives in `@layer base` — as plain CSS it silently overrode every
+`text-*`/`px-*`/`rounded-*`/`bg-*` class on an `<input>`/`<select>`/`<textarea>` in a
+migrated file. Put any new element-level default in `@layer base`, never bare.
+
 `index.css` also carries the global `:focus-visible` ring and a
 `prefers-reduced-motion` block — the app had neither, and the form reset strips the UA
 outline, so keyboard users previously had no focus indicator anywhere.
@@ -122,6 +128,7 @@ outline, so keyboard users previously had no focus indicator anywhere.
 - **`backend/services/memory_index.py`** — semantic index for `arynwood_memory` (separate Qdrant collection from the knowledge base), so chat retrieves memories relevant to the current turn instead of loading all of them every time
 - **`backend/services/telemetry.py`** — Prometheus counters/histograms for LLM calls (`ollama_client`) and MCP tool calls (`mcp_tool_agent`), exposed at `/metrics` alongside the HTTP-level metrics `prometheus-fastapi-instrumentator` already provides
 - **`backend/services/auth.py`** — opt-in bearer-token gate for the whole `/api/*` surface (HTTP + the chat WebSocket); a no-op unless `ARYNWOOD_API_KEY` is set in the environment
+- **`backend/external_paths.py`** — where the tools that live *outside* the repo are found (kohya_ss, AnimateDiff, Whisper/SadTalker/Chatterbox venvs, A1111 model dirs, MusicStudio, Sycamore). Each resolves own `ARYNWOOD_*` env var > group root (`ARYNWOOD_TOOLS_DIR`/`_SERVICES_DIR`/`_PROJECTS_DIR`) > a default under `$HOME`; nothing checks existence, so a missing tool degrades that one feature. Standalone `scripts/run_*.py` can't import it (different interpreter) and repeat the lookup inline — keep the env var names in sync. Documented in `docs/supported-platforms.md`
 - **`backend/mcp_orchestrator.py`** — CLI persona picker + chat loop (not part of web app)
 - **`backend/persona_runner.py`** — synchronous Ollama client used by CLI only
 
@@ -453,13 +460,25 @@ CSP fix, before it actually worked.
   Fixed: source checkout keeps `mcp/config/mcp_servers.json` under the repo root
   unchanged; a packaged build now reads/writes it straight from `user_data_dir()`
   (`~/.local/share/arynwood-mcp/mcp_servers.json` by default) since a packaged
-  install's own directory isn't writable anyway. **The same hand-rolled
-  `dirname(dirname(dirname(__file__)))` pattern still exists, unaudited, in**
-  `backend/routers/music.py`, `lora.py`, `tools.py`, `system.py`, and
-  `backend/services/gpu_jobs.py` (`BASE_DIR = ...`) — each needs the same
-  app_base_dir()-vs-user_data_dir() judgment call (is what it's locating bundled
-  payload or mutable per-install state?) before packaged-build correctness there
-  can be trusted; none of the five has been checked yet.
+  install's own directory isn't writable anyway. **The same `dirname(dirname(dirname(__file__)))` pattern in `music.py`, `lora.py`,
+  `tools.py`, `system.py` and `gpu_jobs.py` was audited and removed (2026-09-18).**
+  It wasn't just an unmigrated path — in a packaged build it pointed into PyInstaller's
+  temporary extraction dir, so Music Lab recordings, saved Chatterbox voices and every GPU
+  job's output vanished on quit. Everything now goes through `_frozen.py`: read-only
+  payload (`scripts/`, `static/`) via `app_base_dir()` (`gpu_jobs.APP_DIR`), writable
+  per-user state via `user_data_dir()` (`gpu_jobs.DATA_DIR`). `tests/test_packaged_paths.py`
+  fails if a `__file__` repo-root chain or a hardcoded `/home/<user>/` path reappears.
+  **`scripts/` is still not bundled** by `arynwood-backend.spec`, and launching them
+  isn't solved either: LoRA/Wan2/LTX run them via `sys.executable` (which, frozen, is the
+  backend binary itself, not an interpreter) while the rest shell out to a bare `python3`
+  on PATH — which is why GPU tools are source-checkout-only. Making them work in the
+  packaged app is an open design decision (bundle + locate an interpreter, or disclose as
+  unavailable), not a bug to patch.
+- **`POST /api/system/restart` can't work in a packaged build** (it touches `backend/api.py`
+  to trigger `uvicorn --reload`, and `main.rs` only logs a sidecar's `Terminated` event —
+  it never respawns it). It returns 501 there, `GET /api/system/status` reports
+  `can_restart`, and the UI hides the controls. A real fix means adding a respawn loop to
+  `start_backend_sidecar()`, which needs a Tauri rebuild to verify.
 
 **Diagnosing the packaged app when something's wrong:** WebKitGTK devtools can be
 enabled temporarily via the `"devtools"` Cargo feature on `tauri` plus
@@ -484,6 +503,15 @@ build. Still open: the tool-permission-tier/approval-gate path in `mcp_tool_agen
 (destructive/external-publish tiers, the approval round-trip over the chat
 WebSocket) has only ever been exercised through mocked tests, never a real
 approve/deny click against a live Kdenlive session — that still needs doing.
+
+**"Kdenlive isn't running" is a distinct, expected failure (2026-09-18).** The MCP service
+can be up while the Kdenlive GUI is closed; every tool then fails at the D-Bus layer. Since
+`kdenlive-api` now raises `KdenliveNotRunning`, tools return `ERROR: Kdenlive isn't running —
+…` instead of a raw `gdbus … exit status 1` command line (which is all the model used to see,
+hence replies like "an issue with the current setup"). That fix lives in the sibling
+`kdenlive-arynwood/kdenlive-api` repo and only takes effect after
+`systemctl --user restart mcp-kdenlive`. Tools still report failure as a *successful* MCP
+result (`isError: false`, error only in the text) — a known, unfixed protocol-level nit.
 
 ### `mcp` name collision
 This repo's own top-level `mcp/` directory (`mcp/config/...`) shadows the real `mcp` PyPI package for anything run from the repo root. Never `pip install mcp` into this venv expecting `import mcp` to resolve to the SDK — it won't.

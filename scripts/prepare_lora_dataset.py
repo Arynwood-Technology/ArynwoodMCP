@@ -33,7 +33,9 @@ from pathlib import Path
 
 from PIL import Image
 
-KOHYA_SS_DIR = Path("/home/lorelei/tools/kohya_ss")
+KOHYA_SS_DIR = Path(  # same lookup as backend/external_paths.py; this script runs standalone
+    os.environ.get("ARYNWOOD_KOHYA_DIR")
+    or os.path.join(os.environ.get("ARYNWOOD_TOOLS_DIR") or os.path.expanduser("~/tools"), "kohya_ss"))
 KOHYA_PYTHON = KOHYA_SS_DIR / "venv" / "bin" / "python"
 WD14_SCRIPT = KOHYA_SS_DIR / "sd-scripts" / "finetune" / "tag_images_by_wd14_tagger.py"
 WD14_MODEL_DIR = KOHYA_SS_DIR / "wd14_tagger_model"

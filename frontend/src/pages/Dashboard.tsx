@@ -58,6 +58,7 @@ function ArynwoodChat() {
   const [streamBuf, setStreamBuf]   = useState('')
   const [wsReady, setWsReady]       = useState(false)
   const bufRef = useRef('')
+  const streamingRef = useRef(false)
   const [editingModel, setEditingModel] = useState(false)
   const [modelDraft, setModelDraft]     = useState('')
   const [attachment, setAttachment]     = useState<{ name: string; text: string } | null>(null)
@@ -80,6 +81,8 @@ function ArynwoodChat() {
     }
   }, [servers, activeServer, setServers, setActiveServer])
 
+  useEffect(() => { streamingRef.current = streaming }, [streaming])
+
   useEffect(() => {
     const ws = new ChatSocket(
       (msg) => {
@@ -97,7 +100,15 @@ function ArynwoodChat() {
         }
       },
       () => setWsReady(true),
-      () => setWsReady(false),
+      () => {
+        // The in-flight turn died with the socket — reset, or `streaming` would keep the
+        // composer locked even after ChatSocket reconnects.
+        if (streamingRef.current) {
+          setMsgs(p => [...p, { id: Date.now(), role: 'error', text: 'Connection lost — the reply was interrupted. Reconnecting…' }])
+        }
+        bufRef.current = ''
+        setWsReady(false); setStreaming(false); setStreamBuf('')
+      },
     )
     ws.connect(); wsRef.current = ws; return () => ws.disconnect()
   }, [setDashConvId, setMsgs])
@@ -283,13 +294,15 @@ export function Dashboard() {
             )}
           </>
         ) : <span className="text-[11px] text-muted">Checking services…</span>}
-        <Button
-          size="sm" variant="outline" className="ml-auto"
-          onClick={restartBackend} disabled={restarting}
-        >
-          <RotateCcw size={12} aria-hidden="true" className={restarting ? 'animate-spin' : undefined} />
-          {restarting ? 'Restarting…' : 'Restart API'}
-        </Button>
+        {status?.can_restart !== false && (
+          <Button
+            size="sm" variant="outline" className="ml-auto"
+            onClick={restartBackend} disabled={restarting}
+          >
+            <RotateCcw size={12} aria-hidden="true" className={restarting ? 'animate-spin' : undefined} />
+            {restarting ? 'Restarting…' : 'Restart API'}
+          </Button>
+        )}
       </PageBar>
 
       {/* Two-column layout */}

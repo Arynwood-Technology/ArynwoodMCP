@@ -50,3 +50,28 @@ None of the GPU-bound services are bundled with the desktop app — see
 - Everything else (A1111, TortoiseTTS, Prometheus, the MusicStudio sidecars,
   mcp-kdenlive) is optional — the corresponding feature degrades or is unavailable
   without it, the rest of the app is unaffected.
+
+### Where Arynwood looks for the external tools
+
+The GPU tools, LoRA training, Whisper, SadTalker, Chatterbox, the A1111 model folders, the
+MusicStudio sidecars and the Sycamore PDF parser are separate checkouts/venvs. By default
+Arynwood looks under your home directory; every location can be overridden in the `.env`
+file (repo root for a source checkout, `~/.local/share/arynwood-mcp/.env` for the packaged
+app). A path that doesn't exist just leaves that one feature unavailable.
+
+| Setting | Default | Used for |
+|---|---|---|
+| `ARYNWOOD_TOOLS_DIR` | `~/tools` | Root for the entries below |
+| `ARYNWOOD_KOHYA_DIR` | `$TOOLS/kohya_ss` | LoRA dataset prep and training |
+| `ARYNWOOD_ANIMATEDIFF_DIR` | `$TOOLS/AnimateDiff` | AnimateDiff |
+| `ARYNWOOD_WHISPER_VENV` | `$TOOLS/whisper-venv` | Whisper transcription / captions |
+| `ARYNWOOD_SADTALKER_DIR`, `ARYNWOOD_SADTALKER_PYTHON` | `$TOOLS/sad-talker`, `~/miniconda3/envs/sadtalker/bin/python` | SadTalker |
+| `ARYNWOOD_CHATTERBOX_VENV` | `$TOOLS/chatterbox-venv` | Chatterbox voice cloning |
+| `ARYNWOOD_SERVICES_DIR` | `~/services` | Root for the A1111 entries below |
+| `ARYNWOOD_A1111_DIR` | `$SERVICES/a1111` | A1111 docker-compose project |
+| `ARYNWOOD_A1111_CHECKPOINTS_DIR`, `ARYNWOOD_A1111_LORA_DIR` | `$A1111/data/models/{Stable-diffusion,Lora}` | Model listing, LoRA export |
+| `ARYNWOOD_PROJECTS_DIR` | `~/GitHub` | Root for the sibling repos below |
+| `ARYNWOOD_MUSICSTUDIO_DIR` | `$PROJECTS/MusicStudio` | Music sidecars (stems, RVC, song generation) |
+| `ARYNWOOD_SYCAMORE_DIR` | `$PROJECTS/sycamore/lib/sycamore` | PDF learning (layout/OCR/tables) |
+
+A specific setting beats its root, and an empty value (`ARYNWOOD_KOHYA_DIR=`) counts as unset.

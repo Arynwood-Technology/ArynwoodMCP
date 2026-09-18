@@ -15,12 +15,13 @@ import os
 
 from fastapi import APIRouter
 
+from backend import external_paths
 from backend.routers.lora import A1111_CHECKPOINTS_DIR
 from backend.routers.tools import SD_CHECKPOINTS
 
 router = APIRouter()
 
-A1111_LORA_DIR = "/home/lorelei/services/a1111/data/models/Lora"
+A1111_LORA_DIR = external_paths.A1111_LORA_DIR
 
 
 def _list_safetensor_dir(directory: str) -> list[dict]:

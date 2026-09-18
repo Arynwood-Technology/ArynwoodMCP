@@ -8,7 +8,15 @@ from typing import Optional
 
 import httpx
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from backend._frozen import app_base_dir, user_data_dir
+
+# Two roots on purpose — they're the same directory in a source checkout but NOT in a
+# packaged build, and mixing them up is what silently lost generated files on quit:
+#   APP_DIR  — read-only bundled payload (scripts/, static/); PyInstaller's _MEIPASS when frozen
+#   DATA_DIR — writable per-user state (job outputs, saved voices, music assets); the XDG
+#              data dir when frozen, since _MEIPASS is a temp dir wiped on every exit
+APP_DIR = app_base_dir()
+DATA_DIR = user_data_dir()
 SD_BASE = "http://localhost:7860"
 _jobs: dict[str, dict] = {}
 

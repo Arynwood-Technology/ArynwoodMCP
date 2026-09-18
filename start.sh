@@ -12,8 +12,10 @@ if [ -f "$ROOT/.env" ]; then
   set +a
 fi
 
+# Version comes from the one file the release process bumps, so this banner can't drift.
+VERSION="$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$ROOT/frontend/package.json" | head -1)"
 echo "╔══════════════════════════════════════╗"
-echo "║        Arynwood MCP  v0.4.0          ║"
+printf "║  %-35s ║\n" "Arynwood MCP  v${VERSION:-?}"
 echo "╚══════════════════════════════════════╝"
 
 # --- Ollama ---

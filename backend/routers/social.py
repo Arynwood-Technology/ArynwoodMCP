@@ -18,6 +18,7 @@ Credentials (in .env):
   SOCIAL_REDIRECT_BASE  (default: http://localhost:8010)
 """
 
+import html
 import json
 import os
 import secrets
@@ -90,6 +91,19 @@ _OAUTH_CLOSE_HTML = """<!DOCTYPE html><html><body>
 </body></html>"""
 
 
+def _oauth_close_page(msg: str, platform: str, ok: bool) -> HTMLResponse:
+    """The popup's "you can close this" page.
+
+    `msg` can carry text we don't control (the `error` query param, an exception's text
+    quoting a remote API response) and `platform` is a raw URL path segment that lands
+    inside a JS string — so escape the message and only ever emit a known platform name,
+    otherwise a crafted callback URL is reflected script injection on the app's origin.
+    """
+    safe_platform = platform if platform in PLATFORM_CFG else "unknown"
+    return HTMLResponse(_OAUTH_CLOSE_HTML.format(
+        msg=html.escape(msg), platform=safe_platform, ok="true" if ok else "false"))
+
+
 def _callback_url(platform: str) -> str:
     """Build the OAuth redirect URI for a platform."""
     return f"{REDIRECT_BASE}/api/social/callback/{platform}"
@@ -100,6 +114,29 @@ def _cfg(platform: str) -> dict:
     if platform not in PLATFORM_CFG:
         raise HTTPException(404, f"Unknown platform: {platform}")
     return PLATFORM_CFG[platform]
+
+
+# ── Credential setup status ───────────────────────────────────────────────────
+
+@router.get("/config")
+async def social_config():
+    """GET /config — which platforms have OAuth credentials, and where they're read from.
+
+    The UI uses this to tell the user exactly which variables are missing and which
+    file to put them in (that path differs between a source checkout and a packaged
+    build — see backend/api.py). Reports presence only: never a client id or secret.
+    """
+    configured: dict[str, bool] = {}
+    env_vars: dict[str, list[str]] = {}
+    for name, cfg in PLATFORM_CFG.items():
+        env_vars[name] = [cfg["client_id_env"], cfg["client_secret_env"]]
+        configured[name] = bool(_e(cfg["client_id_env"]) and _e(cfg["client_secret_env"]))
+    return {
+        "env_file": os.path.join(user_data_dir(), ".env"),
+        "redirect_base": REDIRECT_BASE,
+        "configured": configured,
+        "env_vars": env_vars,
+    }
 
 
 # ── Account listing ───────────────────────────────────────────────────────────
@@ -154,10 +191,10 @@ async def connect_platform(platform: str):
 async def oauth_callback(platform: str, code: str = "", state: str = "", error: str = "", db=Depends(get_db)):
     """GET /callback/{platform} — receive OAuth code, exchange for tokens, and store the account."""
     if error:
-        return HTMLResponse(_OAUTH_CLOSE_HTML.format(msg=f"Authorization denied: {error}", platform=platform, ok="false"))
+        return _oauth_close_page(f"Authorization denied: {error}", platform, False)
 
     if state not in _pending_states or _pending_states.pop(state) != platform:
-        return HTMLResponse(_OAUTH_CLOSE_HTML.format(msg="Invalid state — possible CSRF. Try reconnecting.", platform=platform, ok="false"))
+        return _oauth_close_page("Invalid state — possible CSRF. Try reconnecting.", platform, False)
 
     cfg = _cfg(platform)
     client_id = _e(cfg["client_id_env"])
@@ -177,7 +214,7 @@ async def oauth_callback(platform: str, code: str = "", state: str = "", error: 
             r.raise_for_status()
             tok = r.json()
     except Exception as e:
-        return HTMLResponse(_OAUTH_CLOSE_HTML.format(msg=f"Token exchange failed: {e}", platform=platform, ok="false"))
+        return _oauth_close_page(f"Token exchange failed: {e}", platform, False)
 
     access_token = tok.get("access_token", "")
     refresh_token = tok.get("refresh_token")
@@ -195,9 +232,9 @@ async def oauth_callback(platform: str, code: str = "", state: str = "", error: 
         elif platform == "linkedin":
             await _store_linkedin_account(db, access_token, refresh_token, expires_at)
     except Exception as e:
-        return HTMLResponse(_OAUTH_CLOSE_HTML.format(msg=f"Account fetch failed: {e}", platform=platform, ok="false"))
+        return _oauth_close_page(f"Account fetch failed: {e}", platform, False)
 
-    return HTMLResponse(_OAUTH_CLOSE_HTML.format(msg="Connected successfully!", platform=platform, ok="true"))
+    return _oauth_close_page("Connected successfully!", platform, True)
 
 
 async def _store_facebook_accounts(db, access_token: str, platform: str):

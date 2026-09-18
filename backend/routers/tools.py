@@ -15,18 +15,17 @@ from fastapi.responses import JSONResponse, FileResponse
 import httpx
 from pydantic import BaseModel
 
+from backend import external_paths
 from backend.services.gpu_jobs import (
-    _jobs, gpu_queue, _new_job, _newest_file,
+    APP_DIR, DATA_DIR, _jobs, gpu_queue, _new_job, _newest_file,
     _sd_unload_checkpoint, _sd_reload_checkpoint,
     _free_sd_vram_for_job, _restore_sd_vram_after_job,
 )
 
 router = APIRouter()
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 # Prefer the project venv pip so installs don't hit the system-managed environment
-_VENV_PIP = os.path.join(BASE_DIR, "venv", "bin", "pip")
+_VENV_PIP = os.path.join(APP_DIR, "venv", "bin", "pip")
 _PIP = _VENV_PIP if os.path.isfile(_VENV_PIP) else "pip"
 
 # ── Stable Diffusion checkpoint presets ─────────────────────────────────────────
@@ -41,7 +40,8 @@ _PIP = _VENV_PIP if os.path.isfile(_VENV_PIP) else "pip"
 #   legacy    — original SD1.5 base checkpoint, kept around for before/after comparisons.
 #               Needs its own (non-SDXL) VAE and degrades above ~512-768px.
 SD_BASE = "http://localhost:7860"
-# The docker-compose container name for A1111 (see /home/lorelei/services/a1111/docker-compose.yml).
+# The docker-compose container name for A1111 (its compose project lives under
+# external_paths.A1111_DIR).
 # Used to recover from A1111 getting stuck with its internal model reference corrupted —
 # observed after unload/reload-checkpoint cycles, where even /sdapi/v1/reload-checkpoint
 # itself starts raising AttributeErrors and only a container restart clears it.
@@ -220,7 +220,7 @@ TOOLS = {
         "description": "AI image upscaling (2×/4×). Works on photos, illustrations, and video frames.",
         "type": "image", "category": "image",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_realesrgan.py"),
+        "script": os.path.join(APP_DIR, "scripts", "run_realesrgan.py"),
         "install": "pip install realesrgan basicsr",
     },
     "rembg": {
@@ -251,7 +251,7 @@ TOOLS = {
         "description": "Ultra-fast 82M-param TTS. Apache 2.0. Near-instant synthesis, runs on CPU or GPU.",
         "type": "audio", "category": "audio",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_kokoro.py"),
+        "script": os.path.join(APP_DIR, "scripts", "run_kokoro.py"),
         "install": "pip install kokoro soundfile",
     },
     "f5_tts": {
@@ -259,7 +259,7 @@ TOOLS = {
         "description": "Zero-shot voice cloning from a 3-second reference clip. State-of-the-art (2024).",
         "type": "audio", "category": "audio",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_f5tts.py"),
+        "script": os.path.join(APP_DIR, "scripts", "run_f5tts.py"),
         "install": "pip install f5-tts",
     },
     "musicgen": {
@@ -267,7 +267,7 @@ TOOLS = {
         "description": "Meta's text-to-music model. Generate background music from a text description.",
         "type": "audio", "category": "audio",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_musicgen.py"),
+        "script": os.path.join(APP_DIR, "scripts", "run_musicgen.py"),
         "install": "pip install audiocraft",
     },
     "whisper": {
@@ -275,8 +275,8 @@ TOOLS = {
         "description": "OpenAI Whisper speech-to-text. Accurate transcription for any audio/video.",
         "type": "audio", "category": "audio",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_whisper.py"),
-        "install": "/home/lorelei/tools/whisper-venv/bin/pip install -U openai-whisper",
+        "script": os.path.join(APP_DIR, "scripts", "run_whisper.py"),
+        "install": f"{external_paths.WHISPER_VENV}/bin/pip install -U openai-whisper",
     },
     # ── Video ────────────────────────────────────────────────────────────────
     "sadtalker": {
@@ -284,15 +284,15 @@ TOOLS = {
         "description": "Talking-head video from a portrait image + audio file.",
         "type": "video", "category": "video",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_sadtalker.py"),
-        "install": "# Checkout + checkpoints at /home/lorelei/tools/sad-talker, conda env 'sadtalker'",
+        "script": os.path.join(APP_DIR, "scripts", "run_sadtalker.py"),
+        "install": f"# Checkout + checkpoints at {external_paths.SADTALKER_DIR}, conda env 'sadtalker'",
     },
     "musetalk": {
         "name": "MuseTalk",
         "description": "Real-time talking head synthesis. Faster than SadTalker, same portrait+audio workflow.",
         "type": "video", "category": "video",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_musetalk.py"),
+        "script": os.path.join(APP_DIR, "scripts", "run_musetalk.py"),
         "install": "git clone https://github.com/TMElyralab/MuseTalk && pip install -r requirements.txt",
     },
     "wan2": {
@@ -301,7 +301,7 @@ TOOLS = {
                         "weights auto-download from HuggingFace on first run, fits comfortably in 12GB VRAM.",
         "type": "video", "category": "video",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_wan2.py"),
+        "script": os.path.join(APP_DIR, "scripts", "run_wan2.py"),
         "install": "pip install -U diffusers 'transformers<5' sentencepiece accelerate imageio imageio-ffmpeg  "
                    "# already satisfied in the main project venv; weights pull from "
                    "Wan-AI/Wan2.1-T2V-1.3B-Diffusers on first job. transformers>=5 has a tokenizer-conversion "
@@ -314,8 +314,8 @@ TOOLS = {
         "description": "Animate any SD1.5 model. Text→looping animation.",
         "type": "video", "category": "video",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_anim.py"),
-        "install": "cd /home/lorelei/tools/AnimateDiff && python3.11 -m venv venv && "
+        "script": os.path.join(APP_DIR, "scripts", "run_anim.py"),
+        "install": f"cd {external_paths.ANIMATEDIFF_DIR} && python3.11 -m venv venv && "
                    "venv/bin/pip install -r requirements.txt  # needs 3.11, not 3.12 — tokenizers==0.13.3 has "
                    "no cp312 wheel and fails to build from source. Motion module + SD1.5 base auto-download on first run.",
     },
@@ -350,7 +350,7 @@ TOOLS = {
         "description": "Image → 3D mesh in seconds. Exports .obj/.glb for Blender or OrcaSlicer. Needs ~3GB VRAM.",
         "type": "3d", "category": "3d",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_triposr.py"),
+        "script": os.path.join(APP_DIR, "scripts", "run_triposr.py"),
         "install": "pip install tsr  # github.com/VAST-AI-Research/TripoSR",
         "vram_gb": 3,
     },
@@ -359,7 +359,7 @@ TOOLS = {
         "description": "High-quality image → 3D mesh via multi-view diffusion. Better geometry than TripoSR. ~8GB VRAM.",
         "type": "3d", "category": "3d",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_instantmesh.py"),
+        "script": os.path.join(APP_DIR, "scripts", "run_instantmesh.py"),
         "install": "git clone https://github.com/TencentARC/InstantMesh && pip install -r requirements.txt",
         "vram_gb": 8,
     },
@@ -368,7 +368,7 @@ TOOLS = {
         "description": "Text or image → 3D (OpenAI, MIT). Generates .ply / .obj point clouds and meshes.",
         "type": "3d", "category": "3d",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_shape.py"),
+        "script": os.path.join(APP_DIR, "scripts", "run_shape.py"),
         "install": "pip install shap-e",
         "vram_gb": 4,
     },
@@ -377,7 +377,7 @@ TOOLS = {
         "description": "Monocular depth estimation from any image. Feeds 3D reconstruction and video pipelines. ~1GB VRAM.",
         "type": "image", "category": "3d",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_depth.py"),
+        "script": os.path.join(APP_DIR, "scripts", "run_depth.py"),
         "install": "pip install depth-anything-v2  # or via transformers",
         "vram_gb": 1,
     },
@@ -387,7 +387,7 @@ TOOLS = {
         "description": "Microsoft vision model (MIT). OCR, image captioning, object detection, grounding — all in one. ~1.5GB VRAM.",
         "type": "image", "category": "image",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_florence2.py"),
+        "script": os.path.join(APP_DIR, "scripts", "run_florence2.py"),
         "install": "pip install transformers timm einops",
         "vram_gb": 2,
     },
@@ -399,7 +399,7 @@ TOOLS = {
                        "fits this 12GB card. Weights auto-download from Hugging Face on first run (~4-5GB).",
         "type": "video", "category": "video",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_ltxvideo.py"),
+        "script": os.path.join(APP_DIR, "scripts", "run_ltxvideo.py"),
         "install": f"{_PIP} install -U diffusers 'transformers<5' sentencepiece accelerate imageio imageio-ffmpeg"
                    " # transformers>=5 breaks this tokenizer, see wan2's install note",
         "vram_gb": 6,
@@ -409,7 +409,7 @@ TOOLS = {
         "description": "SAP/THUDM text-to-video (Apache 2.0). High quality 6s clips. 2B param model fits in 7-8GB VRAM.",
         "type": "video", "category": "video",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_cogvideo.py"),
+        "script": os.path.join(APP_DIR, "scripts", "run_cogvideo.py"),
         "install": "pip install diffusers transformers accelerate",
         "vram_gb": 8,
     },
@@ -429,12 +429,12 @@ TOOLS = {
         "description": "Resemble AI zero-shot TTS (Apache 2.0, 2025). Clones voice from 5-10s reference. State-of-the-art quality.",
         "type": "audio", "category": "audio",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_chatterbox.py"),
+        "script": os.path.join(APP_DIR, "scripts", "run_chatterbox.py"),
         "install": "# Needs its own venv, not the main one — chatterbox-tts pins torch==2.6.0 and "
                    "transformers==5.2.0, which would downgrade the main venv's torch 2.12 and break the "
                    "transformers<5 pin Wan2.1/LTX-Video need. One-time setup: "
-                   "python3 -m venv /home/lorelei/tools/chatterbox-venv && "
-                   "/home/lorelei/tools/chatterbox-venv/bin/pip install chatterbox-tts",
+                   f"python3 -m venv {external_paths.CHATTERBOX_VENV} && "
+                   f"{external_paths.CHATTERBOX_VENV}/bin/pip install chatterbox-tts",
         "vram_gb": 2,
     },
     # ── Agents & RAG ─────────────────────────────────────────────────────────
@@ -459,7 +459,7 @@ TOOLS = {
         "description": "AI pair programmer in your terminal (Apache 2.0). Works with local Ollama. Edit real codebases with AI.",
         "type": "code", "category": "ai",
         "port": None,
-        "script": os.path.join(BASE_DIR, "scripts", "run_aider.py"),
+        "script": os.path.join(APP_DIR, "scripts", "run_aider.py"),
         "install": "pip install aider-chat  # then: aider --model ollama/qwen2.5-coder:14b",
     },
     # ── Local HTML Tools ─────────────────────────────────────────────────────
@@ -468,7 +468,7 @@ TOOLS = {
         "description": "Canva-style graphic design tool with layers, gradients, SVG shapes, AI image generation, text effects, snap guides, and template gallery.",
         "type": "creative", "category": "creative",
         "port": None,
-        "script": os.path.join(BASE_DIR, "static", "html-tools", "design-center.html"),
+        "script": os.path.join(APP_DIR, "static", "html-tools", "design-center.html"),
         "homepage": "http://localhost:8010/html-tools/design-center.html",
     },
     "terminal_hub": {
@@ -476,7 +476,7 @@ TOOLS = {
         "description": "Linux command reference and terminal interface for the Arynwood system.",
         "type": "code", "category": "code",
         "port": None,
-        "script": os.path.join(BASE_DIR, "static", "html-tools", "terminal.html"),
+        "script": os.path.join(APP_DIR, "static", "html-tools", "terminal.html"),
         "homepage": "http://localhost:8010/html-tools/terminal.html",
     },
     "client_intake": {
@@ -484,7 +484,7 @@ TOOLS = {
         "description": "Client intake form and website generator tool for onboarding and project scoping.",
         "type": "code", "category": "code",
         "port": None,
-        "script": os.path.join(BASE_DIR, "static", "html-tools", "client-intake.html"),
+        "script": os.path.join(APP_DIR, "static", "html-tools", "client-intake.html"),
         "homepage": "http://localhost:8010/html-tools/client-intake.html",
     },
     "flowchart": {
@@ -492,7 +492,7 @@ TOOLS = {
         "description": "Visual workflow designer for building and visualizing process flows and diagrams.",
         "type": "code", "category": "code",
         "port": None,
-        "script": os.path.join(BASE_DIR, "static", "html-tools", "flowchart.html"),
+        "script": os.path.join(APP_DIR, "static", "html-tools", "flowchart.html"),
         "homepage": "http://localhost:8010/html-tools/flowchart.html",
     },
     # ── Scraping ─────────────────────────────────────────────────────────────
@@ -627,7 +627,7 @@ async def install_tool_stream(tool_id: str):
     async def _stream():
         """Async generator that streams shell output lines from the install command."""
         # Replace bare 'pip' with the venv pip so installs land in the right environment
-        _venv_bin = os.path.join(BASE_DIR, "venv", "bin")
+        _venv_bin = os.path.join(APP_DIR, "venv", "bin")
         resolved_cmd = cmd.replace("pip install", f"{_PIP} install").replace("pip3 install", f"{_PIP} install")
         # Prepend venv/bin to PATH so venv-installed scripts (e.g. scrapling) are found
         env = {**os.environ, "PATH": f"{_venv_bin}:{os.environ.get('PATH', '')}"}
@@ -635,7 +635,7 @@ async def install_tool_stream(tool_id: str):
             resolved_cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
-            cwd=BASE_DIR,
+            cwd=APP_DIR,
             env=env,
         )
         async for line in proc.stdout:
@@ -1318,7 +1318,7 @@ async def sadtalker_start_job(
         shutil.copyfileobj(audio.file, f)
 
     output_dir = TOOLS["sadtalker"].get(
-        "output_dir", os.path.join(BASE_DIR, "triggers", "gpu_watch", "sadtalker_output"))
+        "output_dir", os.path.join(DATA_DIR, "triggers", "gpu_watch", "sadtalker_output"))
     os.makedirs(output_dir, exist_ok=True)
 
     job_id = _new_job("sadtalker")
@@ -1373,7 +1373,7 @@ async def sadtalker_start_job(
 
 # ── AnimateDiff ────────────────────────────────────────────────────────────────
 
-_ANIMATEDIFF_DIR = "/home/lorelei/tools/AnimateDiff"
+_ANIMATEDIFF_DIR = external_paths.ANIMATEDIFF_DIR
 _ANIMATEDIFF_PYTHON = os.path.join(_ANIMATEDIFF_DIR, "venv", "bin", "python")
 
 
@@ -1396,7 +1396,7 @@ async def animatediff_start_job(
             404, f"AnimateDiff env not set up — expected {_ANIMATEDIFF_PYTHON}. "
                  f"Run: {TOOLS['animatediff']['install']}")
 
-    output_dir = os.path.join(BASE_DIR, "triggers", "gpu_watch", "animatediff_output")
+    output_dir = os.path.join(DATA_DIR, "triggers", "gpu_watch", "animatediff_output")
     os.makedirs(output_dir, exist_ok=True)
 
     job_id = _new_job("animatediff")
@@ -1441,7 +1441,7 @@ async def animatediff_start_job(
 
 # ── Whisper ────────────────────────────────────────────────────────────────────
 
-_WHISPER_PYTHON = "/home/lorelei/tools/whisper-venv/bin/python"
+_WHISPER_PYTHON = external_paths.venv_python(external_paths.WHISPER_VENV)
 
 
 @router.post("/whisper/jobs")
@@ -1534,7 +1534,7 @@ async def ltx_video_start_job(
         with open(img_path, "wb") as f:
             shutil.copyfileobj(image.file, f)
 
-    output_dir = os.path.join(BASE_DIR, "triggers", "gpu_watch", "ltx_video_output")
+    output_dir = os.path.join(DATA_DIR, "triggers", "gpu_watch", "ltx_video_output")
     os.makedirs(output_dir, exist_ok=True)
 
     job_id = _new_job("ltx_video")
@@ -1591,11 +1591,11 @@ async def ltx_video_start_job(
 # Runs in its own venv, not the main project one — see the "chatterbox" TOOLS
 # entry's install string for why (torch/transformers version conflict with
 # Wan2.1/LTX-Video's transformers<5 pin).
-_CHATTERBOX_PYTHON = "/home/lorelei/tools/chatterbox-venv/bin/python"
+_CHATTERBOX_PYTHON = external_paths.venv_python(external_paths.CHATTERBOX_VENV)
 
 # Named reference-clip library so a voice can be picked from a dropdown instead
 # of re-uploading a file every time — one .wav per saved character voice.
-VOICE_LIBRARY_DIR = os.path.join(BASE_DIR, "triggers", "gpu_watch", "chatterbox_voices")
+VOICE_LIBRARY_DIR = os.path.join(DATA_DIR, "triggers", "gpu_watch", "chatterbox_voices")
 
 
 def _voice_slug(name: str) -> str:
@@ -1680,7 +1680,7 @@ async def chatterbox_start_job(
             raise HTTPException(404, f"No saved voice named '{voice_name}'.")
         ref_path = saved_path
 
-    output_dir = os.path.join(BASE_DIR, "triggers", "gpu_watch", "chatterbox_output")
+    output_dir = os.path.join(DATA_DIR, "triggers", "gpu_watch", "chatterbox_output")
     os.makedirs(output_dir, exist_ok=True)
 
     job_id = _new_job("chatterbox")
@@ -1746,7 +1746,7 @@ async def chatterbox_start_job(
             # unreproducible after the fact.
             if _jobs.get(job_id, {}).get("status") == "error":
                 debug_dir = os.path.join(
-                    BASE_DIR, "triggers", "gpu_watch", "chatterbox_output", "_failed_inputs", job_id)
+                    DATA_DIR, "triggers", "gpu_watch", "chatterbox_output", "_failed_inputs", job_id)
                 try:
                     os.makedirs(os.path.dirname(debug_dir), exist_ok=True)
                     shutil.move(tmp, debug_dir)

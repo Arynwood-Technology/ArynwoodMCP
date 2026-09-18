@@ -409,6 +409,12 @@ export function Chat() {
   const [activityStatus, setActivityStatus] = useState('')
   const [streamBuffer, setStreamBuffer] = useState('')
   const [wsReady, setWsReady] = useState(false)
+  // Backend errors and connection loss — without this a failed turn just silently vanishes.
+  const [notice, setNotice] = useState('')
+  const streamingRef = useRef(false)
+  // What the last turn was sent with, so a failed turn can hand it back to the composer
+  // instead of leaving the user to retype (or re-attach) it.
+  const lastSentRef = useRef<{ text: string; attachment: { name: string; text: string } | null } | null>(null)
   const [actionLog, setActionLog] = useState<Record<number, ActionResult[]>>({}) // keyed by message id
   const [memRefresh, setMemRefresh] = useState(0)
   const [attachment, setAttachment]   = useState<{ name: string; text: string } | null>(null)
@@ -440,6 +446,16 @@ export function Chat() {
     if (!id) return
     try { setMessages(await getMessages(id)) } catch (err) { console.warn('Failed to load messages:', err) }
   }, [])
+
+  useEffect(() => { streamingRef.current = streaming }, [streaming])
+
+  // Only fills empty slots — never overwrites something the user has since started typing.
+  const restoreLastSent = () => {
+    const last = lastSentRef.current
+    if (!last) return
+    setInput(prev => prev || last.text)
+    setAttachment(prev => prev ?? last.attachment)
+  }
 
   // Init WebSocket
   useEffect(() => {
@@ -512,10 +528,25 @@ export function Chat() {
           setStreaming(false)
           setStreamBuffer('')
           setActivityStatus('')
+          setNotice(msg.message)
+          restoreLastSent()
         }
       },
       () => setWsReady(true),
-      () => setWsReady(false),
+      () => {
+        // The turn (and any pending approval — the backend treats a disconnect as a
+        // denial) died with the socket; leaving `streaming` set would lock the composer
+        // even after ChatSocket reconnects.
+        if (streamingRef.current) {
+          setNotice('Connection lost — the reply was interrupted. Reconnecting…')
+          restoreLastSent()
+        }
+        setWsReady(false)
+        setStreaming(false)
+        setStreamBuffer('')
+        setActivityStatus('')
+        setPendingApproval(null)
+      },
     )
     ws.connect()
     wsRef.current = ws
@@ -554,12 +585,14 @@ export function Chat() {
   const send = () => {
     if ((!input.trim() && !attachment) || streaming || !wsReady || pendingApproval) return
     const text = input.trim()
+    lastSentRef.current = { text, attachment }
     const fullMessage = attachment
       ? `[File: ${attachment.name}]\n\`\`\`\n${attachment.text}\n\`\`\`\n\n${text}`
       : text
     const displayText = attachment ? `📎 ${attachment.name}${text ? ` — ${text}` : ''}` : text
     setInput('')
     setAttachment(null)
+    setNotice('')
     setStreaming(true)
     setActivityStatus('')
     setMessages(prev => [...prev, { id: Date.now(), conversation_id: activeConversationId ?? 0, role: 'user', content: displayText, created_at: '' }])
@@ -806,6 +839,13 @@ export function Chat() {
             </IconButton>
           </div>
         </div>
+
+        {notice && (
+          <p role="alert" className="m-0 flex items-center justify-between gap-3 bg-danger/10 px-5 py-1 text-[11px] text-danger">
+            <span className="min-w-0 break-words">{notice}</span>
+            <IconButton size="sm" label="Dismiss message" onClick={() => setNotice('')}><X size={12} /></IconButton>
+          </p>
+        )}
 
         {/* WS status */}
         {!wsReady && (

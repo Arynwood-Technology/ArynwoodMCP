@@ -11,7 +11,8 @@ from pydantic import BaseModel
 
 from backend.db import get_db
 from backend.services import knowledge
-from backend.services.gpu_jobs import BASE_DIR, gpu_queue, _jobs, _new_job
+from backend import external_paths
+from backend.services.gpu_jobs import APP_DIR, gpu_queue, _jobs, _new_job
 
 router = APIRouter()
 
@@ -20,9 +21,9 @@ router = APIRouter()
 # project venv — same reasoning as scripts/run_whisper.py's dedicated whisper-venv:
 # it pulls in its own torch/transformers/timm/easyocr/paddleocr stack. See
 # docs/sycamore-integration-plan.md for the full rationale.
-_SYCAMORE_REPO_DIR = "/home/lorelei/GitHub/sycamore/lib/sycamore"
+_SYCAMORE_REPO_DIR = external_paths.SYCAMORE_REPO_DIR
 _SYCAMORE_VENV_PYTHON = os.path.join(_SYCAMORE_REPO_DIR, ".venv", "bin", "python3")
-_SYCAMORE_PARTITION_SCRIPT = os.path.join(BASE_DIR, "scripts", "run_sycamore_partition.py")
+_SYCAMORE_PARTITION_SCRIPT = os.path.join(APP_DIR, "scripts", "run_sycamore_partition.py")
 
 
 class ChunkIn(BaseModel):

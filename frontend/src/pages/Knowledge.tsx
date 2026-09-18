@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Trash2, Link as LinkIcon, FileText, Type, Search, CheckCircle2, XCircle } from 'lucide-react'
+import { Trash2, Link as LinkIcon, FileText, Type, Search, CheckCircle2, XCircle, CircleDashed } from 'lucide-react'
 import {
   getKnowledgeStatus, getKnowledgeSources, deleteKnowledgeSource,
   searchKnowledge, learnUrl, learnText, learnFile, uploadKnowledgeFile,
@@ -152,15 +152,19 @@ export function Knowledge() {
         {/* Status */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
           <StatusPill
-            ok={!!status?.qdrant.online}
+            tone={status?.qdrant.online ? 'ok' : 'error'}
             label={status?.qdrant.online ? 'Qdrant online' : 'Qdrant offline'}
           />
           <StatusPill
-            ok={!!status?.qdrant.collection_ready}
-            label={status?.qdrant.collection_ready ? 'Collection ready' : 'Collection not yet created'}
+            tone={status?.qdrant.collection_ready ? 'ok' : 'neutral'}
+            label={
+              status?.qdrant.collection_ready ? 'Collection ready'
+              : status?.qdrant.online ? 'Collection is created on your first learn'
+              : 'Collection unknown while Qdrant is offline'
+            }
           />
           <StatusPill
-            ok={!!status?.embedding_model_available}
+            tone={status?.embedding_model_available ? 'ok' : 'error'}
             label={status ? `${status.embedding_model} ${status.embedding_model_available ? 'available' : 'missing'}` : 'embedding model'}
           />
         </div>
@@ -356,16 +360,25 @@ export function Knowledge() {
   )
 }
 
-function StatusPill({ ok, label }: { ok: boolean; label: string }) {
+// 'neutral' is for states that are expected rather than broken (e.g. the vector
+// collection before the first learn) — a red error there reads as a failed install.
+type PillTone = 'ok' | 'error' | 'neutral'
+
+const PILL_STYLE: Record<PillTone, { bg: string; color: string }> = {
+  ok:      { bg: 'rgba(34,197,94,0.1)',  color: 'var(--success)' },
+  error:   { bg: 'rgba(239,68,68,0.1)',  color: 'var(--danger)' },
+  neutral: { bg: 'var(--surface2)',      color: 'var(--text-muted)' },
+}
+
+function StatusPill({ tone, label }: { tone: PillTone; label: string }) {
+  const { bg, color } = PILL_STYLE[tone]
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 6,
-      background: ok ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-      border: `1px solid ${ok ? 'var(--success)' : 'var(--danger)'}`,
-      color: ok ? 'var(--success)' : 'var(--danger)',
+      background: bg, border: `1px solid ${tone === 'neutral' ? 'var(--border)' : color}`, color,
       borderRadius: 999, padding: '4px 12px', fontSize: 12,
     }}>
-      {ok ? <CheckCircle2 size={13} /> : <XCircle size={13} />}
+      {tone === 'ok' ? <CheckCircle2 size={13} /> : tone === 'error' ? <XCircle size={13} /> : <CircleDashed size={13} />}
       {label}
     </div>
   )

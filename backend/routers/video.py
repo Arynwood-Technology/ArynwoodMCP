@@ -15,7 +15,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from backend.services.gpu_jobs import (
-    BASE_DIR, _jobs, gpu_queue, _new_job, _newest_file,
+    APP_DIR, DATA_DIR, _jobs, gpu_queue, _new_job, _newest_file,
     _free_sd_vram_for_job, _restore_sd_vram_after_job,
 )
 from backend.routers.tools import _WHISPER_PYTHON
@@ -30,8 +30,8 @@ from backend.routers.tools import _WHISPER_PYTHON
 
 router = APIRouter()
 
-_WAN2_SCRIPT = os.path.join(BASE_DIR, "scripts", "run_wan2.py")
-_WHISPER_SCRIPT = os.path.join(BASE_DIR, "scripts", "run_whisper.py")
+_WAN2_SCRIPT = os.path.join(APP_DIR, "scripts", "run_wan2.py")
+_WHISPER_SCRIPT = os.path.join(APP_DIR, "scripts", "run_whisper.py")
 
 _VIDEO_TOOLS = {"sadtalker", "animatediff", "ltx_video", "wan2"}
 
@@ -130,7 +130,7 @@ async def wan2_start_job(
     if not os.path.exists(_WAN2_SCRIPT):
         raise HTTPException(404, "Wan2.1 wrapper script not found. Check scripts/run_wan2.py")
 
-    output_dir = os.path.join(BASE_DIR, "triggers", "gpu_watch", "wan2_output")
+    output_dir = os.path.join(DATA_DIR, "triggers", "gpu_watch", "wan2_output")
     os.makedirs(output_dir, exist_ok=True)
 
     job_id = _new_job("wan2")
@@ -391,7 +391,7 @@ async def edit_start_job(
             shutil.rmtree(tmp, ignore_errors=True)
             raise HTTPException(400, f"Unknown source_type {clip.source_type!r}")
 
-    output_dir = os.path.join(BASE_DIR, "triggers", "gpu_watch", "video_edit_output")
+    output_dir = os.path.join(DATA_DIR, "triggers", "gpu_watch", "video_edit_output")
     os.makedirs(output_dir, exist_ok=True)
 
     job_id = _new_job("video_edit")
@@ -711,7 +711,7 @@ async def captions_start_job(
     with open(vid_path, "wb") as f:
         shutil.copyfileobj(video.file, f)
 
-    output_dir = os.path.join(BASE_DIR, "triggers", "gpu_watch", "captions_output")
+    output_dir = os.path.join(DATA_DIR, "triggers", "gpu_watch", "captions_output")
     os.makedirs(output_dir, exist_ok=True)
 
     job_id = _new_job("captions")

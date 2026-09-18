@@ -3,6 +3,7 @@ import {
   Disc3, Music4, Waves, ShieldCheck, SlidersHorizontal,
   Play, Loader2, ExternalLink, ChevronDown, ChevronUp,
   FileText, BookOpen, CheckCircle2, Circle, PlugZap,
+  type LucideIcon,
 } from 'lucide-react'
 import {
   getDjTools, launchDjTool, getDjSessions, startDjSession,
@@ -12,7 +13,7 @@ import {
 
 // ── Category meta ────────────────────────────────────────────────────────────
 
-const CATEGORY_META: Record<string, { label: string; sub: string; Icon: any; color: string }> = {
+const CATEGORY_META: Record<string, { label: string; sub: string; Icon: LucideIcon; color: string }> = {
   dj:      { label: 'DJ Mixing',              sub: 'Live mixing / beatmatching',           Icon: Disc3,             color: '#7c6ef7' },
   daw:     { label: 'Production',             sub: 'Arrangement, drums, mixdown',          Icon: Music4,            color: '#f472b6' },
   synth:   { label: 'Synths & Sound Design',  sub: 'Basslines, leads, drum synthesis',     Icon: Waves,             color: '#5eead4' },

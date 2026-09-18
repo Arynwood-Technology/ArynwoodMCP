@@ -467,12 +467,24 @@ async def run_tool_loop(
                     approve and await approve(name, arguments, tier)
                 ):
                     seen_calls.add(key)
-                    text = (
-                        f"DENIED: {name} is a {tier.replace('_', ' ')} action and requires user "
-                        "approval, which was not granted in this context. Do not retry it — tell "
-                        "the user what you were trying to do and that it needs their explicit "
-                        "approval first."
-                    )
+                    tier_label = tier.replace("_", " ")
+                    if approve:
+                        # A person was shown this call and said no. Saying "needs approval"
+                        # here made the model answer "please confirm — shall I proceed?"
+                        # right after an explicit Deny (seen in a live run).
+                        text = (
+                            f"DENIED: the user was asked to approve {name} (a {tier_label} action) "
+                            f"and declined. {name} was NOT run and nothing was changed. Do not retry "
+                            "it and do not ask for confirmation again — the answer is no. In your "
+                            "reply, say plainly that you did not do it because the user declined."
+                        )
+                    else:
+                        text = (
+                            f"DENIED: {name} is a {tier_label} action and requires user "
+                            "approval, which was not granted in this context. Do not retry it — tell "
+                            "the user what you were trying to do and that it needs their explicit "
+                            "approval first."
+                        )
                     telemetry.record_tool_call(server_name, name, "denied")
                 else:
                     seen_calls.add(key)

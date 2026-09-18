@@ -96,3 +96,45 @@ async def test_read_only_call_never_consults_approval_callback(monkeypatch):
     approve.assert_not_called()
     assert mcp_post.call_count == 2
     assert "track1 and track2" in result
+
+
+def _tool_messages_seen_on_round_two(chat) -> list[str]:
+    return [m["content"] for m in chat.call_args_list[1].kwargs["messages"] if m.get("role") == "tool"]
+
+
+async def test_explicit_user_decline_is_reported_to_the_model_as_a_final_no(monkeypatch):
+    """Found in a live run: after the user clicked Deny, the model replied "I need your
+    confirmation to proceed — do you want to go ahead?", because the one shared DENIED
+    text said the action "needs their explicit approval first". A real decline must tell
+    the model the answer is no, nothing ran, and not to ask again."""
+    mcp_post = AsyncMock(side_effect=[TOOLS_LIST_RESULT])
+    chat = AsyncMock(side_effect=[_decision("delete_track"), _final("Okay, I did not delete it.")])
+    monkeypatch.setattr(mcp_tool_agent, "_mcp_post", mcp_post)
+    monkeypatch.setattr(mcp_tool_agent.ollama_client, "chat", chat)
+
+    approve = AsyncMock(return_value=False)
+    await mcp_tool_agent.run_tool_loop("kdenlive", "sys", "delete the intro track", "Kdenlive", approve=approve)
+
+    (denial,) = _tool_messages_seen_on_round_two(chat)
+    assert denial.startswith("DENIED")
+    assert "declined" in denial
+    assert "NOT run" in denial
+    assert "do not ask" in denial.lower()
+    # ...and must not invite the "please confirm" reply that a real decline should never get.
+    assert "needs their explicit approval first" not in denial
+
+
+async def test_no_approval_channel_is_worded_differently_from_a_user_decline(monkeypatch):
+    """With no callback at all (a non-interactive caller) nobody was asked, so telling the
+    model "the user declined" would be false — that path keeps the "needs approval" text."""
+    mcp_post = AsyncMock(side_effect=[TOOLS_LIST_RESULT])
+    chat = AsyncMock(side_effect=[_decision("delete_track"), _final("I could not delete the track.")])
+    monkeypatch.setattr(mcp_tool_agent, "_mcp_post", mcp_post)
+    monkeypatch.setattr(mcp_tool_agent.ollama_client, "chat", chat)
+
+    await mcp_tool_agent.run_tool_loop("kdenlive", "sys", "delete the intro track", "Kdenlive")
+
+    (denial,) = _tool_messages_seen_on_round_two(chat)
+    assert denial.startswith("DENIED")
+    assert "declined" not in denial
+    assert "needs their explicit approval first" in denial

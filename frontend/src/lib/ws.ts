@@ -22,11 +22,20 @@ export type ChatPayload = {
   conversation_id?: number
 }
 
+// Reconnect delay: 1s, 2s, 4s, 8s, then 10s. Starting quickly matters — in the packaged
+// app the frontend can load a few seconds before the bundled backend is accepting
+// connections, and without a retry the composer would sit at "Connecting…" forever.
+const RECONNECT_BASE_MS = 1000
+const RECONNECT_MAX_MS = 10_000
+
 export class ChatSocket {
   private ws: WebSocket | null = null
   private onMessage: (msg: WsMessage) => void
   private onOpen?: () => void
   private onClose?: () => void
+  private closedByCaller = false
+  private retryTimer: ReturnType<typeof setTimeout> | null = null
+  private attempt = 0
 
   constructor(
     onMessage: (msg: WsMessage) => void,
@@ -39,21 +48,50 @@ export class ChatSocket {
   }
 
   connect() {
+    this.closedByCaller = false
+    this.open()
+  }
+
+  private open() {
     // In production (Tauri) the page is served from file:// or tauri://,
     // so we must use an absolute WebSocket URL pointing at the backend.
     const base = import.meta.env.PROD
       ? 'ws://localhost:8010'
       : `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}`
-    this.ws = new WebSocket(`${base}/api/chat/ws`)
-    this.ws.onopen = () => this.onOpen?.()
-    this.ws.onclose = () => this.onClose?.()
-    this.ws.onmessage = (e) => {
+    const ws = new WebSocket(`${base}/api/chat/ws`)
+    this.ws = ws
+    // Every handler ignores events from a socket that is no longer `this.ws` — a close
+    // event arriving late from a discarded socket must not flip the UI to "disconnected"
+    // while its replacement is healthy (React StrictMode's mount/unmount/mount hits this).
+    ws.onopen = () => {
+      if (this.ws !== ws) return
+      this.attempt = 0
+      this.onOpen?.()
+    }
+    ws.onclose = () => {
+      if (this.ws !== ws) return
+      this.ws = null
+      this.onClose?.()
+      this.scheduleReconnect()
+    }
+    ws.onmessage = (e) => {
+      if (this.ws !== ws) return
       try {
         this.onMessage(JSON.parse(e.data))
       } catch (err) {
         console.warn('Failed to parse chat WS message:', err, e.data)
       }
     }
+  }
+
+  private scheduleReconnect() {
+    if (this.closedByCaller) return
+    const delay = Math.min(RECONNECT_BASE_MS * 2 ** this.attempt, RECONNECT_MAX_MS)
+    this.attempt++
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null
+      if (!this.closedByCaller) this.open()
+    }, delay)
   }
 
   send(payload: ChatPayload) {
@@ -71,9 +109,24 @@ export class ChatSocket {
     }
   }
 
+  /** Intentional teardown (unmount): stops reconnecting and silences the old socket. */
   disconnect() {
-    this.ws?.close()
+    this.closedByCaller = true
+    if (this.retryTimer) { clearTimeout(this.retryTimer); this.retryTimer = null }
+    const ws = this.ws
     this.ws = null
+    if (!ws) return
+    ws.onmessage = null
+    ws.onclose = null
+    ws.onerror = null
+    if (ws.readyState === WebSocket.CONNECTING) {
+      // close() on a still-connecting socket makes the browser log "WebSocket is closed
+      // before the connection is established" — wait for it to open, then close quietly.
+      ws.onopen = () => ws.close()
+    } else {
+      ws.onopen = null
+      ws.close()
+    }
   }
 
   get ready() {

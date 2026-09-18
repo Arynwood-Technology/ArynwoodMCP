@@ -4,7 +4,9 @@ import subprocess
 
 # openai-whisper lives in its own venv (not pip-installed in the main project
 # venv) since it pulls in its own torch/numba stack independent of the backend.
-WHISPER_BIN = "/home/lorelei/tools/whisper-venv/bin/whisper"
+# Same lookup as backend/external_paths.py (this script runs standalone, so it can't import it).
+WHISPER_BIN = os.path.join(
+    os.environ.get("ARYNWOOD_WHISPER_VENV") or os.path.join(os.environ.get("ARYNWOOD_TOOLS_DIR") or os.path.expanduser("~/tools"), "whisper-venv"), "bin", "whisper")
 
 
 def run_whisper(audio_path, out_dir, model_name="base"):

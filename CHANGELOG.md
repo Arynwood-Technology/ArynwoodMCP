@@ -36,8 +36,8 @@ them as a summary, not a precise record.
   this file is personal per-install config, not bundled app payload — a
   packaged build now reads/writes it from the XDG data dir instead of a
   read-only path inside the AppImage. The same unmigrated pattern still exists
-  in `music.py`, `lora.py`, `tools.py`, `system.py`, and `gpu_jobs.py` — not
-  yet audited.
+  in `music.py`, `lora.py`, `tools.py`, `system.py`, and `gpu_jobs.py` — since
+  audited and fixed (see below).
 - **59 real correctness bugs in the frontend**, found while auditing the
   (already-red) ESLint baseline rather than assuming it was all style noise:
   two `rules-of-hooks` violations, impure calls reachable from render,
@@ -45,6 +45,57 @@ them as a summary, not a precise record.
   dependency issues across 20 files. `docs/architecture.md` and
   `docs/troubleshooting.md` also had a stale `mcp_servers.json` example
   missing its required `mcpServers` wrapper key — fixed.
+- **External tool locations were hardcoded to one machine's home directory** (kohya_ss,
+  AnimateDiff, Whisper, SadTalker, Chatterbox, the A1111 model folders, MusicStudio,
+  Sycamore), so those features failed on any other machine even from a source checkout.
+  They now resolve through `backend/external_paths.py` — `ARYNWOOD_*` env vars, else a
+  default under `$HOME` — and a test fails if a `/home/<user>/` path or a
+  `__file__`-relative repo-root chain reappears in shipped code. See
+  `docs/supported-platforms.md` for the settings.
+- **Packaged builds lost generated files on quit.** Music Lab recordings, saved Chatterbox
+  voices and every GPU job's output were written under the bundle's temporary extraction
+  directory. They now live in the user data directory (unchanged in a source checkout).
+- **"Restart API" claimed to restart in a packaged build and did nothing** (it touched a
+  `backend/api.py` that doesn't exist there, and the desktop shell never respawns its
+  backend). The backend now reports `can_restart`, the endpoint answers 501 when it can't,
+  and the Dashboard button, status drawer action and command-palette entry are hidden.
+- **Chat never reconnected.** If the backend restarted — or the packaged app's frontend loaded
+  before its bundled backend was ready — the composer stayed on "Connecting…" until a page
+  reload. The socket now reconnects with backoff, ignores late events from a discarded
+  socket (which could flip a healthy connection to "disconnected"), and no longer logs
+  "closed before the connection is established" on unmount.
+- **A failed chat turn vanished silently.** A backend error (e.g. model not found) was
+  discarded, the composer was emptied, and a dropped connection mid-reply left the composer
+  locked. Errors now show in a dismissible banner, the message you sent is put back in the
+  box, and in-flight state is reset on disconnect.
+- **After you denied a destructive tool call, the model replied "I need your confirmation to
+  proceed — shall I go ahead?"** because a decline and "no approval channel" shared one
+  message. A real decline now tells the model the answer is no, nothing ran, and not to ask
+  again.
+- Knowledge page showed a red "Collection not yet created" error on every fresh install; it's
+  now a neutral note (the collection is created on the first learn).
+- Social page told packaged-app users to edit "`.env`" without saying where, and let Connect
+  open a raw-JSON error popup. It now shows the real `.env` path and only the variables still
+  missing, and Connect reads "Needs setup" until they're set (`GET /api/social/config`
+  reports presence only, never values).
+- Text inputs, selects and textareas in Tailwind-migrated components ignored their utility
+  classes (the global form reset was unlayered CSS, which beats Tailwind's layered
+  utilities); the reset now lives in `@layer base`.
+- Icon-only buttons on Models, Servers and Social had no accessible name; the launcher banners
+  hardcoded `v0.4.0` (they now read `package.json`, with a test that all version sources
+  agree); the lint baseline said 108 while actual lint was 46, so CI would have let 62 new
+  problems through — it is now 41.
+
+### Security
+
+- The Social OAuth popup page put the `error` query parameter and the URL's platform segment
+  into HTML/JavaScript unescaped (reflected script injection on the app's origin via a crafted
+  callback link). Output is now escaped and the platform is pinned to a known name.
+
+### Documentation
+
+- New `docs/known-limitations.md` (tiered status of every feature, including that Publish
+  target passwords are stored unencrypted in the local database).
 
 ## [0.4.2] — 2026-09-11
 

@@ -87,6 +87,8 @@ export interface SystemStatus {
   prometheus: boolean
   gpu: { available: boolean; name?: string; temp?: string; utilization?: string; memory_used?: string; memory_total?: string }
   platform: string
+  /** false in a packaged build, which can't respawn its own backend (absent on older backends). */
+  can_restart?: boolean
 }
 
 export interface OllamaModel {

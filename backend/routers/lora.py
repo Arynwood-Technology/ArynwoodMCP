@@ -14,6 +14,8 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+from backend import external_paths
+from backend._frozen import app_base_dir
 from backend.db import DB_PATH, get_db
 from backend.routers.tools import (
     A1111_CONTAINER,
@@ -27,11 +29,11 @@ from backend.routers.tools import (
 
 router = APIRouter()
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-KOHYA_SS_DIR = "/home/lorelei/tools/kohya_ss"
-A1111_CHECKPOINTS_DIR = "/home/lorelei/services/a1111/data/models/Stable-diffusion"
+BASE_DIR = app_base_dir()
+KOHYA_SS_DIR = external_paths.KOHYA_SS_DIR
+A1111_CHECKPOINTS_DIR = external_paths.A1111_CHECKPOINTS_DIR
 # A1111 runs in A1111_CONTAINER (see tools.py) as root with no UID remapping, so its
-# bind-mounted ./data/models/Lora (host: /home/lorelei/services/a1111/data/models/Lora) is
+# bind-mounted ./data/models/Lora (host: external_paths.A1111_LORA_DIR) is
 # root:root on the host — this process (running as the regular user) can't write or delete
 # there directly. Go through `docker cp`/`docker exec` instead, which the docker daemon
 # (running as root) can do regardless of our own filesystem permissions.

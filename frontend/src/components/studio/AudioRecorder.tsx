@@ -333,7 +333,7 @@ export function AudioRecorder({ onSendToEffects, onSendToVoice, onSendToJam }: A
     setSaveStatus('')
     if (!saveDir) { setSaveStatus('No folder selected — browse above or use Download instead.'); return }
     const name = saveName.trim()
-    if (!/^[\w][\w .()\-]*\.wav$/i.test(name)) { setSaveStatus('Filename must end in .wav and contain no slashes.'); return }
+    if (!/^[\w][\w .()-]*\.wav$/i.test(name)) { setSaveStatus('Filename must end in .wav and contain no slashes.'); return }
     const wav = buildTrimmedWav()
     if (!wav) return
     setSaving(true)

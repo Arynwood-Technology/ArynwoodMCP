@@ -1,7 +1,7 @@
 """
 Studio router — manages MusicStudio sidecars and proxies requests to them.
 
-Sidecars (from /home/lorelei/GitHub/MusicStudio/sidecars/):
+Sidecars (from the sibling MusicStudio repo's sidecars/, see external_paths.MUSICSTUDIO_DIR):
   voice    → :8001  (RVC voice conversion, Python 3.11 venv)
   audio-fx → :8002  (Pedalboard effects, Matchering, Basic Pitch)
   song-gen → :8003  (ACE-Step / MusicGen instrument generation, Python 3.11 venv)
@@ -23,9 +23,11 @@ import httpx
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, BackgroundTasks
 from fastapi.responses import Response, StreamingResponse
 
+from backend import external_paths
+
 router = APIRouter()
 
-MUSICSTUDIO_DIR = "/home/lorelei/GitHub/MusicStudio"
+MUSICSTUDIO_DIR = external_paths.MUSICSTUDIO_DIR
 
 SIDECARS: dict[str, dict] = {
     "voice": {

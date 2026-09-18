@@ -131,16 +131,41 @@ function PlatformIcon({ p, size = 32 }: { p: Platform; size?: number }) {
   )
 }
 
+// ── OAuth credential setup ────────────────────────────────────────────────────
+
+interface SocialConfig {
+  env_file: string
+  redirect_base: string
+  configured: Record<Platform, boolean>
+  env_vars: Record<Platform, string[]>
+}
+
+/** Platforms sharing the same credential variables (Facebook + Instagram share one
+ *  Meta app) collapse into one line, and only ones still missing credentials are listed. */
+function missingCredentialGroups(config: SocialConfig): { label: string; vars: string[] }[] {
+  const byVars = new Map<string, { labels: string[]; vars: string[] }>()
+  for (const p of ALL_PLATFORMS) {
+    if (config.configured[p]) continue
+    const key = config.env_vars[p].join('|')
+    const entry = byVars.get(key) ?? { labels: [], vars: config.env_vars[p] }
+    entry.labels.push(PLATFORMS[p].label)
+    byVars.set(key, entry)
+  }
+  return [...byVars.values()].map(e => ({ label: e.labels.join(' / '), vars: e.vars }))
+}
+
 // ── Connection card ───────────────────────────────────────────────────────────
 
 function ConnectionCard({
-  platform, accounts, onConnect, onDisconnect, connecting,
+  platform, accounts, onConnect, onDisconnect, connecting, needsSetup = false,
 }: {
   platform: Platform
   accounts: SocialAccount[]
   onConnect: (p: Platform) => void
   onDisconnect: (id: number) => void
   connecting: Platform | null
+  /** OAuth credentials for this platform aren't configured — Connect would only open a JSON error. */
+  needsSetup?: boolean
 }) {
   const { label: name, color, hint } = PLATFORMS[platform]
   const connected = accounts.filter(a => a.platform === platform)
@@ -156,17 +181,19 @@ function ConnectionCard({
         </div>
         <button
           onClick={() => onConnect(platform)}
-          disabled={isConnecting}
+          disabled={isConnecting || needsSetup}
+          title={needsSetup ? 'Add this platform’s credentials first — see “Setup required” below' : undefined}
           style={{
             padding: '6px 14px', borderRadius: 6, border: `1px solid ${color}`,
-            background: isConnecting ? 'transparent' : color,
-            color: isConnecting ? color : '#fff',
-            cursor: isConnecting ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 600,
+            background: isConnecting || needsSetup ? 'transparent' : color,
+            color: isConnecting || needsSetup ? color : '#fff',
+            opacity: needsSetup ? 0.55 : 1,
+            cursor: isConnecting || needsSetup ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 600,
             display: 'flex', alignItems: 'center', gap: 6,
           }}
         >
           {isConnecting ? <RefreshCw size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Link2 size={12} />}
-          {isConnecting ? 'Waiting…' : connected.length ? 'Add Account' : 'Connect'}
+          {isConnecting ? 'Waiting…' : needsSetup ? 'Needs setup' : connected.length ? 'Add Account' : 'Connect'}
         </button>
       </div>
 
@@ -395,14 +422,18 @@ export function Social() {
   const [projects, setProjects] = useState<ContentProject[]>([])
   const [ytChannels, setYtChannels] = useState<YoutubeChannelAnalytics[]>([])
   const [ytUploads, setYtUploads] = useState<YoutubeUpload[]>([])
+  const [config, setConfig] = useState<SocialConfig | null>(null)
 
   async function fetchAll() {
     try {
-      const [accts, history, projs] = await Promise.all([
+      const [accts, history, projs, cfg] = await Promise.all([
         request<SocialAccount[]>('/social/accounts'),
         request<PostRecord[]>('/social/posts'),
         request<ContentProject[]>('/social/projects'),
+        // Optional: an older backend without /social/config just gets the generic setup hint.
+        request<SocialConfig>('/social/config').catch(() => null),
       ])
+      setConfig(cfg)
       setAccounts(accts)
       setPosts(history)
       setProjects(projs)
@@ -482,7 +513,8 @@ export function Social() {
   function togglePlatform(p: Platform) {
     setSelectedPlatforms(prev => {
       const next = new Set(prev)
-      next.has(p) ? next.delete(p) : next.add(p)
+      if (next.has(p)) next.delete(p)
+      else next.add(p)
       return next
     })
   }
@@ -526,7 +558,7 @@ export function Social() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
             <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>Connected Accounts</span>
-            <button onClick={fetchAll} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2 }}>
+            <button onClick={fetchAll} aria-label="Refresh accounts" title="Refresh accounts" style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2 }}>
               <RefreshCw size={13} />
             </button>
           </div>
@@ -539,17 +571,31 @@ export function Social() {
               onConnect={connectPlatform}
               onDisconnect={disconnectAccount}
               connecting={connecting}
+              needsSetup={config ? !config.configured[p] : false}
             />
           ))}
 
-          <div style={{ ...card, fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.7 }}>
-            <strong style={{ color: 'var(--text)' }}>Setup required</strong><br />
-            Add credentials to <code>.env</code>:<br />
-            <code>FACEBOOK_APP_ID</code> / <code>FACEBOOK_APP_SECRET</code><br />
-            <code>GOOGLE_CLIENT_ID</code> / <code>GOOGLE_CLIENT_SECRET</code><br />
-            <code>LINKEDIN_CLIENT_ID</code> / <code>LINKEDIN_CLIENT_SECRET</code><br />
-            <code>SOCIAL_REDIRECT_BASE=http://localhost:8010</code>
-          </div>
+          {config === null ? (
+            <div style={{ ...card, fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.7 }}>
+              <strong style={{ color: 'var(--text)' }}>Setup required</strong><br />
+              Connecting an account needs OAuth credentials from that platform, added to Arynwood’s <code>.env</code> file.
+            </div>
+          ) : missingCredentialGroups(config).length > 0 && (
+            <div style={{ ...card, fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.7 }}>
+              <strong style={{ color: 'var(--text)' }}>Setup required</strong><br />
+              Add these to <code style={{ wordBreak: 'break-all' }}>{config.env_file}</code>, then restart Arynwood:
+              {missingCredentialGroups(config).map(g => (
+                <div key={g.label} style={{ marginTop: 6 }}>
+                  <span style={{ color: 'var(--text)' }}>{g.label}</span><br />
+                  <code>{g.vars.join(' / ')}</code>
+                </div>
+              ))}
+              <div style={{ marginTop: 8 }}>
+                Register <code style={{ wordBreak: 'break-all' }}>{config.redirect_base}/api/social/callback/&lt;platform&gt;</code> as
+                the redirect URI in each platform’s developer console.
+              </div>
+            </div>
+          )}
 
           <ContentProjectsPanel
             projects={projects}
@@ -650,7 +696,7 @@ export function Social() {
                   style={{ border: `1px dashed ${imageFile ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 8, padding: '10px 14px', fontSize: 12, cursor: 'pointer', color: imageFile ? 'var(--text)' : 'var(--text-muted)', textAlign: 'center', background: imageFile ? 'rgba(124,110,247,0.06)' : 'transparent' }}
                 >
                   {imageFile ? (
-                    <span>{imageFile.name} <button onClick={e => { e.stopPropagation(); setImageFile(null) }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', marginLeft: 6 }}><X size={11} /></button></span>
+                    <span>{imageFile.name} <button onClick={e => { e.stopPropagation(); setImageFile(null) }} aria-label="Remove image" title="Remove image" style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', marginLeft: 6 }}><X size={11} /></button></span>
                   ) : (
                     <span><Upload size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />Click to upload image</span>
                   )}
@@ -669,7 +715,7 @@ export function Social() {
                   style={{ border: `1px dashed ${videoFile ? '#ff0000' : 'var(--border)'}`, borderRadius: 8, padding: '10px 14px', fontSize: 12, cursor: 'pointer', color: videoFile ? 'var(--text)' : 'var(--text-muted)', textAlign: 'center', background: videoFile ? 'rgba(255,0,0,0.06)' : 'transparent' }}
                 >
                   {videoFile ? (
-                    <span>{videoFile.name} ({(videoFile.size / 1024 / 1024).toFixed(1)} MB) <button onClick={e => { e.stopPropagation(); setVideoFile(null) }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', marginLeft: 6 }}><X size={11} /></button></span>
+                    <span>{videoFile.name} ({(videoFile.size / 1024 / 1024).toFixed(1)} MB) <button onClick={e => { e.stopPropagation(); setVideoFile(null) }} aria-label="Remove video" title="Remove video" style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', marginLeft: 6 }}><X size={11} /></button></span>
                   ) : (
                     <span><Upload size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />Click to select video</span>
                   )}

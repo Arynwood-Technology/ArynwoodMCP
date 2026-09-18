@@ -176,8 +176,8 @@ function PullProgress({ name, srv, onDone, onError }: {
             } catch { /* streamed NDJSON line split mid-chunk — wait for the rest */ }
           }
         }
-      } catch (e: any) {
-        if (!cancelled) onError(e.message ?? 'Unknown error')
+      } catch (e) {
+        if (!cancelled) onError(e instanceof Error ? e.message : 'Unknown error')
       }
     }
     run()
@@ -206,7 +206,7 @@ export function ModelManager() {
   const navigate = useNavigate()
 
   const [tab, setTab] = useState<'installed' | 'catalog' | 'gpu'>('installed')
-  const [models, setModels] = useState<{ name: string; size: number; details?: any }[]>([])
+  const [models, setModels] = useState<{ name: string; size: number; details?: { parameter_size?: string; quantization_level?: string } }[]>([])
   const [loading, setLoading] = useState(false)
   const [checkpoints, setCheckpoints] = useState<CheckpointList | null>(null)
   const [loras, setLoras] = useState<ModelFileList | null>(null)
@@ -329,7 +329,7 @@ export function ModelManager() {
                 <option key={s.id} value={s.id}>{s.name} ({s.host}:{s.port})</option>
               ))}
             </select>
-            <button onClick={load} style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
+            <button onClick={load} aria-label="Refresh model list" title="Refresh model list" style={{ background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '6px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12 }}>
               <RefreshCw size={12} />
             </button>
           </div>
@@ -393,7 +393,7 @@ export function ModelManager() {
                         <button onClick={() => selectModelForChat(m.name)} style={{ background: isActive ? 'var(--accent)' : 'var(--surface)', border: `1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}`, color: isActive ? '#fff' : 'var(--text)', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
                           <MessageSquare size={12} /> Chat
                         </button>
-                        <button onClick={() => del(m.name)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '5px 6px' }}>
+                        <button onClick={() => del(m.name)} aria-label={`Delete ${m.name}`} title={`Delete ${m.name}`} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '5px 6px' }}>
                           <Trash2 size={14} />
                         </button>
                       </div>

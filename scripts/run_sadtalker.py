@@ -4,8 +4,9 @@ import subprocess
 
 # Real checkout + its conda env (torch+CUDA already installed there) — the
 # repo has no bundled SadTalker; it lives outside the project on this machine.
-SADTALKER_DIR = "/home/lorelei/tools/sad-talker"
-SADTALKER_PYTHON = "/home/lorelei/miniconda3/envs/sadtalker/bin/python"
+# Same lookup as backend/external_paths.py (this script runs standalone, so it can't import it).
+SADTALKER_DIR = os.environ.get("ARYNWOOD_SADTALKER_DIR") or os.path.join(os.environ.get("ARYNWOOD_TOOLS_DIR") or os.path.expanduser("~/tools"), "sad-talker")
+SADTALKER_PYTHON = os.environ.get("ARYNWOOD_SADTALKER_PYTHON") or os.path.expanduser("~/miniconda3/envs/sadtalker/bin/python")
 
 
 def run_sadtalker(img_path, audio_path, out_dir, pose_style=0, expression_scale=1.0):

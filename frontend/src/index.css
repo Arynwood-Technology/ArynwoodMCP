@@ -63,33 +63,41 @@ body {
 }
 
 /* ── Global form element theming ──────────────────────────────────────────── */
+/* In `@layer base`, NOT unlayered: Tailwind v4 emits utilities inside `@layer utilities`,
+   and an unlayered rule beats any layered one regardless of specificity — so as plain CSS
+   this reset silently overrode every Tailwind class (text-[10px], px-*, rounded-*, bg-*)
+   on an input/select/textarea in a migrated file. Layered, utilities win where a component
+   sets them and this still themes every control that doesn't; inline `style={{}}` in the
+   unmigrated pages beats both, exactly as before.                                      */
+@layer base {
 
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
-select,
-textarea {
-  background: var(--color-surface2);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  padding: 5px 8px;
-  font-family: inherit;
-  font-size: inherit;
-  transition: border-color 0.15s;
-}
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  select,
+  textarea {
+    background: var(--color-surface2);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-family: inherit;
+    font-size: inherit;
+    transition: border-color 0.15s;
+  }
 
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):focus,
-select:focus,
-textarea:focus {
-  outline: none;
-  border-color: var(--color-accent);
-}
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
 
-/* …but never at the cost of the keyboard focus ring. */
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 1px;
+  /* …but never at the cost of the keyboard focus ring. */
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
 }
 
 input::placeholder,

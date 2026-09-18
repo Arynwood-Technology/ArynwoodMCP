@@ -148,13 +148,15 @@ function DrawerBody() {
           <StatusRow
             label="API" state={apiUp}
             detail={apiUp === 'ok' ? 'FastAPI responding on /api/system/status' : 'No response from the backend'}
-            fix="Check the uvicorn process, then: ./start.sh"
-            action={
+            fix={import.meta.env.PROD
+              ? 'Quit and relaunch Arynwood — the packaged app restarts its backend on launch.'
+              : 'Check the uvicorn process, then: ./start.sh'}
+            action={status?.can_restart === false ? undefined : (
               <Button size="sm" variant="outline"
                 onClick={() => { restartBackend().catch(() => {}); setTimeout(() => refresh(true), 3000) }}>
                 Restart
               </Button>
-            }
+            )}
           />
         </Section>
 

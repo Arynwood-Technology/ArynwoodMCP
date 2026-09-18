@@ -3,8 +3,9 @@ import os
 import platform
 import signal
 import subprocess
+import sys
 import re
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 import httpx
 
 from backend.services.gpu_jobs import gpu_queue
@@ -64,6 +65,17 @@ def get_gpu_info() -> dict:
     return {"available": False}
 
 
+def can_restart() -> bool:
+    """Whether POST /restart can actually do anything here.
+
+    Restart works by touching backend/api.py so `uvicorn --reload` respawns the worker —
+    a source-checkout dev mechanism. A packaged (PyInstaller) build has no api.py on disk
+    and no reloader, and the Tauri shell doesn't respawn a sidecar that exits, so there
+    the honest answer is "no": the user has to relaunch the app.
+    """
+    return not getattr(sys, "frozen", False)
+
+
 @router.get("/status")
 async def get_status():
     """GET /status — parallel health check for Ollama, TTS, SD, Prometheus, and GPU."""
@@ -80,6 +92,7 @@ async def get_status():
         "prometheus": checks[3],
         "gpu": get_gpu_info(),
         "platform": platform.system(),
+        "can_restart": can_restart(),
     }
 
 
@@ -89,7 +102,16 @@ async def restart_backend():
 
     uvicorn --reload only respawns the worker on file-change events — a SIGTERM
     to the worker leaves the reloader alive with no server behind it.
+
+    501 in a packaged build (see can_restart) rather than reporting "restarting" for
+    something that will never happen.
     """
+    if not can_restart():
+        raise HTTPException(
+            status_code=501,
+            detail="This build can't restart its own backend — quit and relaunch Arynwood.",
+        )
+
     async def _do_restart():
         await asyncio.sleep(0.3)
         api_py = os.path.join(

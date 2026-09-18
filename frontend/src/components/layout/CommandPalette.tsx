@@ -47,6 +47,7 @@ function PaletteBody() {
   const personas          = useAppStore(s => s.personas)
   const tools             = useAppStore(s => s.tools)
   const activeServer      = useAppStore(s => s.activeServer)
+  const canRestart        = useAppStore(s => s.status?.can_restart) !== false
   const storeConvs        = useAppStore(s => s.conversations)
 
   const navigate = useNavigate()
@@ -86,11 +87,11 @@ function PaletteBody() {
         icon: PanelLeft, keywords: 'collapse expand nav',
         run: close(toggleSidebar),
       },
-      {
+      ...(canRestart ? [{
         id: 'action:restart', group: 'Actions', label: 'Restart API backend',
         icon: RotateCcw, keywords: 'reload server uvicorn',
         run: close(() => { restartBackend().catch(() => {}) }),
-      },
+      }] : []),
 
       // Pages
       ...NAV_DESTINATIONS.map(d => ({
@@ -134,7 +135,7 @@ function PaletteBody() {
     ]
   }, [
     navigate, setOpen, setActiveConvId, setStatusDrawer, toggleSidebar,
-    setActivePersona, setActiveModel, personas, models, convs, tools, activeServer,
+    setActivePersona, setActiveModel, personas, models, convs, tools, activeServer, canRestart,
   ])
 
   // Filter, rank, and attach group headings in one pass — headings are derived

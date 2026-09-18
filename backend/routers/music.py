@@ -23,14 +23,16 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+from backend._frozen import user_data_dir
 from backend.db import DB_PATH, get_db
 from backend.routers.studio import _ping, _sidecar_url
 from backend.services.gpu_jobs import _free_sd_vram_for_job, _restore_sd_vram_after_job, gpu_queue
 
 router = APIRouter()
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-ASSETS_DIR = os.path.join(BASE_DIR, "music", "assets")
+# User recordings and generated audio: must live in the writable data dir, not the
+# bundle (a packaged build's bundle root is a temp dir wiped on every quit).
+ASSETS_DIR = os.path.join(user_data_dir(), "music", "assets")
 os.makedirs(ASSETS_DIR, exist_ok=True)
 
 # Generous but bounded — generation here is turn-based, not real-time (see

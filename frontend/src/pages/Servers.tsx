@@ -126,6 +126,8 @@ export function Servers() {
                 </button>
                 <button
                   onClick={() => del(s.id)}
+                  aria-label={`Delete server ${s.name}`}
+                  title="Delete server"
                   style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4 }}
                 >
                   <Trash2 size={15} />

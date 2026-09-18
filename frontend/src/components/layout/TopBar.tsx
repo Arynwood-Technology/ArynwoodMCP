@@ -46,7 +46,8 @@ export function TopBar({ title }: { title: string }) {
           onChange={e => setActiveModel(e.target.value)}
           placeholder="model name"
           aria-label="Active model"
-          className="w-30 rounded-md border border-border bg-surface2 px-2 py-1 text-xs text-text"
+          title={activeModel}
+          className="w-44 rounded-md border border-border bg-surface2 px-2 py-1 text-xs text-text"
         />
       </div>
     </header>
