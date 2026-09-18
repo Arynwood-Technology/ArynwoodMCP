@@ -148,6 +148,7 @@ them as a summary, not a precise record.
 
 - New `docs/known-limitations.md` (tiered status of every feature, including that Publish
   target passwords are stored unencrypted in the local database) and `docs/customizing-personas.md`.
+- CLAUDE.md: how to build and verify an AppImage locally without installing it.
 - `docs/installation.md`: everything in the data directory, upgrading an AppImage, and that sidecars
   work in the packaged build. `docs/troubleshooting.md`: sidecars that won't start, a port still in use
   after quitting, the missing Restart button, and "Invalid timeline" exports.

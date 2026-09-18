@@ -507,6 +507,24 @@ CSP fix, before it actually worked.
   `can_restart`, and the UI hides the controls. A real fix means adding a respawn loop to
   `start_backend_sidecar()`, which needs a Tauri rebuild to verify.
 
+**Building and verifying an AppImage locally (do NOT install it over the user's daily app).**
+```bash
+git status --short                                   # build from a CLEAN committed tree, never mid-edit
+venv/bin/pyinstaller --noconfirm arynwood-backend.spec           # -> dist/arynwood-backend
+venv/bin/python scripts/smoke_packaged_backend.py dist/arynwood-backend   # GATE: must print ALL CHECKS PASSED
+cp dist/arynwood-backend frontend/src-tauri/binaries/arynwood-backend-x86_64-unknown-linux-gnu
+cd frontend && APPIMAGE_EXTRACT_AND_RUN=1 npx tauri build --bundles appimage \
+  --config '{"version":"0.4.2-dev.'$(git rev-parse --short HEAD)'"}'   # label it: it is NOT the published 0.4.2
+```
+Output: `frontend/src-tauri/target/release/bundle/appimage/`. The `--config` version override only names the
+file, so the repo's version files stay in step (`tests/test_version_consistency.py`). Verify the artifact
+without launching it (a launch opens a window and fights any running app for :8010): extract with
+`APPIMAGE_EXTRACT_AND_RUN=1 ./x.AppImage --appimage-extract`, run the smoke test against
+`squashfs-root/usr/bin/arynwood-backend`, and check nothing private is bundled. The bundled backend is
+~4 KB larger than `dist/arynwood-backend` (bundler alignment) — expected; the smoke test on the extracted
+copy is the proof, not a checksum comparison. A Rust rebuild is ~2 minutes incrementally. Never
+`pkill -f <pattern>` from a shell whose own command line contains the pattern — it kills the shell.
+
 **Diagnosing the packaged app when something's wrong:** WebKitGTK devtools can be
 enabled temporarily via the `"devtools"` Cargo feature on `tauri` plus
 `window.open_devtools()` in `main.rs`'s `.setup()` — deliberately not left on by
