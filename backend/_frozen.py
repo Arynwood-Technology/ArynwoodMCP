@@ -16,6 +16,18 @@ def app_base_dir() -> str:
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def xdg_data_dir() -> str:
+    """Per-user data dir for this app (XDG_DATA_HOME or ~/.local/share, + arynwood-mcp).
+
+    The same place in a source checkout and a packaged build, and never inside the repo —
+    unlike user_data_dir(), which is the repo root when running from source. Use it for
+    things that must live OUTSIDE the checkout (e.g. the private persona overlay), so they
+    can't be committed by accident. Creates nothing.
+    """
+    data_home = os.environ.get("XDG_DATA_HOME") or os.path.join(os.path.expanduser("~"), ".local", "share")
+    return os.path.join(data_home, "arynwood-mcp")
+
+
 def user_data_dir() -> str:
     """Writable directory for mutable app state (DB, generated media) — the repo's
     config/static dirs in a source checkout (unchanged, existing behavior), or the
@@ -27,7 +39,6 @@ def user_data_dir() -> str:
     """
     if not getattr(sys, "frozen", False):
         return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    data_home = os.environ.get("XDG_DATA_HOME") or os.path.join(os.path.expanduser("~"), ".local", "share")
-    data_dir = os.path.join(data_home, "arynwood-mcp")
+    data_dir = xdg_data_dir()
     os.makedirs(data_dir, exist_ok=True)
     return data_dir

@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import os
 import re
 import uuid
@@ -9,8 +10,9 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, WebSock
 from pydantic import BaseModel
 from backend.db import get_db
 from backend.services import knowledge, mcp_tool_agent, ollama_client, memory_index
-from backend._frozen import app_base_dir
+from backend._frozen import app_base_dir, xdg_data_dir
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 PERSONAS: dict = {}
 # app_base_dir(), not a __file__-relative chain: this needs to resolve to real app
@@ -72,14 +74,50 @@ MIN_BUDGET_TOKENS = 512
 
 # ── Persona loading ─────────────────────────────────────────────────────────────
 
-def load_personas() -> dict:
-    """Load persona definitions from mcp/config/models.json; return empty dict on failure."""
-    path = os.path.join(BASE_DIR, "mcp", "config", "models.json")
+def personas_overlay_path() -> str:
+    """Where the user's own personas live: ARYNWOOD_PERSONAS_FILE, else
+    <XDG data dir>/personas.local.json.
+
+    Deliberately the per-user data dir in EVERY build (never the repo checkout), so
+    personal personas can't be committed or pushed by accident. See
+    docs/customizing-personas.md.
+    """
+    return os.environ.get("ARYNWOOD_PERSONAS_FILE") or os.path.join(xdg_data_dir(), "personas.local.json")
+
+
+_warned: set[tuple[str, str]] = set()
+
+
+def _warn_once(path: str, problem: str) -> None:
+    # get_personas() runs on every request; one warning per problem, not one per call.
+    if (path, problem) not in _warned:
+        _warned.add((path, problem))
+        logger.warning("personas file %s ignored: %s", path, problem)
+
+
+def _read_personas_file(path: str) -> dict:
+    """A JSON object of persona id -> persona dict. Never raises: a missing or malformed
+    file yields {} (a broken personal file must not be able to take chat down)."""
     try:
         with open(path) as f:
-            return json.load(f)
-    except Exception:
+            data = json.load(f)
+    except FileNotFoundError:
         return {}
+    except (OSError, ValueError) as exc:
+        _warn_once(path, f"unreadable ({exc})")
+        return {}
+    if not isinstance(data, dict):
+        _warn_once(path, "top level must be a JSON object of persona id -> persona")
+        return {}
+    return {pid: cfg for pid, cfg in data.items() if isinstance(cfg, dict)}
+
+
+def load_personas() -> dict:
+    """The bundled personas (mcp/config/models.json) with the user's own personas
+    overlaid on top. An overlay entry replaces a bundled one with the same id."""
+    personas = _read_personas_file(os.path.join(BASE_DIR, "mcp", "config", "models.json"))
+    personas.update(_read_personas_file(personas_overlay_path()))
+    return personas
 
 
 def get_personas():

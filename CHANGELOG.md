@@ -20,6 +20,15 @@ them as a summary, not a precise record.
   own established voice. `llm.num_ctx` lets a persona with an unusually
   large system prompt override the app-wide context ceiling so its own
   instructions don't crowd out conversation history and the reply itself.
+- **Your own personas, without touching the app.** `personas.local.json` in the per-user data
+  directory (or `ARYNWOOD_PERSONAS_FILE`) is merged over the bundled personas at runtime, in
+  the source checkout and the packaged app alike — see `docs/customizing-personas.md`.
+- A versioned pre-push guard (`scripts/install-hooks.sh`, `scripts/push-guard.py`) that
+  refuses pushes containing content matching a private denylist, restricts public remotes to
+  `main` and version tags, and fails closed.
+- Doc, Kona, Glyph and Estra now ship with real system prompts and tuned default models
+  (they had none), a `generate_spreadsheet` tool for Glyph, and opt-in codebase tools
+  (`ARYNWOOD_ENABLE_CODEBASE_TOOLS=1`).
 
 ### Fixed
 

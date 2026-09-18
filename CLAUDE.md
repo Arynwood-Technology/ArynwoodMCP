@@ -299,7 +299,9 @@ Personas live in `mcp/config/models.json`, keyed by id:
 | `glyph` | Glyph | Automation | `qwen2.5` |
 | `estra` | Estra | Writer | `qwen2.5` |
 
-The frontend does **not** hardcode this list — `GET /api/chat/personas` (see `backend/routers/chat.py`) reads `mcp/config/models.json` fresh on every call and the Chat page renders whatever comes back, so adding/editing a persona in that file takes effect immediately with no frontend change and no restart.
+The frontend does **not** hardcode this list — `GET /api/chat/personas` (see `backend/routers/chat.py`) reads `mcp/config/models.json` fresh on every call, overlays the user's own `personas.local.json` on top (see below), and the Chat page renders whatever comes back — so adding/editing a persona takes effect immediately with no frontend change and no restart.
+
+**Personal personas are data, not code.** `backend/routers/chat.py`'s `load_personas()` merges `personas_overlay_path()` — `ARYNWOOD_PERSONAS_FILE`, else `~/.local/share/arynwood-mcp/personas.local.json` (`_frozen.xdg_data_dir()`) — over the bundled set; an entry with a bundled id replaces it, a malformed file is ignored with one log line. It lives in the per-user data dir in *every* build (never the checkout) so it can't be committed. `tests/test_persona_overlay.py::test_bundled_personas_are_exactly_the_public_set` fails if a private persona is added to the bundled `models.json`. User-facing guide: `docs/customizing-personas.md`.
 
 Only `central` has native tool-calling, relevance-ranked memory, and MCP tool-server access (Kdenlive etc.) — the other four run on system-prompt-plus-history plus (as of recently) knowledge-base injection, which is now on for every persona by default (`knowledge_enabled: false` in a persona's `models.json` entry opts out). See "Tool-calling: two distinct mechanisms" above.
 
@@ -351,6 +353,31 @@ npm run build     # tsc + vite build
 npm run lint      # eslint
 npm run preview   # preview production build
 ```
+
+## Branching, private data, and pushing
+
+**One branch of code: `main`, tracking the public remote. There is no long-lived personal
+branch** (that model let general work pile up on the private side and made one wrong-direction
+merge a leak). Anything personal is *data outside the repo*:
+
+- Personal personas → `~/.local/share/arynwood-mcp/personas.local.json`, normally a symlink into a
+  separate private repo (`~/GitHub/arynwood-private`, local-only, created by `install.sh` there).
+  That repo also holds the fine-tuning pipeline and the push denylist.
+- The daily-use desktop app is built from `main`; the overlay supplies the personal personas at
+  runtime. What you run every day is exactly what ships.
+- Developer-only features that expose the source tree (`mcp_codebase`) are opt-in:
+  `ARYNWOOD_ENABLE_CODEBASE_TOOLS=1` in `.env`.
+
+**Push guard.** Run `scripts/install-hooks.sh` once per clone (sets `core.hooksPath=.githooks`).
+The `pre-push` hook runs `scripts/push-guard.py`, which for any remote not listed in the private
+repo's `private-remotes.txt` (so an unknown remote is treated as public): allows only `main` and
+`v*.*.*` tags; and scans every *new* commit's message, added lines and paths against the private
+`push-denylist.txt` and a built-in list of forbidden paths. It scans commit by commit, so a
+leak that a later commit "removes" is still refused. It **fails closed** if the private repo can't
+be read. Dry-run: `python3 scripts/push-guard.py --range public/main..main`. Deliberate bypass:
+`git push --no-verify`. The public repo contains none of the private terms — they're only in the
+private repo — and `tests/test_push_guard.py` covers the guard with throwaway repos, including a
+real `git push`.
 
 ## Known Issues / Gotchas
 

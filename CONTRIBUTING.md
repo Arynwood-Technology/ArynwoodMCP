@@ -14,6 +14,8 @@ updated if and when it does.
 
 ## Working in this repo (for anyone with write access)
 
+- Run `scripts/install-hooks.sh` once per clone to enable the pre-push guard (see
+  `CLAUDE.md`, "Branching, private data, and pushing").
 - Read `CLAUDE.md` first — it's the canonical architecture/gotchas reference and is
   kept up to date deliberately.
 - Before committing: `pytest tests/` (backend), `npm run build && npm test` in

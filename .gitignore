@@ -104,3 +104,6 @@ transcend-hackathon-*
 # Generated user content (backend/services/spreadsheet_gen.py etc.) — mutable
 # per-install output, not app payload; see user_data_dir() in backend/_frozen.py
 generated/
+
+# Personal persona overlay lives in the per-user data dir, not the repo — ignore a stray copy anyway.
+personas.local.json
