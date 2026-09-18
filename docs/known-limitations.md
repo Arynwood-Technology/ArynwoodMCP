@@ -5,7 +5,7 @@ what doesn't work yet, so you can decide what to rely on. It is kept in step wit
 actually been tested — if something here reads more cautiously than the app feels, that is
 deliberate.
 
-**Last reviewed against:** v0.4.2 plus the unreleased changes in `CHANGELOG.md`.
+**Last reviewed:** 2026-09-18, against v0.4.2 plus the unreleased changes in `CHANGELOG.md`.
 
 ## How to read the tiers
 
@@ -28,6 +28,8 @@ deliberate.
 | **Kdenlive control from chat** | Needs the `mcp-kdenlive` service **and Kdenlive itself open**. The approve/deny flow has been exercised live against a real model and the real MCP service — but with the editor closed, so real timeline edits driven from an approved call are still untested. Local models can hesitate, loop, or guess a wrong tool name on a large tool list: check consequential results. |
 | GPU generation (Stable Diffusion, TTS, etc.) | Each tool is a separate service you install. One 12 GB GPU is shared, so jobs queue and large models can fail to load if another is resident. See `supported-platforms.md`. |
 | Social publishing | You supply your own OAuth app credentials per platform; Connect stays disabled ("Needs setup") until they are set, and the page lists exactly which variables and which file. Only tested against local pages and mocks — not live posting to every platform. |
+| **Video Studio** (assemble → render) | Playback, splitting, speed changes, fade/slide transitions, photo clips, the three canvas sizes, extra audio tracks, burned-in captions and looks were checked by rendering real clips and inspecting the output (durations, tone order, resolution, frame content): all correct. Not exercised with very long or 4K media. The preview is decoded by the browser, so an unusual codec may not preview even though it renders. |
+| **Music Lab** (song generation) | Both engines produced real audio end to end through the packaged backend (ACE-Step and MusicGen, ~8 GB of VRAM each, one at a time). Needs MusicStudio installed. MusicGen output used to clip; it is now soft-limited. Quality is what those models give — short clips only (ACE-Step ≤ 90 s, MusicGen ≤ 30 s). |
 | Web search | Uses public search; results are treated as untrusted text and can be wrong. |
 
 ## Tier 3 — early, or not in the packaged app yet
@@ -35,9 +37,10 @@ deliberate.
 | Feature | Status |
 |---|---|
 | GPU tool scripts, LoRA training, Whisper/captions, SadTalker, Chatterbox | The helper scripts are **not bundled** into the packaged app, and each needs its own external install. They work from a source checkout; where the tools live is now configurable (see `supported-platforms.md`) instead of assuming one machine's home directory. |
-| Music Lab / stem separation / RVC | Needs the separate MusicStudio sidecars. Recordings and generated audio are stored under your user data directory, so they survive quitting the app (previously they landed in a temporary folder in the packaged build). |
+| Stem separation, RVC voice conversion, audio FX, Whisper captions | Same MusicStudio sidecars as Music Lab and they start the same way, but only song generation has been exercised end to end. Recordings and generated audio are stored under your user data directory, so they survive quitting the app. |
 | PDF learning | Needs a separate Sycamore checkout; without it PDF learning fails clearly (other file types are unaffected). |
 | Filesystem browser and "project tree" chat context | Meaningless in the packaged app (there is no project) and refuses with a clear message there. |
+| Sidecar cleanup | Sidecars and the backend now end when the app quits. A sidecar you start yourself from a terminal is yours to stop. |
 | **Restart API** button | Only works when running from source. The packaged app can't restart its own backend — quit and relaunch. The button is hidden there. |
 | Cutroom (AI-driven video editing) | A separate project. Its editor build and identity are still Kdenlive's; see its own notes. |
 

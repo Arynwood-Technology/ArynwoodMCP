@@ -88,6 +88,47 @@ Set `ARYNWOOD_BIND_HOST=0.0.0.0` and `OLLAMA_HOST=0.0.0.0` in `.env`, and set
 beyond loopback without a key means anyone on your network can use (and modify) your
 instance. See `SECURITY.md`.
 
+## A sidecar (Music Lab, stem separation, voice conversion…) won't start
+
+The Studio page's sidecar bar shows each one's state; **red "failed"** means it started and died, and
+the reason is shown right there (hover the name, or read the strip under the bar). The status drawer
+shows the same. The full output is in `~/.local/share/arynwood-mcp/logs/sidecar-<id>.log`. Common causes:
+
+- **"Sidecar venv not found"** — MusicStudio isn't installed where the app looks
+  (`~/GitHub/MusicStudio` by default; set `ARYNWOOD_MUSICSTUDIO_DIR` in `.env`), or its venv wasn't set
+  up (see that repo's `CLAUDE.md`).
+- **A traceback in the log** — a missing model or package inside that sidecar's own venv; fix it there.
+- **"…is running on port N but wasn't started by this app"** when you press Stop — you (or an earlier
+  session) started it from a terminal. Stop that process yourself (`ss -ltnp | grep :N`).
+- **`No module named 'encodings'`** in the log on a packaged build older than the fix in the changelog —
+  update the app; the old build passed its own Python settings to every sidecar.
+
+## The app won't start, or says the port is in use, right after I quit it
+
+Only one backend can own port 8010. Older packaged builds could leave their backend (and any sidecars,
+holding GPU memory) running after you quit. Find and stop it:
+
+```bash
+ss -ltnp | grep 8010          # what owns the port
+pkill -f arynwood-backend     # then relaunch the app
+```
+
+Current builds tie the backend and sidecars to the app, so quitting stops them. Also note that a
+development backend running on 8010 makes the packaged app silently talk to *that* instead — stop it
+first (`ss -ltnp | grep 8010`).
+
+## "Restart API" is missing / does nothing
+
+The packaged app can't restart its own backend, so the button is hidden there — quit and relaunch. From
+a source checkout it works only under `uvicorn --reload` (the way `start.sh` runs it).
+
+## Video Studio: an export fails with "Invalid timeline"
+
+The render endpoint rejects values that can't be right instead of guessing: clip speed outside
+0.1×–16×, negative or inverted trims (`trim_end` must be after `trim_start`), a transition of zero or
+negative length, negative audio offsets or volumes. The timeline UI can't produce these; a script or a
+hand-edited project can. The message names the field.
+
 ## Something not listed here
 
 Check `CLAUDE.md`'s "Known Issues / Gotchas" section — it's the maintained,

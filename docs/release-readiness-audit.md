@@ -7,6 +7,14 @@ each finding cites the file(s) it came from. Where the checkout already contradi
 commonly-assumed gap (e.g. ".env.example is missing"), that's called out explicitly so
 later work doesn't rediscover it the hard way.
 
+> **Update 2026-09-18.** This audit is a 2026-09-10 snapshot; several findings below have since been
+> fixed or superseded — check `CHANGELOG.md` and `known-limitations.md` for the current state before
+> acting on it. Notably: hardcoded per-machine tool paths are configurable (`backend/external_paths.py`);
+> generated files no longer land in the bundle's temp dir; sidecars start in the packaged app and end with
+> it; "Restart API" is honest; a license, CI, release workflow and a published `v0.4.2` exist; and
+> `scripts/smoke_packaged_backend.py` now smoke-tests a frozen backend. Still true: GPU tool *scripts*
+> aren't bundled, so those features remain source-checkout only.
+
 ## 0. Open decision this audit cannot make: license and distribution model
 
 `CLAUDE.md` describes the deployment target as "multi-tenant managed hosting **or

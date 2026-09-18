@@ -540,6 +540,50 @@ hence replies like "an issue with the current setup"). That fix lives in the sib
 `systemctl --user restart mcp-kdenlive`. Tools still report failure as a *successful* MCP
 result (`isError: false`, error only in the text) — a known, unfixed protocol-level nit.
 
+### A packaged backend's environment is toxic to its children — and to any test that forgets it
+The AppImage + PyInstaller backend runs with `PYTHONHOME`, `PYTHONPATH`, `LD_LIBRARY_PATH`, `PATH`, GTK/GIO
+variables etc. all pointing into its own read-only bundle. Right for it, fatal for anything else it spawns:
+a sidecar's venv Python under the bundle's `PYTHONHOME` dies at interpreter start with `Fatal Python error:
+init_fs_encoding … No module named 'encodings'`, and it did so silently because stderr went to `DEVNULL`
+(reproduced 2026-09-18 against the real running app's `/proc/<pid>/environ`). `_frozen.
+sanitize_environ_for_children()` strips bundle-rooted entries (a user's own entries survive) and runs first
+thing in `run_server.py`; `studio.start_sidecar` also sanitizes its copy. **Any new `subprocess`/`Popen` in
+the backend inherits the clean environment for free — keep it that way; never spawn with an env built from
+scratch that re-adds those variables.** Sidecar output goes to `~/.local/share/arynwood-mcp/logs/
+sidecar-<id>.log`; a sidecar that dies is `failed` (with `error`), not `stopped`. Test it with a real child
+process under a poisoned `PYTHONHOME` (`tests/test_child_environment.py`), not a mock.
+
+### Before any release: smoke-test the FROZEN backend
+`pyinstaller arynwood-backend.spec` then `python3 scripts/smoke_packaged_backend.py dist/arynwood-backend`.
+Hermetic (isolated port/data dir, fake sidecar, poisoned AppImage-style environment) and Linux-only. It
+covers exactly what unit tests can't see: sidecars starting, restart refusal, persona overlay, state going
+to the user data dir, and the backend + sidecars dying when the launcher is hard-killed (the desktop shell
+does that on quit). Every packaged-only bug found on 2026-09-18 was invisible until a real binary ran.
+Children use `_frozen.die_with_parent` (`PR_SET_PDEATHSIG`) — spawn them from the event-loop thread, since
+the "parent" is the forking *thread* — and `run_server.py` calls it too so a PyInstaller onefile child
+doesn't outlive its bootloader.
+
+### Numbers reaching ffmpeg or a loop are validated at the request boundary
+`_atempo_chain(0)` (or negative/NaN/inf) looped forever on the event loop, growing a list to ~19 GB and
+freezing the whole backend. `EditClip`/`EditTransition`/`EditAudioTrack` now bound every number
+(`allow_inf_nan=False`, `MIN_SPEED..MAX_SPEED`, `MAX_SECONDS`) so nonsense is a 400, and the helper is total.
+Any new endpoint that feeds user numbers into a filter graph, a `while`, or a subprocess needs the same;
+`tests/test_video_edit_validation.py` shows the pattern including a SIGALRM fail-fast for hang regressions.
+
+### Video preview: never seek a playing `<video>` to correct small drift
+`TimelineEditor`'s playhead is `performance.now()`-driven while the `<video>` has its own clock. Seeking a
+playing element to re-sync makes it report the target position immediately while the playhead keeps running,
+so it looks behind again and gets seeked again (a storm — measured at 25 seeks per 12s). `previewSync.ts`
+(`planVideoSync`, unit-tested) encodes the rule: no correction while `video.seeking`; small drift is closed
+by nudging `playbackRate`; hard-seek only beyond 0.75s at ≤1 per 400ms; paused scrubbing stays frame-accurate.
+Same-source clips (the halves of a split) must not reassign `video.src` — it forces a reload.
+
+### Page roots are never `100vh`
+`AppShell` is `h-screen overflow-hidden` and spends 52px on the top bar, so a page root of `100vh` ends 52px
+below the visible area inside an `overflow-hidden` parent — its bottom controls were unreachable. Use
+`PageShell` (`h-full min-h-0`) or `height: '100%'`. A tall editor inside a scroll container wants
+`flex: 1 0 auto` (fill when there's room, never shrink below content), not a fixed `height: 100%`.
+
 ### `mcp` name collision
 This repo's own top-level `mcp/` directory (`mcp/config/...`) shadows the real `mcp` PyPI package for anything run from the repo root. Never `pip install mcp` into this venv expecting `import mcp` to resolve to the SDK — it won't.
 

@@ -94,6 +94,49 @@ them as a summary, not a precise record.
   hardcoded `v0.4.0` (they now read `package.json`, with a test that all version sources
   agree); the lint baseline said 108 while actual lint was 46, so CI would have let 62 new
   problems through — it is now 41.
+- **Every sidecar failed to start in the packaged app** (Music Lab song generation, stem separation,
+  voice conversion, audio FX, Whisper) with no explanation. The AppImage/PyInstaller backend passes its
+  own `PYTHONHOME`, `PYTHONPATH`, `LD_LIBRARY_PATH` and `PATH` entries to every child process, and a
+  sidecar's own venv Python given the bundle's `PYTHONHOME` dies at startup (`No module named
+  'encodings'`); the backend also threw the sidecar's stderr away. The frozen backend now strips
+  bundle-rooted entries from its environment before spawning anything, and sidecars log to
+  `~/.local/share/arynwood-mcp/logs/`, report an instant crash with its reason (and a red "failed"
+  state instead of a silent flip back to "stopped"), and show the tail of the log in the Studio bar
+  and the status drawer.
+- **Video timeline playback was choppy, with ~1s freezes.** The preview seeked the playing `<video>`
+  whenever it drifted 0.2s from the wall-clock playhead; a seek leaves the element reporting the target
+  position while the playhead keeps running, so it looked behind again at once and was re-seeked — 25
+  seeks in 12s of undisturbed playback (measured), i.e. scrubbing instead of playing. Small drift is now
+  absorbed by nudging `playbackRate` (±6%), hard seeks are limited to >0.75s and never issued while one
+  is in flight (2 of the 25 remain, at clip boundaries). Playing across a cut between two halves of the
+  same source no longer reloads the file (black flash + stall), and a newly loaded clip now aims at where
+  the playhead is *now*.
+- **Video Studio's "Render Timeline" button was unreachable in a 900px-tall window** (the app's default
+  is 1400×900), and Social/Studio/DJ were flush against or past the bottom edge: four pages sized their
+  root to `100vh` inside a shell that already spends 52px on the top bar. Shorter windows also let the
+  Properties/Audio panels paint over the timeline; the editor now grows with its content and the area
+  scrolls instead. An automated pass over 12 pages, every tab, at 1440×900, 1100×700 and 900×600 finds
+  no overlapping text or controls.
+- **One malformed video-edit request froze the entire backend.** A clip with `speed` of 0, a negative
+  number, infinity or NaN sent `_atempo_chain` into a loop that never ends (and grows a list until it
+  reached ~19 GB); it ran on the event loop, so chat and everything else hung until the process was
+  killed. The timeline UI only offers fixed speed presets, but a corrupted project, script or tool call
+  could send it. `POST /api/video/edit/jobs` now rejects out-of-range or non-finite speeds, trims,
+  transition durations, volumes and offsets with a 400, and the function itself refuses them and is bounded.
+  A full render matrix (speed, trims, fade/slide transitions, photo clips, three canvases, audio tracks,
+  captions, looks) was checked with ffprobe and audio/frame analysis: all correct.
+- **The packaged app left its backend and sidecars running after you quit.** The desktop shell hard-kills
+  the backend launcher, which runs no cleanup, so the Python child kept `:8010` and each sidecar kept its
+  port and GPU memory. Both now ask the kernel to signal them when their parent dies
+  (`PR_SET_PDEATHSIG`), and a graceful shutdown stops the sidecars it started. The Stop button used to
+  say "stopped" for a sidecar this app didn't start (e.g. one launched from a terminal) while it kept
+  running; it now says so.
+- Music Lab: MusicGen output was hard-clipped (thousands of samples at full scale, flat-topped
+  waveforms); the runner now enables audiocraft's soft limiter (`MusicStudio`, `run_musicgen.py`).
+- `scripts/smoke_packaged_backend.py` runs a built backend binary under an AppImage-style environment,
+  hermetically (isolated port and data dir, fake sidecar), and checks the packaged-only behaviours above.
+- `npm run dev` can target a backend on another port (`ARYNWOOD_DEV_API=http://localhost:18010`), so a
+  running desktop app on `:8010` no longer blocks development.
 
 ### Security
 
@@ -104,7 +147,10 @@ them as a summary, not a precise record.
 ### Documentation
 
 - New `docs/known-limitations.md` (tiered status of every feature, including that Publish
-  target passwords are stored unencrypted in the local database).
+  target passwords are stored unencrypted in the local database) and `docs/customizing-personas.md`.
+- `docs/installation.md`: everything in the data directory, upgrading an AppImage, and that sidecars
+  work in the packaged build. `docs/troubleshooting.md`: sidecars that won't start, a port still in use
+  after quitting, the missing Restart button, and "Invalid timeline" exports.
 
 ## [0.4.2] — 2026-09-11
 

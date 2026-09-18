@@ -23,3 +23,6 @@ updated if and when it does.
   pre-existing baseline of problems (see `CLAUDE.md`); don't let that baseline grow.
 - Small, reviewable, single-purpose changes are preferred over large mixed diffs.
 - Update `CHANGELOG.md`'s `[Unreleased]` section for anything user-visible.
+- Before a release: build the backend (`pyinstaller arynwood-backend.spec`) and run
+  `python3 scripts/smoke_packaged_backend.py dist/arynwood-backend` — it catches packaged-only bugs that
+  neither a source run nor the unit tests can.

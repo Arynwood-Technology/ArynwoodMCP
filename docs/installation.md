@@ -44,6 +44,13 @@ explaining why, not a crash, but they don't work either way:
   (it lists the packaged bundle's internal temp directory instead of erroring —
   harmless, but not useful either).
 
+**Music Lab, stem separation, voice conversion, audio FX and video captions** run as
+separate MusicStudio sidecars. They work in the packaged build *if* MusicStudio is installed
+(default `~/GitHub/MusicStudio`, or set `ARYNWOOD_MUSICSTUDIO_DIR`); the app starts them from the
+Studio page. Older packaged builds could not start them at all — the bundle's own Python settings
+were passed down and broke every sidecar. If one won't start now, the Studio page shows the reason
+and the log is in `~/.local/share/arynwood-mcp/logs/` (see `troubleshooting.md`).
+
 Everything else — chat across all 5 personas, memory, knowledge base (needs
 Qdrant + Ollama reachable), social publishing — works the same as running from
 source. See `docs/release-readiness-audit.md` §3 for the technical reason (these
@@ -57,10 +64,32 @@ sha256sum -c SHA256SUMS.txt
 
 ### Where the app stores its data
 
-Mutable state (SQLite database, logs) lives outside the install location, under
-`~/.local/share/arynwood-mcp/` (XDG data dir) — not inside the AppImage or wherever
-the `.deb` installs binaries. Uninstalling the package does **not** delete this
-directory; remove it yourself if you want a clean slate.
+Mutable state lives outside the install location, under `~/.local/share/arynwood-mcp/`
+(XDG data dir) — not inside the AppImage or wherever the `.deb` installs binaries:
+
+| Path | What |
+|---|---|
+| `arynwood.db` | conversations, memory, settings, deploy targets (SFTP passwords in here are unencrypted) |
+| `.env` | your API credentials and optional settings (see `.env.example`) |
+| `personas.local.json` | your own personas, merged over the built-in ones ([customizing personas](customizing-personas.md)) |
+| `mcp_servers.json` | which MCP tool servers (e.g. Kdenlive) are registered |
+| `music/assets/`, `triggers/gpu_watch/`, `generated/` | Music Lab recordings and generated media, GPU job outputs, spreadsheets |
+| `logs/` | one log per sidecar (`sidecar-<id>.log`) |
+
+Uninstalling the package does **not** delete this directory; remove it yourself if you want a
+clean slate.
+
+### Upgrading (AppImage)
+
+Your data directory is separate from the app, so upgrading never touches it:
+
+```bash
+# 1. quit Arynwood completely (an older build can leave its backend running — see troubleshooting.md)
+# 2. keep the old one until you've checked the new one starts
+mv ~/Applications/arynwood-mcp.AppImage ~/Applications/arynwood-mcp.AppImage.previous
+cp arynwood-mcp_*.AppImage ~/Applications/arynwood-mcp.AppImage && chmod +x ~/Applications/arynwood-mcp.AppImage
+# 3. launch it; delete the .previous file once you're happy
+```
 
 ### Uninstalling
 
