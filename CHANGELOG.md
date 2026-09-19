@@ -32,6 +32,23 @@ them as a summary, not a precise record.
 
 ### Fixed
 
+- **Music Lab: "Generate"/"Jam" stayed disabled if you started the Song Generation sidecar after
+  opening the tab.** The provider list was fetched only when the tab first appeared, so it stayed empty
+  (with a warning telling you to start a sidecar that was already running) until you switched tabs and
+  back. It is now fetched whenever the sidecar becomes ready — and asked for again if the sidecar is up but
+  hasn't finished probing its providers — with an accurate message and a "try again" button if it never
+  answers.
+- **Microphone recording failed with "Invalid constraint" in the desktop app.** The recorder requested the
+  first listed input by an `exact` device id — but before the first permission grant browsers list devices
+  with a blank id, and WebKitGTK rejects such a request (and its error isn't a `DOMException`, so the
+  friendly message was skipped too). Devices with blank ids are no longer offered, the chosen device is
+  requested as a preference rather than a requirement, and if the browser still refuses it recording
+  retries with the default input. Applies to Music Lab's recorder and the Video Studio voiceover recorder.
+- **Music Lab hid why a generation failed.** A request the backend rejected showed only "Could not start
+  generation", and a job that failed inside the sidecar (a model crash, audio it couldn't decode) simply
+  vanished from the "Generating" list. Both now show the actual reason, and a failed job stays visible
+  until you dismiss it.
+
 - **Kdenlive tool-calling was completely dark in every build**, packaged app
   included — `mcp/config/mcp_servers.json` didn't exist, so no chat message
   could ever reach the MCP gate/tool-calling loop regardless of whether

@@ -5,7 +5,7 @@ import { useJobPoll } from './useJobPoll'
 import { getVideoLibrary, type VideoLibraryItem } from '../../lib/api'
 import { computePeaks, drawWaveform } from '../../lib/waveform'
 import { audioBufferToWavBlob } from '../../lib/wav'
-import { describeMicError } from '../../lib/mic'
+import { describeMicError, nextDeviceId, openMicStream, usableInputs } from '../../lib/mic'
 import { timestampSlug } from '../../lib/filename'
 import type { CaptionSegment } from './CaptionsPanel'
 import {
@@ -1079,10 +1079,9 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
   // ── Live voiceover recording ─────────────────────────────────────────────
   async function refreshMicDevices() {
     try {
-      const list = await navigator.mediaDevices.enumerateDevices()
-      const inputs = list.filter(d => d.kind === 'audioinput')
+      const inputs = usableInputs(await navigator.mediaDevices.enumerateDevices())
       setMicDevices(inputs)
-      setMicDeviceId(prev => prev || inputs[0]?.deviceId || '')
+      setMicDeviceId(prev => nextDeviceId(prev, inputs))
     } catch {
       // permission not granted yet — device list (and labels) fill in after the first successful recording
     }
@@ -1130,11 +1129,8 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
       // even though the same hardware works fine everywhere else. Off by
       // default here since this is a voiceover/content-recording use case,
       // not a voice call.
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          ...(micDeviceId ? { deviceId: { exact: micDeviceId } } : {}),
-          echoCancellation: false, noiseSuppression: false, autoGainControl: false,
-        },
+      const stream = await openMicStream(micDeviceId, {
+        echoCancellation: false, noiseSuppression: false, autoGainControl: false,
       })
       micStreamRef.current = stream
       await refreshMicDevices() // labels are only populated once permission has been granted at least once

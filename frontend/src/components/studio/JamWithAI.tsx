@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Guitar, Loader2, Upload } from 'lucide-react'
-import { getMusicAssets, getMusicCapabilities } from '../../lib/api'
-import type { MusicAsset, MusicCapabilities } from '../../lib/api'
+import { getMusicAssets } from '../../lib/api'
+import type { MusicAsset } from '../../lib/api'
 import { useMusicJobStore } from '../../store/useMusicJobStore'
 import { useMusicJobPoll } from './useMusicJobPoll'
+import { useMusicCapabilities } from './useMusicCapabilities'
+import { FailedMusicJobs } from './FailedMusicJobs'
 import { MusicAssetCard } from './MusicAssetCard'
 import { AudioRecorder } from './AudioRecorder'
 
@@ -43,7 +45,7 @@ interface JamWithAIProps {
 }
 
 export function JamWithAI({ sidecarReady }: JamWithAIProps) {
-  const [capabilities, setCapabilities] = useState<MusicCapabilities | null>(null)
+  const { capabilities, loading: capabilitiesLoading, failed: capabilitiesFailed, retry: retryCapabilities } = useMusicCapabilities(sidecarReady)
   const [assets, setAssets] = useState<MusicAsset[]>([])
   const [myJobIds, setMyJobIds] = useState<string[]>([])
   const [error, setError] = useState('')
@@ -62,17 +64,13 @@ export function JamWithAI({ sidecarReady }: JamWithAIProps) {
   const { start } = useMusicJobPoll()
   const jobs = useMusicJobStore(s => s.jobs)
 
-  async function loadCapabilities() {
-    try { setCapabilities(await getMusicCapabilities()) }
-    catch { /* song-gen sidecar down — providers list stays empty, handled below */ }
-  }
   async function loadAssets() {
     try { setAssets(await getMusicAssets()) }
     catch (e) { setError(e instanceof Error ? e.message : 'Could not load asset library') }
   }
-  // Fetch-on-mount: load the provider list + asset library once.
+  // Fetch-on-mount: load the asset library once. (The provider list follows the sidecar — useMusicCapabilities.)
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { void loadCapabilities(); void loadAssets() }, [])
+  useEffect(() => { void loadAssets() }, [])
 
   // Jam mode only makes sense with a provider that actually listens to the
   // input — ACE-Step's audio_conditioning is false today, so offering it here
@@ -130,9 +128,9 @@ export function JamWithAI({ sidecarReady }: JamWithAIProps) {
     if (pendingInputBlob) form.append('input_audio', pendingInputBlob, 'jam_input.wav')
     else if (selectedInputAssetId) form.append('input_asset_id', selectedInputAssetId)
 
-    const jobId = await start('/api/music/jam', form)
-    if (jobId) setMyJobIds(ids => [...ids, jobId])
-    else setError('Could not start the jam session.')
+    const result = await start('/api/music/jam', form)
+    if ('jobId' in result) setMyJobIds(ids => [...ids, result.jobId])
+    else setError(`Could not start the jam session — ${result.error}`)
   }
 
   const inFlight = myJobIds
@@ -208,8 +206,17 @@ export function JamWithAI({ sidecarReady }: JamWithAIProps) {
           ))}
           {!jamProviders.length && (
             <span style={{ fontSize: 12, color: 'var(--warning)' }}>
-              No provider with audio-conditioning is installed yet — Jam needs a provider that can actually
-              listen to your input (currently MusicGen; run setup_song_gen.sh --with-musicgen).
+              {!sidecarReady && 'Start the Song Generation sidecar above to see available providers.'}
+              {capabilitiesLoading && 'Loading providers from the Song Generation sidecar…'}
+              {capabilitiesFailed && (
+                <>
+                  The Song Generation sidecar is running but did not report any providers. Check its log, or{' '}
+                  <button onClick={retryCapabilities} style={{ ...button, padding: '2px 8px' }}>try again</button>.
+                </>
+              )}
+              {sidecarReady && !capabilitiesLoading && !capabilitiesFailed && (
+                'No provider with audio-conditioning is available — Jam needs a provider that can actually listen to your input (currently MusicGen; run setup_song_gen.sh --with-musicgen).'
+              )}
             </span>
           )}
         </div>
@@ -263,6 +270,7 @@ export function JamWithAI({ sidecarReady }: JamWithAIProps) {
         </section>
       )}
 
+      <FailedMusicJobs jobIds={myJobIds} onDismiss={id => setMyJobIds(ids => ids.filter(x => x !== id))} />
       {error && <div style={{ padding: '10px 14px', border: '1px solid var(--danger)', borderRadius: 8, color: 'var(--danger)', fontSize: 12, background: 'rgba(239,68,68,.08)' }}>{error}</div>}
 
       <section>

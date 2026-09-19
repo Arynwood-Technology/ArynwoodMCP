@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { audioBufferToWavBlob, blobToBase64, sliceAudioBuffer } from '../../lib/wav'
-import { describeMicError } from '../../lib/mic'
+import { describeMicError, nextDeviceId, openMicStream, usableInputs } from '../../lib/mic'
 
 type Phase = 'idle' | 'recording' | 'review'
 
@@ -83,10 +83,9 @@ export function AudioRecorder({ onSendToEffects, onSendToVoice, onSendToJam }: A
 
   async function refreshDevices() {
     try {
-      const list = await navigator.mediaDevices.enumerateDevices()
-      const inputs = list.filter(d => d.kind === 'audioinput')
+      const inputs = usableInputs(await navigator.mediaDevices.enumerateDevices())
       setDevices(inputs)
-      setDeviceId(prev => prev || inputs[0]?.deviceId || '')
+      setDeviceId(prev => nextDeviceId(prev, inputs))
     } catch { /* permission not granted yet */ }
   }
 
@@ -104,9 +103,7 @@ export function AudioRecorder({ onSendToEffects, onSendToVoice, onSendToJam }: A
   async function startRecording() {
     setError('')
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: deviceId ? { deviceId: { exact: deviceId } } : true,
-      })
+      const stream = await openMicStream(deviceId)
       streamRef.current = stream
       await refreshDevices()
 

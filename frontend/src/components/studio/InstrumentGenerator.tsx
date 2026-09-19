@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Sparkles, Loader2 } from 'lucide-react'
-import { getMusicAssets, getMusicCapabilities } from '../../lib/api'
-import type { MusicAsset, MusicCapabilities } from '../../lib/api'
+import { getMusicAssets } from '../../lib/api'
+import type { MusicAsset } from '../../lib/api'
 import { useMusicJobStore } from '../../store/useMusicJobStore'
 import { useMusicJobPoll } from './useMusicJobPoll'
+import { useMusicCapabilities } from './useMusicCapabilities'
+import { FailedMusicJobs } from './FailedMusicJobs'
 import { MusicAssetCard } from './MusicAssetCard'
 
 const INSTRUMENTS = ['Bass', 'Drums', 'Guitar', 'Piano', 'Synth', 'Strings', 'Percussion', 'Other', 'Full arrangement']
@@ -26,7 +28,7 @@ interface InstrumentGeneratorProps {
 }
 
 export function InstrumentGenerator({ sidecarReady }: InstrumentGeneratorProps) {
-  const [capabilities, setCapabilities] = useState<MusicCapabilities | null>(null)
+  const { capabilities, loading: capabilitiesLoading, failed: capabilitiesFailed, retry: retryCapabilities } = useMusicCapabilities(sidecarReady)
   const [assets, setAssets] = useState<MusicAsset[]>([])
   const [myJobIds, setMyJobIds] = useState<string[]>([])
   const [error, setError] = useState('')
@@ -48,18 +50,14 @@ export function InstrumentGenerator({ sidecarReady }: InstrumentGeneratorProps) 
   const { start } = useMusicJobPoll()
   const jobs = useMusicJobStore(s => s.jobs)
 
-  async function loadCapabilities() {
-    try { setCapabilities(await getMusicCapabilities()) }
-    catch { /* song-gen sidecar down — providers list stays empty, handled in the UI below */ }
-  }
   async function loadAssets() {
     try { setAssets(await getMusicAssets({ kind: 'generated' })) }
     catch (e) { setError(e instanceof Error ? e.message : 'Could not load asset library') }
   }
 
-  // Fetch-on-mount: load the provider list + asset library once.
+  // Fetch-on-mount: load the asset library once. (The provider list follows the sidecar — useMusicCapabilities.)
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { void loadCapabilities(); void loadAssets() }, [])
+  useEffect(() => { void loadAssets() }, [])
 
   useEffect(() => {
     // Picks a default provider once capabilities arrive; guarded by !provider
@@ -97,9 +95,9 @@ export function InstrumentGenerator({ sidecarReady }: InstrumentGeneratorProps) 
     if (referenceFile) form.append('reference_audio', referenceFile)
     if (melodyFile) form.append('melody_audio', melodyFile)
 
-    const jobId = await start('/api/music/generate', form)
-    if (jobId) setMyJobIds(ids => [...ids, jobId])
-    else setError('Could not start generation.')
+    const result = await start('/api/music/generate', form)
+    if ('jobId' in result) setMyJobIds(ids => [...ids, result.jobId])
+    else setError(`Could not start generation — ${result.error}`)
   }
 
   const inFlight = myJobIds
@@ -134,7 +132,16 @@ export function InstrumentGenerator({ sidecarReady }: InstrumentGeneratorProps) 
             </button>
           ))}
           {!capabilities?.providers.length && (
-            <span style={{ fontSize: 12, color: 'var(--warning)' }}>Start the Song Generation sidecar above to see available providers.</span>
+            <span style={{ fontSize: 12, color: 'var(--warning)' }}>
+              {!sidecarReady && 'Start the Song Generation sidecar above to see available providers.'}
+              {capabilitiesLoading && 'Loading providers from the Song Generation sidecar…'}
+              {capabilitiesFailed && (
+                <>
+                  The Song Generation sidecar is running but did not report any providers. Check its log, or{' '}
+                  <button onClick={retryCapabilities} style={{ ...button, padding: '2px 8px' }}>try again</button>.
+                </>
+              )}
+            </span>
           )}
         </div>
       </section>
@@ -207,6 +214,7 @@ export function InstrumentGenerator({ sidecarReady }: InstrumentGeneratorProps) 
         </section>
       )}
 
+      <FailedMusicJobs jobIds={myJobIds} onDismiss={id => setMyJobIds(ids => ids.filter(x => x !== id))} />
       {error && <div style={{ padding: '10px 14px', border: '1px solid var(--danger)', borderRadius: 8, color: 'var(--danger)', fontSize: 12, background: 'rgba(239,68,68,.08)' }}>{error}</div>}
 
       <section>

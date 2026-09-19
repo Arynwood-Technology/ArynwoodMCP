@@ -122,6 +122,20 @@ first (`ss -ltnp | grep 8010`).
 The packaged app can't restart its own backend, so the button is hidden there — quit and relaunch. From
 a source checkout it works only under `uvicorn --reload` (the way `start.sh` runs it).
 
+## Music Lab: Generate / Jam is greyed out, or the microphone says "Invalid constraint"
+
+- **No provider buttons (ACE-Step / MusicGen), or "Start the Song Generation sidecar" while it is
+  already running** — on a build older than the fix in the changelog the provider list was only loaded
+  when the tab first opened. Switching to another tab and back reloads it; updating the app fixes it.
+  On a current build the list loads by itself as soon as the sidecar is up; if it says the sidecar
+  "did not report any providers", read `~/.local/share/arynwood-mcp/logs/sidecar-song-gen.log`.
+- **"Invalid constraint" when recording** — same build-age issue: the recorder asked for a specific
+  input device that WebKit refused. Update the app; until then, reload the page (the device list fills in
+  with real ids after the first permission grant) or pick "Default microphone".
+- **Generation "failed"** — the message under the form is the sidecar's own error. "Could not decode
+  input audio" means the uploaded file isn't readable audio; a CUDA out-of-memory error means something
+  else (Stable Diffusion, an Ollama model) is holding the GPU — see the A1111 section above.
+
 ## Video Studio: an export fails with "Invalid timeline"
 
 The render endpoint rejects values that can't be right instead of guessing: clip speed outside
