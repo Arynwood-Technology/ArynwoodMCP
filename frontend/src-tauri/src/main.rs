@@ -317,7 +317,6 @@ fn main() {
         .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             use tauri::webview::{DownloadEvent, WebviewWindowBuilder};
-            use tauri::Manager;
             use tauri_plugin_notification::NotificationExt;
 
             if !cfg!(debug_assertions) {
@@ -336,22 +335,16 @@ fn main() {
                 .first()
                 .cloned()
                 .expect("no window defined in tauri.conf.json");
-            let downloads_dir = app.path().download_dir().ok();
-
             #[allow(unused_variables)]
             let window = WebviewWindowBuilder::from_config(app.handle(), &window_config)?
                 .on_download(move |webview, event| {
                     match event {
-                        DownloadEvent::Requested { url, destination } => {
-                            if let Some(dir) = &downloads_dir {
-                                let filename = url
-                                    .path_segments()
-                                    .and_then(|mut segments| segments.next_back())
-                                    .filter(|s| !s.is_empty())
-                                    .unwrap_or("download");
-                                *destination = dir.join(filename);
-                            }
-                        }
+                        // `destination` arrives already pointing into the Downloads folder, named the
+                        // way WebKit suggests (the `download` attribute or Content-Disposition) and
+                        // de-duplicated. Don't override it: deriving a name from the URL's last path
+                        // segment turned a `blob:` download into "<uuid>" with no extension, and a
+                        // backend file into "audio".
+                        DownloadEvent::Requested { .. } => {}
                         // Native webviews have no download shelf/toast of their own, so
                         // without this the file lands in Downloads with zero visible feedback.
                         DownloadEvent::Finished { path, success, .. } => {

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Play, Square, Download, Pencil, Star, RefreshCw, Trash2, Check, X } from 'lucide-react'
-import { renameMusicAsset, favoriteMusicAsset, deleteMusicAsset, regenerateMusicAsset } from '../../lib/api'
+import { apiUrl, renameMusicAsset, favoriteMusicAsset, deleteMusicAsset, regenerateMusicAsset } from '../../lib/api'
+import { DownloadButton } from '../DownloadButton'
 import type { MusicAsset } from '../../lib/api'
 import { computePeaks, drawWaveform } from '../../lib/waveform'
 
@@ -23,7 +24,8 @@ export function MusicAssetCard({ asset, onChanged, onRegenerated, supportsExtend
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  const audioUrl = `/api/music/assets/${asset.id}/audio`
+  const audioPath = `/api/music/assets/${asset.id}/audio`
+  const audioUrl = apiUrl(audioPath)
 
   // Waveform thumbnail — decodes the asset once on mount and draws via the
   // shared lib/waveform.ts helpers (peak-cache + windowed draw), the same
@@ -124,9 +126,7 @@ export function MusicAssetCard({ asset, onChanged, onRegenerated, supportsExtend
         <button style={iconBtn} onClick={togglePlay} title={playing ? 'Stop' : 'Play'} disabled={busy}>
           {playing ? <Square size={14} /> : <Play size={14} />}
         </button>
-        <a href={audioUrl} download={`${asset.label}.wav`}>
-          <button style={iconBtn} title="Download"><Download size={14} /></button>
-        </a>
+        <DownloadButton url={audioPath} filename={`${asset.label}.wav`} style={iconBtn} title="Download"><Download size={14} /></DownloadButton>
         <button style={iconBtn} onClick={handleRegenerate} title="Regenerate" disabled={busy}><RefreshCw size={14} /></button>
         <button style={{ ...iconBtn, color: 'var(--danger)' }} onClick={handleDelete} title="Delete" disabled={busy}><Trash2 size={14} /></button>
         <button style={disabledBtn} title={supportsExtend ? 'Extend — coming soon' : 'Extend — not supported by this provider yet'} disabled>Extend</button>

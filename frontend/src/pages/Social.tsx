@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Share2, Link2, Unlink, RefreshCw, Send, Upload, X, Check, AlertCircle, Clock } from 'lucide-react'
-import { request } from '../lib/api'
+import { apiUrl, request } from '../lib/api'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -488,7 +488,7 @@ export function Social() {
     setPostResults([])
 
     const popup = window.open(
-      `/api/social/connect/${platform}`,
+      apiUrl(`/api/social/connect/${platform}`),
       `oauth_${platform}`,
       'width=600,height=700,left=200,top=100'
     )

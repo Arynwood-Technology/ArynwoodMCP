@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Scissors, Play, Pause, Mic, Square, Magnet, Trash2, Captions, Sparkles } from 'lucide-react'
 import { planVideoSync } from './previewSync'
 import { useJobPoll } from './useJobPoll'
-import { getVideoLibrary, type VideoLibraryItem } from '../../lib/api'
+import { apiUrl, getVideoLibrary, type VideoLibraryItem } from '../../lib/api'
+import { DownloadButton } from '../DownloadButton'
 import { computePeaks, drawWaveform } from '../../lib/waveform'
 import { audioBufferToWavBlob } from '../../lib/wav'
 import { describeMicError, nextDeviceId, openMicStream, usableInputs } from '../../lib/mic'
@@ -372,7 +373,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
     setClips(c => [...c, {
       key: crypto.randomUUID(), sourceType: 'job', jobId: item.job_id,
       label: `${item.tool} — ${new Date(item.created_at * 1000).toLocaleTimeString()}`,
-      previewUrl: `/api/tools/jobs/${item.job_id}/file`,
+      previewUrl: apiUrl(`/api/tools/jobs/${item.job_id}/file`),
       isImage, isPhoto: false, look: 'none', speed: 1,
       duration: null, trimStart: 0, trimEnd: null,
     }])
@@ -1335,7 +1336,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
     if (playingTrackId === track.id) {
       audio.pause(); setPlayingTrackId(null); return
     }
-    audio.src = `/api/video/music/proxy?url=${encodeURIComponent(track.audio_url)}`
+    audio.src = apiUrl(`/api/video/music/proxy?url=${encodeURIComponent(track.audio_url)}`)
     audio.play().catch(() => {})
     setPlayingTrackId(track.id)
   }
@@ -1983,7 +1984,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
               <span style={LABEL}>Result</span>
               <video src={job.resultPath} controls style={{ maxWidth: '100%', borderRadius: 8, border: '1px solid var(--border)' }} />
               <div style={{ display: 'flex', gap: 12 }}>
-                <a href={`/api/tools/jobs/${job.jobId}/download/${encodeURIComponent(downloadFilename)}`} download={downloadFilename} style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>↓ Download</a>
+                <DownloadButton url={`/api/tools/jobs/${job.jobId}/download/${encodeURIComponent(downloadFilename)}`} filename={downloadFilename} style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>↓ Download</DownloadButton>
                 <button onClick={reset} style={{ fontSize: 11, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Start a new render</button>
               </div>
             </div>

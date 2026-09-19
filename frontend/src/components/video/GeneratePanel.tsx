@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useJobPoll } from './useJobPoll'
-import { getVideoLibrary, type VideoLibraryItem } from '../../lib/api'
+import { apiUrl, getVideoLibrary, type VideoLibraryItem } from '../../lib/api'
+import { DownloadButton } from '../DownloadButton'
 import { timestampSlug } from '../../lib/filename'
 
 type FieldSpec =
@@ -236,7 +237,7 @@ export function GeneratePanel({ onOpenEditor }: { onOpenEditor?: () => void }) {
           ) : (
             <video src={job.resultPath} controls style={{ maxWidth: '100%', borderRadius: 8, border: '1px solid var(--border)' }} />
           )}
-          <a href={`/api/tools/jobs/${job.jobId}/download/${encodeURIComponent(downloadFilename)}`} download={downloadFilename} style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>↓ Download</a>
+          <DownloadButton url={`/api/tools/jobs/${job.jobId}/download/${encodeURIComponent(downloadFilename)}`} filename={downloadFilename} style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>↓ Download</DownloadButton>
         </div>
       )}
 
@@ -248,7 +249,7 @@ export function GeneratePanel({ onOpenEditor }: { onOpenEditor?: () => void }) {
               <div key={item.job_id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 12 }}>
                 <span style={{ fontWeight: 600, minWidth: 90, textTransform: 'capitalize' }}>{item.tool.replace('_', ' ')}</span>
                 <span style={{ color: 'var(--text-muted)', flex: 1 }}>{new Date(item.created_at * 1000).toLocaleString()}</span>
-                <a href={`/api/tools/jobs/${item.job_id}/file`} style={{ color: 'var(--accent)', textDecoration: 'none' }}>View</a>
+                <a href={apiUrl(`/api/tools/jobs/${item.job_id}/file`)} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>View</a>
               </div>
             ))}
           </div>

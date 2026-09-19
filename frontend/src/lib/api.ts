@@ -1,5 +1,22 @@
 const BASE = '/api'
 
+/**
+ * Where the backend is when the UI isn't served by it — the packaged desktop app's page origin is
+ * tauri://localhost. In dev, Vite proxies /api, so relative paths work. `VITE_BACKEND_ORIGIN` exists for
+ * testing a production build against a backend on another port; the shipped app doesn't set it.
+ */
+export const BACKEND_ORIGIN: string = import.meta.env.VITE_BACKEND_ORIGIN || 'http://localhost:8010'
+
+/**
+ * `/api/...` → an absolute backend URL in a production build, unchanged otherwise. main.tsx patches `fetch()`
+ * for this, but that can't reach `<audio src>`, `<video src>`, `<img src>`, `new Audio()`, `<a href>` or
+ * `window.open()` — a relative /api path there resolves against tauri://localhost, which answers with the
+ * app's own index.html. (That is why nothing played in the packaged app.)
+ */
+export function apiUrl(path: string): string {
+  return import.meta.env.PROD && path.startsWith('/api') ? `${BACKEND_ORIGIN}${path}` : path
+}
+
 export async function request<T>(path: string, opts?: RequestInit): Promise<T> {
   const isFormData = opts?.body instanceof FormData
   const r = await fetch(`${BASE}${path}`, {

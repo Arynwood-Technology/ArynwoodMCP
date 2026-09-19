@@ -515,11 +515,27 @@ CSP fix, before it actually worked.
   found` and a NULL-pointer `g_signal_connect_data` critical in `WebKitWebProcess`, then the process died —
   the window goes solid grey while `arynwood` and the backend keep running (`pgrep -f WebKitWebProcess` empty).
   Music Lab playback, Video Studio preview and mic recording all depend on it; none of it can be seen from a
-  source checkout or Chrome. `scripts/stage_gstreamer_plugins.sh` stages the ~33 plugins a web view needs
-  (playback, libav decode, pulse/alsa/pipewire, isomp4/matroska/ogg/opus for `MediaRecorder`) and prints
+  source checkout or Chrome. `scripts/stage_gstreamer_plugins.sh` stages the ~41 plugins a web view needs
+  (playback, libav decode, pulse/alsa/pipewire, `transcode`+`voaacenc`+`encoding` for `MediaRecorder` — found by
+  delta-debugging all 240 host plugins; without them it throws "unsupported" or records 0 bytes) and prints
   `GSTREAMER_PLUGINS_DIR` for the bundler; without it the bundler copies all 273 host plugins and their whole
   dependency tree (VA-API, CUDA, WebRTC…). Needs `patchelf` and the `gstreamer1.0-*` packages on the build machine.
-  The `.deb` is unaffected (it uses the system's GStreamer).
+  The `.deb` is unaffected (it uses the system's GStreamer). **Test media in a real WebKitGTK, not Chrome:**
+  `scripts/check_webkit_media.py` (system `python3-gi` + `gir1.2-webkit2-4.1`, run under `xvfb-run`) plays a
+  WAV/MP3/MP4 and records via `MediaRecorder` under whatever plugin set the environment gives it; its docstring has
+  the environment for an extracted AppImage. WebKit's `no such element factory "x"` (with
+  `GST_DEBUG=GST_ELEMENT_FACTORY:2`) names what to add. Beware `gst-launch` passing: it proves plugins load, not that
+  WebKit can use them (MediaRecorder needed three plugins no gst-launch pipeline ever touched).
+- **`fetch()` is patched for the packaged app; nothing else is** (fixed 2026-09-19). `main.tsx` rewrites a
+  string `/api/...` passed to `fetch`, but `<audio src>`, `<video src>`, `<img src>`, `new Audio()`, `el.src =`,
+  `<a href>` and `window.open()` resolve a relative `/api/...` against `tauri://localhost`, which serves the
+  app's `index.html` (audio → `MEDIA_ERR_SRC_NOT_SUPPORTED`; a download saves the HTML page). **Wrap every such URL
+  in `apiUrl()`** (`lib/api.ts`; `VITE_BACKEND_ORIGIN` overrides the origin for tests). **Downloads of backend files
+  use `DownloadButton` / `downloadFile()`** (fetch → blob → `<a download>`), never a bare `<a href download>`: in real
+  WebKitGTK a cross-origin `download` attribute is silently ignored, a blob one is honoured. The CSP in
+  `tauri.conf.json` needs `media-src ... blob:` or every `blob:` preview (files picked from disk, recordings) fails
+  with error 4. `main.rs`'s `on_download` must leave `destination` alone — wry pre-fills Downloads + the name WebKit
+  suggests. None of this shows in a source checkout, because Vite proxies `/api` and the origin is the backend's.
 
 **Building and verifying an AppImage locally (do NOT install it over the user's daily app).**
 ```bash
@@ -535,13 +551,11 @@ Output: `frontend/src-tauri/target/release/bundle/appimage/`. The `--config` ver
 file, so the repo's version files stay in step (`tests/test_version_consistency.py`). Verify the artifact
 without launching it (a launch opens a window and fights any running app for :8010): extract with
 `APPIMAGE_EXTRACT_AND_RUN=1 ./x.AppImage --appimage-extract`, run the smoke test against
-`squashfs-root/usr/bin/arynwood-backend`, check nothing private is bundled, and check the media stack:
-`find squashfs-root -name 'libgst*.so' | wc -l` must be well above 0, and with
-`LD_LIBRARY_PATH=squashfs-root/usr/lib GST_PLUGIN_SYSTEM_PATH_1_0=squashfs-root/usr/lib/gstreamer-1.0 GST_REGISTRY=/tmp/r.bin`
-`gst-inspect-1.0 autoaudiosink` must find it; then decode a real WAV, MP3 and H.264/AAC MP4
-(`gst-launch-1.0 -q filesrc location=x.mp4 ! decodebin ! fakesink`) and run a muted pipeline into `autoaudiosink`
-(`… ! volume volume=0 ! autoaudiosink`) under that same environment. Run the same `gst-inspect-1.0` against the
-*previous* extraction as a control — it should say `No such element or plugin 'autoaudiosink'`. The bundled backend is
+`squashfs-root/usr/bin/arynwood-backend`, check nothing private is bundled, and check the media stack in a real WebKitGTK:
+`find squashfs-root -name 'libgst*.so' | wc -l` must be well above 0, then run `scripts/check_webkit_media.py` with
+the extracted bundle's environment (its docstring has the exact command) — WAV, MP3, MP4 must play and the recorder
+must produce bytes. Run it against the *previous* extraction as a control: it prints `GStreamer element autoaudiosink
+not found` and times out (the renderer died = the grey window). The bundled backend is
 ~4 KB larger than `dist/arynwood-backend` (bundler alignment) — expected; the smoke test on the extracted
 copy is the proof, not a checksum comparison. A Rust rebuild is ~2 minutes incrementally. Never
 `pkill -f <pattern>` from a shell whose own command line contains the pattern — it kills the shell.

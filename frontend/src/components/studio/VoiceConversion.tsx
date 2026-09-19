@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { request } from '../../lib/api'
+import { apiUrl, request } from '../../lib/api'
+import { DownloadButton } from '../DownloadButton'
 
 interface VoiceModel { name: string; has_index: boolean }
 type Status = 'idle' | 'running' | 'completed' | 'failed'
@@ -114,7 +115,8 @@ export function VoiceConversion({ sidecarReady, externalFile, onExternalFileCons
 
   const canRender = sidecarReady && !!file && !!selectedModel && status !== 'running'
   const importReady = !!importName.trim() && !!importPth
-  const resultUrl = jobId ? `/api/studio/voice/convert/${jobId}/result` : ''
+  const resultPath = jobId ? `/api/studio/voice/convert/${jobId}/result` : ''
+  const resultUrl = apiUrl(resultPath)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 900 }}>
@@ -155,7 +157,7 @@ export function VoiceConversion({ sidecarReady, externalFile, onExternalFileCons
         {status === 'running' && <div style={{ height: 5, background: 'var(--surface2)', borderRadius: 3, overflow: 'hidden', marginTop: 10 }}><div style={{ height: '100%', width: `${progress}%`, background: 'var(--accent)', transition: 'width .3s' }} /></div>}
       </section>
 
-      {status === 'completed' && jobId && <section style={{ padding: 16, border: '1px solid rgba(94,234,212,.38)', borderRadius: 10, background: 'rgba(94,234,212,.05)' }}><div style={label}>4 · Review and finish</div><div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 10 }}><audio controls src={resultUrl} style={{ flex: '1 1 320px', height: 34 }} /><a href={resultUrl} download="character-voice.wav"><button style={button}>Download WAV</button></a><button style={{ ...button, borderColor: 'var(--accent)', color: 'var(--accent)' }} onClick={sendResultToEffects}>Send to Character Effects →</button></div></section>}
+      {status === 'completed' && jobId && <section style={{ padding: 16, border: '1px solid rgba(94,234,212,.38)', borderRadius: 10, background: 'rgba(94,234,212,.05)' }}><div style={label}>4 · Review and finish</div><div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 10 }}><audio controls src={resultUrl} style={{ flex: '1 1 320px', height: 34 }} /><DownloadButton url={resultPath} filename="character-voice.wav" style={button}>Download WAV</DownloadButton><button style={{ ...button, borderColor: 'var(--accent)', color: 'var(--accent)' }} onClick={sendResultToEffects}>Send to Character Effects →</button></div></section>}
       {error && <div style={{ padding: '10px 14px', border: '1px solid var(--danger)', borderRadius: 8, color: 'var(--danger)', fontSize: 12, background: 'rgba(239,68,68,.08)' }}>{error}</div>}
       {!sidecarReady && <div style={{ padding: '10px 14px', border: '1px solid var(--warning)', borderRadius: 8, color: 'var(--warning)', fontSize: 12 }}>Start the Voice Conversion sidecar above to use Character Lab.</div>}
 

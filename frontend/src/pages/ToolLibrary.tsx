@@ -11,9 +11,10 @@ import {
   getTools, generateImage, generateTTS,
   removeBg, upscaleImg, searchSearx, listQdrant,
   generateAlltalk, generateKokoro, scrapeFetch,
-  openTool, installToolStream,
+  openTool, installToolStream, apiUrl,
   type Tool,
 } from '../lib/api'
+import { DownloadButton } from '../components/DownloadButton'
 
 // ── Category meta ─────────────────────────────────────────────────────────────
 
@@ -332,7 +333,7 @@ function SadTalkerPanel() {
         await new Promise(res => setTimeout(res, 3000))
         const jr = await fetch(`/api/tools/jobs/${jobId}`)
         const job = await jr.json()
-        if (job.status === 'done') { setVideoUrl(`/api/tools/jobs/${jobId}/file`); break }
+        if (job.status === 'done') { setVideoUrl(apiUrl(`/api/tools/jobs/${jobId}/file`)); break }
         if (job.status === 'error') throw new Error(job.error || 'SadTalker failed')
       }
     } catch (e: any) { setError(e.message) }
@@ -356,7 +357,7 @@ function SadTalkerPanel() {
       {videoUrl && (
         <>
           <video src={videoUrl} controls style={{ maxWidth: '100%', borderRadius: 8 }} />
-          <a href={videoUrl} download="sadtalker.mp4" style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>Download MP4</a>
+          <DownloadButton url={videoUrl} filename="sadtalker.mp4" style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>Download MP4</DownloadButton>
         </>
       )}
     </div>
@@ -516,7 +517,7 @@ function ChatterboxPanel() {
         await new Promise(res => setTimeout(res, 3000))
         const jr = await fetch(`/api/tools/jobs/${jobId}`)
         const job = await jr.json()
-        if (job.status === 'done') { setAudioUrl(`/api/tools/jobs/${jobId}/file`); break }
+        if (job.status === 'done') { setAudioUrl(apiUrl(`/api/tools/jobs/${jobId}/file`)); break }
         if (job.status === 'error') throw new Error(job.error || 'Chatterbox failed')
       }
     } catch (e: any) { setError(e.message) }
@@ -545,7 +546,7 @@ function ChatterboxPanel() {
       {audioUrl && (
         <>
           <audio controls src={audioUrl} style={{ width: '100%' }} />
-          <a href={audioUrl} download="chatterbox.wav" style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>Download WAV</a>
+          <DownloadButton url={audioUrl} filename="chatterbox.wav" style={{ fontSize: 11, color: 'var(--accent)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>Download WAV</DownloadButton>
         </>
       )}
       <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Zero-shot voice cloning — add a reference clip above to clone that voice; leave it empty for Chatterbox's built-in default voice.</div>

@@ -131,6 +131,14 @@ happens on a current build, run `pgrep -af WebKitWebProcess` while it's grey (no
 died), then look for the last few lines from `WebKitWebProcess` in `journalctl --user --since "-10min"` and
 report them.
 
+## Audio or video won't play, a download saves a tiny file, or Record does nothing (desktop app)
+
+All three were bugs in desktop builds before the fixes in the changelog (playback/downloads used URLs the
+packaged app couldn't resolve; the AppImage lacked GStreamer plugins). Update the app. On a current build, a
+Download button that fails says why next to itself, and `scripts/check_webkit_media.py` (see `CLAUDE.md`) plays and
+records in the same web engine so you can tell an app bug from a missing system package. A downloaded file lands
+in your Downloads folder under the name shown on the button, with a desktop notification.
+
 ## Music Lab: Generate / Jam is greyed out, or the microphone says "Invalid constraint"
 
 - **No provider buttons (ACE-Step / MusicGen), or "Start the Song Generation sidecar" while it is

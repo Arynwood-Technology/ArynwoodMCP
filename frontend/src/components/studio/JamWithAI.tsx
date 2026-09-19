@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Guitar, Loader2, Upload } from 'lucide-react'
-import { getMusicAssets } from '../../lib/api'
+import { apiUrl, getMusicAssets } from '../../lib/api'
 import type { MusicAsset } from '../../lib/api'
 import { useMusicJobStore } from '../../store/useMusicJobStore'
 import { useMusicJobPoll } from './useMusicJobPoll'
@@ -101,7 +101,7 @@ export function JamWithAI({ sidecarReady }: JamWithAIProps) {
 
   const inputPreviewUrl = useMemo(() => {
     if (pendingInputBlob) return URL.createObjectURL(pendingInputBlob)
-    if (selectedInputAssetId) return `/api/music/assets/${selectedInputAssetId}/audio`
+    if (selectedInputAssetId) return apiUrl(`/api/music/assets/${selectedInputAssetId}/audio`)
     return null
   }, [pendingInputBlob, selectedInputAssetId])
   useEffect(() => () => { if (pendingInputBlob && inputPreviewUrl) URL.revokeObjectURL(inputPreviewUrl) }, [pendingInputBlob, inputPreviewUrl])

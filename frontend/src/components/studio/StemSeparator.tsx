@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
-import { request } from '../../lib/api'
+import { apiUrl, request } from '../../lib/api'
+import { DownloadButton } from '../DownloadButton'
 
 const STEM_COLORS: Record<string, string> = {
   vocals: '#e86db7',
@@ -144,10 +145,8 @@ export function StemSeparator({ sidecarReady }: { sidecarReady: boolean }) {
             <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px' }}>
               <span style={{ width: 10, height: 10, borderRadius: '50%', background: STEM_COLORS[name] ?? '#7c5cbf', flexShrink: 0, display: 'inline-block' }} />
               <span style={{ fontWeight: 600, fontSize: 13, minWidth: 60, textTransform: 'capitalize' }}>{name}</span>
-              <audio controls src={`/api/studio/stems/${jobId}/${name}`} style={{ flex: 1, height: 28 }} />
-              <a href={`/api/studio/stems/${jobId}/${name}`} download={`${name}.wav`}>
-                <button style={{ fontSize: 11, padding: '4px 10px', border: '1px solid var(--accent)', borderRadius: 6, color: 'var(--accent)', background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>↓ Download</button>
-              </a>
+              <audio controls src={apiUrl(`/api/studio/stems/${jobId}/${name}`)} style={{ flex: 1, height: 28 }} />
+              <DownloadButton url={`/api/studio/stems/${jobId}/${name}`} filename={`${name}.wav`} style={{ fontSize: 11, padding: '4px 10px', border: '1px solid var(--accent)', borderRadius: 6, color: 'var(--accent)', background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>↓ Download</DownloadButton>
             </div>
           ))}
         </div>

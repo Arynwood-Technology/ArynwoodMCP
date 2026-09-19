@@ -17,11 +17,17 @@ OUT="${1:?usage: $0 <staging-dir>}"
 SRC="${GSTREAMER_PLUGINS_DIR:-/usr/lib/$(uname -m)-linux-gnu/gstreamer-1.0}"
 
 # Playback, decode, capture and MediaRecorder. Missing any of these = a feature silently missing in the app.
+# (debugutilsbad = fakeaudiosink/fakevideosink, which WebKit builds into every media pipeline: without it
+#  `gst_bin_add_many`/`g_object_set` assertions fire on each <audio> element and Subtitles/effects degrade;
+#  transcode + voaacenc + encoding = what WebKitGTK's MediaRecorder needs — found by delta-debugging all 240 host
+#  plugins: without the first two `new MediaRecorder(stream)` throws "unsupported on this platform", without
+#  `encoding` (encodebin2) it records 0 bytes; Music Lab's Record tab depends on it)
 REQUIRED="coreelements typefindfunctions playback app audioconvert audioresample audioparsers volume
-  videoconvertscale autodetect pulseaudio isomp4 matroska ogg vorbis opus wavparse libav vpx"
+  videoconvertscale autodetect pulseaudio isomp4 matroska ogg vorbis opus wavparse libav vpx debugutilsbad
+  videofilter transcode voaacenc encoding"
 # Nice to have; the app still plays audio and video without them.
 OPTIONAL="alsa pipewire flac mpg123 id3demux apetag icydemux opusparse videoparsersbad videorate audiorate
-  rawparse opengl audiofx"
+  rawparse opengl audiofx deinterlace subenc gio autoconvert"
 
 [ -d "$SRC" ] || { echo "no GStreamer plugin directory at $SRC (install gstreamer1.0-plugins-{base,good,bad,ugly}, -libav, -pulseaudio)" >&2; exit 1; }
 rm -rf "$OUT" && mkdir -p "$OUT"

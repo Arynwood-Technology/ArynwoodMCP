@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AudioRecorder } from './AudioRecorder'
-import { request } from '../../lib/api'
+import { apiUrl, request } from '../../lib/api'
+import { DownloadButton } from '../DownloadButton'
 
 const UPLOAD_SENTINEL = '__upload_new__'
 
@@ -97,7 +98,7 @@ function ScriptToVoice({ onSendToEffects }: { onSendToEffects: (blob: Blob) => v
         const jobResponse = await fetch('/api/tools/jobs/' + created.job_id)
         const job = await jobResponse.json()
         if (job.status === 'done') {
-          setAudioUrl('/api/tools/jobs/' + created.job_id + '/file')
+          setAudioUrl(apiUrl('/api/tools/jobs/' + created.job_id + '/file'))
           setStatus('')
           return
         }
@@ -171,7 +172,7 @@ function ScriptToVoice({ onSendToEffects }: { onSendToEffects: (blob: Blob) => v
       <button type="button" disabled={!ready} onClick={() => void generate()} style={{ ...stepButton, marginTop: 14, background: ready ? 'var(--accent)' : 'var(--surface2)', borderColor: ready ? 'var(--accent)' : 'var(--border)', color: ready ? '#fff' : 'var(--text-muted)', cursor: ready ? 'pointer' : 'not-allowed' }}>{generating ? 'Generating your WAV…' : usingSaved ? `Generate as ${selectedVoice}` : 'Generate WAV'}</button>
       {status && <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--accent2)' }}>{status}</p>}
       {error && <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--danger)' }}>{error}</p>}
-      {audioUrl && <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}><audio controls src={audioUrl} style={{ flex: '1 1 280px', height: 34 }} /><a href={audioUrl} download={(usingSaved ? selectedVoice : 'script') + '.wav'}><button type="button" style={stepButton}>Download WAV</button></a><button type="button" onClick={() => void sendToEffects()} style={{ ...stepButton, borderColor: 'var(--accent)', color: 'var(--accent)' }}>Send to Effects Rack →</button></div>}
+      {audioUrl && <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}><audio controls src={audioUrl} style={{ flex: '1 1 280px', height: 34 }} /><DownloadButton url={audioUrl} filename={(usingSaved ? selectedVoice : 'script') + '.wav'} style={stepButton}>Download WAV</DownloadButton><button type="button" onClick={() => void sendToEffects()} style={{ ...stepButton, borderColor: 'var(--accent)', color: 'var(--accent)' }}>Send to Effects Rack →</button></div>}
     </section>
   )
 }

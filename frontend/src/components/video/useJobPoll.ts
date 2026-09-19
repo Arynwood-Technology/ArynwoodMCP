@@ -1,3 +1,4 @@
+import { apiUrl } from '../../lib/api'
 import { useCallback } from 'react'
 import { useVideoJobStore, IDLE_JOB } from '../../store/useVideoJobStore'
 
@@ -45,7 +46,7 @@ export function useJobPoll(key: string) {
             stopPolling()
             patchJob(key, {
               status: 'done', jobId,
-              resultPath: j.result_path ? `/api/tools/jobs/${jobId}/file` : null,
+              resultPath: j.result_path ? apiUrl(`/api/tools/jobs/${jobId}/file`) : null,
               resultText: j.result_text ?? null, error: null,
             })
           } else if (j.status === 'error') {

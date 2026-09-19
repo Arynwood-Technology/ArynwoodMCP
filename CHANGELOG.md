@@ -32,6 +32,24 @@ them as a summary, not a precise record.
 
 ### Fixed
 
+- **Nothing played, and every download saved the wrong file, in the desktop app.** `main.tsx` patches
+  `fetch()` so `/api/...` reaches the backend, but `<audio src>`, `<video src>`, `<a href>` and `new Audio()`
+  can't be patched: a relative `/api/...` there resolved against the app's own origin, which answers with its
+  own `index.html` (`MEDIA_ERR_SRC_NOT_SUPPORTED`), and the Download button saved that HTML page under a
+  name like `audio`. Media and link URLs now go through `apiUrl()`. Downloads fetch the file and save the blob
+  (`DownloadButton` / `lib/download.ts`) — measured in real WebKitGTK, an `<a download>` to another origin is
+  silently ignored, while a blob download honours the filename. The desktop shell no longer overrides the
+  filename WebKit suggests (it used the URL's last path segment, so a blob saved as a bare UUID).
+- **The desktop app's Content-Security-Policy blocked every `blob:` media URL** (no `media-src`, and
+  `default-src` lacks `blob:`) — so a clip or take you had just loaded from disk, and the recorder's own
+  preview, could never play. Added `media-src 'self' blob: data: http://localhost:*` and `blob:`/`data:` to
+  `connect-src`.
+- **Music Lab's Record tab could not record in the desktop app**: `new MediaRecorder(stream)` threw
+  "unsupported on this platform" (and, once that was fixed, recorded 0 bytes) because the AppImage lacked the
+  GStreamer plugins WebKitGTK's recorder needs (`transcode`, `voaacenc`, `encoding`). Also bundled:
+  `debugutilsbad` (fake sinks WebKit puts in every media pipeline — their absence logged GStreamer assertions on
+  each `<audio>`), `videofilter`, `deinterlace`, `subenc`, `gio`, `autoconvert`.
+
 - **The desktop app's window went solid grey the first time it touched audio or video.** The AppImage
   bundled GStreamer's libraries but none of its plugins, and WebKitGTK does all media through GStreamer —
   so there was no audio sink (`GStreamer element autoaudiosink not found`), and WebKit crashed its renderer
