@@ -538,7 +538,10 @@ without launching it (a launch opens a window and fights any running app for :80
 `squashfs-root/usr/bin/arynwood-backend`, check nothing private is bundled, and check the media stack:
 `find squashfs-root -name 'libgst*.so' | wc -l` must be well above 0, and with
 `LD_LIBRARY_PATH=squashfs-root/usr/lib GST_PLUGIN_SYSTEM_PATH_1_0=squashfs-root/usr/lib/gstreamer-1.0 GST_REGISTRY=/tmp/r.bin`
-`gst-inspect-1.0 autoaudiosink` must find it (silent decode/sink pipelines are in the 2026-09-18 audit note). The bundled backend is
+`gst-inspect-1.0 autoaudiosink` must find it; then decode a real WAV, MP3 and H.264/AAC MP4
+(`gst-launch-1.0 -q filesrc location=x.mp4 ! decodebin ! fakesink`) and run a muted pipeline into `autoaudiosink`
+(`… ! volume volume=0 ! autoaudiosink`) under that same environment. Run the same `gst-inspect-1.0` against the
+*previous* extraction as a control — it should say `No such element or plugin 'autoaudiosink'`. The bundled backend is
 ~4 KB larger than `dist/arynwood-backend` (bundler alignment) — expected; the smoke test on the extracted
 copy is the proof, not a checksum comparison. A Rust rebuild is ~2 minutes incrementally. Never
 `pkill -f <pattern>` from a shell whose own command line contains the pattern — it kills the shell.
