@@ -32,6 +32,14 @@ them as a summary, not a precise record.
 
 ### Fixed
 
+- **The desktop app's window went solid grey the first time it touched audio or video.** The AppImage
+  bundled GStreamer's libraries but none of its plugins, and WebKitGTK does all media through GStreamer —
+  so there was no audio sink (`GStreamer element autoaudiosink not found`), and WebKit crashed its renderer
+  process on a NULL sink while the app and backend kept running. Music Lab playback, Video Studio preview and
+  microphone recording in the packaged app all depended on it. The AppImage now bundles the ~33 GStreamer
+  plugins a web view needs (`scripts/stage_gstreamer_plugins.sh`, `bundleMediaFramework`); the `.deb` was never
+  affected (it uses the system's GStreamer).
+
 - **Music Lab: "Generate"/"Jam" stayed disabled if you started the Song Generation sidecar after
   opening the tab.** The provider list was fetched only when the tab first appeared, so it stayed empty
   (with a warning telling you to start a sidecar that was already running) until you switched tabs and

@@ -507,12 +507,27 @@ CSP fix, before it actually worked.
   `can_restart`, and the UI hides the controls. A real fix means adding a respawn loop to
   `start_backend_sidecar()`, which needs a Tauri rebuild to verify.
 
+- **The AppImage had no GStreamer plugins, so the first audio element crashed the web view** (fixed
+  2026-09-18). WebKitGTK does all media through GStreamer — `<audio>`/`<video>`, `MediaRecorder`, microphone
+  capture. Tauri bundles GStreamer's *libraries* but no *plugins* unless `bundle.linux.appimage.bundleMediaFramework`
+  is on, and the AppImage's environment (`GST_PLUGIN_SYSTEM_PATH_1_0`, set by the gtk hook) points GStreamer only
+  at the bundle, so the host's plugins weren't a fallback either. Result: `GStreamer element autoaudiosink not
+  found` and a NULL-pointer `g_signal_connect_data` critical in `WebKitWebProcess`, then the process died —
+  the window goes solid grey while `arynwood` and the backend keep running (`pgrep -f WebKitWebProcess` empty).
+  Music Lab playback, Video Studio preview and mic recording all depend on it; none of it can be seen from a
+  source checkout or Chrome. `scripts/stage_gstreamer_plugins.sh` stages the ~33 plugins a web view needs
+  (playback, libav decode, pulse/alsa/pipewire, isomp4/matroska/ogg/opus for `MediaRecorder`) and prints
+  `GSTREAMER_PLUGINS_DIR` for the bundler; without it the bundler copies all 273 host plugins and their whole
+  dependency tree (VA-API, CUDA, WebRTC…). Needs `patchelf` and the `gstreamer1.0-*` packages on the build machine.
+  The `.deb` is unaffected (it uses the system's GStreamer).
+
 **Building and verifying an AppImage locally (do NOT install it over the user's daily app).**
 ```bash
 git status --short                                   # build from a CLEAN committed tree, never mid-edit
 venv/bin/pyinstaller --noconfirm arynwood-backend.spec           # -> dist/arynwood-backend
 venv/bin/python scripts/smoke_packaged_backend.py dist/arynwood-backend   # GATE: must print ALL CHECKS PASSED
 cp dist/arynwood-backend frontend/src-tauri/binaries/arynwood-backend-x86_64-unknown-linux-gnu
+eval "$(scripts/stage_gstreamer_plugins.sh "$TMPDIR/gst-plugins")"   # curated GStreamer set — see the gotcha below
 cd frontend && APPIMAGE_EXTRACT_AND_RUN=1 npx tauri build --bundles appimage \
   --config '{"version":"0.4.2-dev.'$(git rev-parse --short HEAD)'"}'   # label it: it is NOT the published 0.4.2
 ```
@@ -520,7 +535,10 @@ Output: `frontend/src-tauri/target/release/bundle/appimage/`. The `--config` ver
 file, so the repo's version files stay in step (`tests/test_version_consistency.py`). Verify the artifact
 without launching it (a launch opens a window and fights any running app for :8010): extract with
 `APPIMAGE_EXTRACT_AND_RUN=1 ./x.AppImage --appimage-extract`, run the smoke test against
-`squashfs-root/usr/bin/arynwood-backend`, and check nothing private is bundled. The bundled backend is
+`squashfs-root/usr/bin/arynwood-backend`, check nothing private is bundled, and check the media stack:
+`find squashfs-root -name 'libgst*.so' | wc -l` must be well above 0, and with
+`LD_LIBRARY_PATH=squashfs-root/usr/lib GST_PLUGIN_SYSTEM_PATH_1_0=squashfs-root/usr/lib/gstreamer-1.0 GST_REGISTRY=/tmp/r.bin`
+`gst-inspect-1.0 autoaudiosink` must find it (silent decode/sink pipelines are in the 2026-09-18 audit note). The bundled backend is
 ~4 KB larger than `dist/arynwood-backend` (bundler alignment) — expected; the smoke test on the extracted
 copy is the proof, not a checksum comparison. A Rust rebuild is ~2 minutes incrementally. Never
 `pkill -f <pattern>` from a shell whose own command line contains the pattern — it kills the shell.

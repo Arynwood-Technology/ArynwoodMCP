@@ -122,6 +122,15 @@ first (`ss -ltnp | grep 8010`).
 The packaged app can't restart its own backend, so the button is hidden there — quit and relaunch. From
 a source checkout it works only under `uvicorn --reload` (the way `start.sh` runs it).
 
+## The whole window went solid grey (the app is still running)
+
+The page's renderer process crashed; the app and its backend are fine and your files are safe. Quit the app
+and start it again — nothing else is needed. On the AppImage builds before the fix in the changelog this
+happened the moment anything tried to play audio or video (the bundle had no GStreamer plugins). If it still
+happens on a current build, run `pgrep -af WebKitWebProcess` while it's grey (nothing listed = the renderer
+died), then look for the last few lines from `WebKitWebProcess` in `journalctl --user --since "-10min"` and
+report them.
+
 ## Music Lab: Generate / Jam is greyed out, or the microphone says "Invalid constraint"
 
 - **No provider buttons (ACE-Step / MusicGen), or "Start the Song Generation sidecar" while it is
