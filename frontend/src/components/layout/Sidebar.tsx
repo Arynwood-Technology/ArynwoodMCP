@@ -20,9 +20,11 @@ function Label({ children, show }: { children: React.ReactNode; show: boolean })
   return <span className={show ? 'truncate text-xs font-medium' : 'sr-only'}>{children}</span>
 }
 
-function NavBtn({ to, icon: Icon, label, expanded, nested = false }: {
-  to: string; icon: LucideIcon; label: string; expanded: boolean; nested?: boolean
+function NavBtn({ to, icon: Icon, label, expanded, nested = false, also }: {
+  to: string; icon: LucideIcon; label: string; expanded: boolean; nested?: boolean; also?: string[]
 }) {
+  const { pathname } = useLocation()
+  const inAlso = !!also?.some(p => pathname === p || pathname.startsWith(p + '/'))
   return (
     <NavLink
       to={to}
@@ -33,13 +35,13 @@ function NavBtn({ to, icon: Icon, label, expanded, nested = false }: {
         expanded ? 'h-9 w-full gap-2.5 px-2.5' : 'size-11 justify-center',
         nested && expanded && 'pl-7',
         nested && !expanded && 'size-9 border border-border',
-        isActive ? ACTIVE : cn(IDLE, nested && !expanded && 'bg-bg'),
+        isActive || inAlso ? ACTIVE : cn(IDLE, nested && !expanded && 'bg-bg'),
       )}
     >
       {({ isActive }) => (
         <>
           <Icon size={nested && !expanded ? 16 : 20} aria-hidden="true" className="shrink-0" />
-          <Label show={expanded}>{label}{isActive ? ' (current page)' : ''}</Label>
+          <Label show={expanded}>{label}{isActive || inAlso ? ' (current page)' : ''}</Label>
         </>
       )}
     </NavLink>
@@ -108,7 +110,7 @@ export function Sidebar() {
 
       {NAV.map(item => {
         if (item.kind !== 'group') {
-          return <NavBtn key={item.to} to={item.to} icon={item.icon} label={item.label} expanded={expanded} />
+          return <NavBtn key={item.to} to={item.to} icon={item.icon} label={item.label} expanded={expanded} also={item.also} />
         }
 
         const childActive = item.children.some(c => location.pathname === c.to)

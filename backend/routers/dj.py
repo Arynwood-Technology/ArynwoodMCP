@@ -7,9 +7,9 @@ endpoint), these are desktop GUI apps with no HTTP surface at all — status is
 read by asking the OS what's running (`flatpak ps` for Flatpak apps, `pgrep`
 for native binaries), and "launch" just spawns the app and forgets it.
 
-Content (descriptions/quickstart/tips) is sourced from this machine's own
-DJ/README.md and DJ/techno-learning-plan.md — install state and free-tier
-claims there were verified firsthand, not guessed.
+Content (descriptions, quickstarts, tips) is static reference material about each
+app. Install state is never assumed: status comes from the OS, and launching an app that
+isn't installed reports that instead of pretending.
 """
 
 import asyncio
@@ -19,23 +19,6 @@ from fastapi import APIRouter, HTTPException
 
 router = APIRouter()
 
-# Local reference docs this router can open on request (xdg-open, same idiom as
-# tools.py's /open). Paths are outside this repo — the DJ project lives in a
-# separate working directory on this machine.
-_DJ_PROJECT_DIR = os.path.expanduser("~/Desktop/Music Album/DJ")
-REFERENCE_DOCS = {
-    "readme": {
-        "label": "DJ Toolkit README",
-        "description": "What's installed on this machine and day-to-day launch commands.",
-        "path": os.path.join(_DJ_PROJECT_DIR, "README.md"),
-    },
-    "learning_plan": {
-        "label": "8-Week Learning Plan",
-        "description": "Full techno DJ + production curriculum: skills in order, free tutorials, sample packs, weekly milestones.",
-        "path": os.path.join(_DJ_PROJECT_DIR, "techno-learning-plan.md"),
-    },
-}
-
 # Each entry: id -> tool metadata + manual content.
 #   kind: "flatpak" | "binary" | "plugin"
 #     flatpak — launched via `flatpak run <app_id>`, status via `flatpak ps`
@@ -44,7 +27,7 @@ REFERENCE_DOCS = {
 #   standalone: for synths that are both a plugin AND a standalone app
 DJ_TOOLS: dict[str, dict] = {
     "mixxx": {
-        "name": "Mixxx", "version": "2.5.6", "category": "dj",
+        "name": "Mixxx", "version": None, "category": "dj",
         "role": "DJ mixing — beatmatching, EQ blending, live sets",
         "description": "Two-deck+ DJ mixing software with waveform display, headphone cueing, "
                         "3-band EQ, looping, and library management (crates, BPM/key analysis, cue points). "
@@ -63,13 +46,13 @@ DJ_TOOLS: dict[str, dict] = {
             "Skill order: waveform reading + manual beatmatching -> phrase matching (8/16/32-bar counts) -> "
             "3-band EQ blending (bass-swap transitions — the actual techno-DJ technique, not just crossfading) "
             "-> long/quick transitions -> a tagged, crated library -> reading set energy.",
-            "Flatpak sandbox override already applied on this machine so ~/Downloads is visible: "
+            "If Mixxx can't see ~/Downloads (Flatpak sandbox), grant it read-only: "
             "flatpak override --user --filesystem=xdg-download:ro org.mixxx.Mixxx",
             "Launch with tracks preloaded into both decks: flatpak run org.mixxx.Mixxx track1.mp3 track2.mp3",
         ],
     },
     "ardour": {
-        "name": "Ardour", "version": "9.7.0", "category": "daw",
+        "name": "Ardour", "version": None, "category": "daw",
         "role": "DAW — arrangement, mixing, automation, export",
         "description": "Full production DAW. Genuinely free with no track/feature limits via this Flathub build "
                         "(the official ardour.org binary nags for a donation or mutes audio after 10 min — Flathub's doesn't).",
@@ -81,7 +64,7 @@ DJ_TOOLS: dict[str, dict] = {
             "If a newly-installed plugin doesn't show up: Window -> Plugin Manager -> rescan.",
         ],
         "tips": [
-            "Flatpak sandboxing can hide ~/.vst3 / ~/.lv2 plugins from Ardour. Fixed on this machine via: "
+            "Flatpak sandboxing can hide ~/.vst3 / ~/.lv2 plugins from Ardour. Fix it with: "
             "flatpak override --user --filesystem=home/.vst3:ro --filesystem=home/.lv2:ro org.ardour.Ardour — "
             "re-run after installing a new plugin folder Ardour still can't see.",
             "Calf, LSP, and Dragonfly Reverb are installed as system LV2 packages (apt), so Ardour finds them with no override needed.",
@@ -89,7 +72,7 @@ DJ_TOOLS: dict[str, dict] = {
         ],
     },
     "hydrogen": {
-        "name": "Hydrogen", "version": "1.2.6", "category": "daw",
+        "name": "Hydrogen", "version": None, "category": "daw",
         "role": "Drum machine / pattern sequencer",
         "description": "Standalone pattern-based drum machine — the primary tool for programming techno grooves: "
                         "4-on-the-floor kicks, off-beat hats, clap/percussion layering, swing.",
@@ -106,7 +89,7 @@ DJ_TOOLS: dict[str, dict] = {
         ],
     },
     "surge_xt": {
-        "name": "Surge XT", "version": "1.3.4", "category": "synth",
+        "name": "Surge XT", "version": None, "category": "synth",
         "role": "Synth — basslines & leads (VST3/CLAP/standalone)",
         "description": "Deep subtractive/hybrid synthesis, a strong all-rounder for techno basslines and pads.",
         "kind": "flatpak", "app_id": "org.surge_synth_team.surge-xt", "standalone": True,
@@ -120,7 +103,7 @@ DJ_TOOLS: dict[str, dict] = {
         "tips": [],
     },
     "vital": {
-        "name": "Vital", "version": "1.6.4", "category": "synth",
+        "name": "Vital", "version": None, "category": "synth",
         "role": "Synth — wavetable, leads & basslines (VST3/LV2/standalone)",
         "description": "Wavetable synth, excellent for modulated leads and basslines. The free 'Basic' tier is permanent, "
                         "not a trial — full synth engine, just fewer bundled presets/wavetables than the paid tiers.",
@@ -148,7 +131,7 @@ DJ_TOOLS: dict[str, dict] = {
         "tips": [],
     },
     "flatseal": {
-        "name": "Flatseal", "version": "2.4.1", "category": "utility",
+        "name": "Flatseal", "version": None, "category": "utility",
         "role": "Utility — Flatpak sandbox permissions GUI",
         "description": "GUI for adjusting what a Flatpak app can see on disk. Reach for this the moment a Flatpak app "
                         "(Ardour, Mixxx) can't see a folder, drive, or plugin directory it should.",
@@ -159,7 +142,7 @@ DJ_TOOLS: dict[str, dict] = {
             "CLI equivalent, for one-off overrides: flatpak override --user --filesystem=/path/to/folder:ro org.example.App",
         ],
         "tips": [
-            "Already applied on this machine: Ardour -> ~/.vst3 and ~/.lv2 (read-only); Mixxx -> ~/Downloads (read-only).",
+            "Typical grants: Ardour -> ~/.vst3 and ~/.lv2 (read-only); Mixxx -> ~/Downloads (read-only).",
         ],
     },
     "calf": {
@@ -343,26 +326,3 @@ async def start_session(session_id: str):
         except FileNotFoundError:
             results.append({"tool_id": tool_id, "launched": False, "reason": "launch command not found"})
     return {"session_id": session_id, "results": results}
-
-
-# ── Reference docs ───────────────────────────────────────────────────────────
-
-@router.get("/docs")
-async def list_reference_docs():
-    """GET /dj/docs — reference docs this router can open on the desktop."""
-    return [
-        {"id": did, "label": d["label"], "description": d["description"], "exists": os.path.isfile(d["path"])}
-        for did, d in REFERENCE_DOCS.items()
-    ]
-
-
-@router.post("/docs/{doc_id}/open")
-async def open_reference_doc(doc_id: str):
-    """POST /dj/docs/{id}/open — open a local markdown reference doc in the desktop's default app."""
-    if doc_id not in REFERENCE_DOCS:
-        raise HTTPException(404, "Unknown reference doc")
-    path = REFERENCE_DOCS[doc_id]["path"]
-    if not os.path.isfile(path):
-        raise HTTPException(404, f"File not found: {path}")
-    await asyncio.create_subprocess_exec("xdg-open", path)
-    return {"opened": path}

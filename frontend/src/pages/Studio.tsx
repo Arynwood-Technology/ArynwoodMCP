@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Mic, Scissors, Mic2, Sliders, Play, Square, RefreshCw, Loader2, Radio, Sparkles, Guitar } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Mic, Scissors, Mic2, Sliders, Play, Square, RefreshCw, Loader2, Radio, Sparkles, Guitar, Disc3 } from 'lucide-react'
 import { AudioRecorder } from '../components/studio/AudioRecorder'
 import { StemSeparator } from '../components/studio/StemSeparator'
 import { VoiceConversion } from '../components/studio/VoiceConversion'
@@ -34,6 +35,7 @@ const STATUS_COLOR: Record<string, string> = {
 
 export function Studio() {
   const [tab, setTab] = useState<Tab>('booth')
+  const navigate = useNavigate()
   const [sidecars, setSidecars] = useState<Record<string, SidecarInfo>>({})
   const [loadingSidecar, setLoadingSidecar] = useState<string | null>(null)
   const [sidecarError, setSidecarError] = useState<string | null>(null)
@@ -112,9 +114,19 @@ export function Studio() {
             )}
           </div>
         ))}
-        <button onClick={fetchSidecars} title="Refresh" style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2, marginLeft: 'auto' }}>
-          <RefreshCw size={13} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}>
+          {/* A tool, not a tab or a sidebar destination: it opens its own page and stays out of the way. */}
+          <button onClick={() => navigate('/dj')} title="Launch and learn the desktop DJ and production apps (Mixxx, Ardour, Hydrogen, Surge XT…)" style={{
+            display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap', padding: '4px 10px',
+            background: 'none', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11,
+          }}>
+            <Disc3 size={12} />
+            DJ Toolkit
+          </button>
+          <button onClick={fetchSidecars} title="Refresh" style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2 }}>
+            <RefreshCw size={13} />
+          </button>
+        </div>
       </div>
 
       {/* Tab navigation */}

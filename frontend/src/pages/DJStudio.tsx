@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Disc3, Music4, Waves, ShieldCheck, SlidersHorizontal,
   Play, Loader2, ExternalLink, ChevronDown, ChevronUp,
-  FileText, BookOpen, CheckCircle2, Circle, PlugZap,
+  ArrowLeft, BookOpen, CheckCircle2, Circle, PlugZap,
   type LucideIcon,
 } from 'lucide-react'
 import {
   getDjTools, launchDjTool, getDjSessions, startDjSession,
-  getDjDocs, openDjDoc,
-  type DjTool, type DjSession, type DjDoc,
+  type DjTool, type DjSession,
 } from '../lib/api'
 
 // ── Category meta ────────────────────────────────────────────────────────────
@@ -185,7 +185,7 @@ function SessionCard({ session, tools, starting, onStart }: {
 export function DJStudio() {
   const [tools, setTools] = useState<DjTool[]>([])
   const [sessions, setSessions] = useState<DjSession[]>([])
-  const [docs, setDocs] = useState<DjDoc[]>([])
+  const navigate = useNavigate()
   const [launchingId, setLaunchingId] = useState<string | null>(null)
   const [startingSession, setStartingSession] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -199,7 +199,6 @@ export function DJStudio() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadTools()
     getDjSessions().then(setSessions).catch(() => {})
-    getDjDocs().then(setDocs).catch(() => {})
     const t = setInterval(loadTools, 5000)
     return () => clearInterval(t)
   }, [])
@@ -234,16 +233,6 @@ export function DJStudio() {
     setStartingSession(null)
   }
 
-  const openDoc = async (id: string) => {
-    setError(null)
-    try {
-      const { opened } = await openDjDoc(id)
-      setMessage(`Opened ${opened} in your default app.`)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Unable to open that file.')
-    }
-  }
-
   useEffect(() => {
     if (!message) return
     const t = setTimeout(() => setMessage(null), 4000)
@@ -257,6 +246,14 @@ export function DJStudio() {
 
       <div style={{ flex: 1, overflow: 'auto', padding: 24, maxWidth: 980 }}>
 
+        {/* This page is a tool inside Music, not a top-level destination — say where you came from. */}
+        <button onClick={() => navigate('/studio')} style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 14, padding: '4px 0',
+          background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 12,
+        }}>
+          <ArrowLeft size={13} /> Back to Music
+        </button>
+
         {/* Getting started strip */}
         <div style={{
           background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12,
@@ -269,17 +266,6 @@ export function DJStudio() {
               Everything on this page runs as a native app on this machine — launching just opens it, same as clicking it in your app menu.
               Program drums in Hydrogen, arrange/mix in Ardour, beatmatch and blend in Mixxx.
             </div>
-          </div>
-          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-            {docs.map(d => (
-              <button key={d.id} onClick={() => openDoc(d.id)} title={d.description} disabled={!d.exists} style={{
-                background: 'var(--surface2)', border: '1px solid var(--border)', color: d.exists ? 'var(--text-muted)' : 'var(--text-muted)',
-                opacity: d.exists ? 1 : 0.5, borderRadius: 6, padding: '6px 10px', cursor: d.exists ? 'pointer' : 'not-allowed',
-                fontSize: 11, display: 'flex', alignItems: 'center', gap: 5,
-              }}>
-                <FileText size={12} /> {d.label}
-              </button>
-            ))}
           </div>
         </div>
 

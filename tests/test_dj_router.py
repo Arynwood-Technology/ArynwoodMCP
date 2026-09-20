@@ -80,13 +80,18 @@ def test_start_unknown_session_404s(client):
     assert r.status_code == 404
 
 
-def test_open_unknown_doc_404s(client):
-    r = client.post("/api/dj/docs/not-a-doc/open")
-    assert r.status_code == 404
+def test_no_machine_specific_content_ships():
+    """The tool registry is public reference material: no personal paths, no claims about 'this machine',
+    no installed-version numbers copied from one computer. (The docs-opening routes that read a folder on
+    one machine were removed for the same reason.)"""
+    import json
+    blob = json.dumps(dj.DJ_TOOLS)
+    assert "this machine" not in blob
+    assert "Music Album" not in blob
+    assert all(info.get("version") is None for info in dj.DJ_TOOLS.values())
+    assert not hasattr(dj, "REFERENCE_DOCS")
 
 
-def test_list_docs(client):
-    r = client.get("/api/dj/docs")
-    assert r.status_code == 200
-    ids = {d["id"] for d in r.json()}
-    assert ids == set(dj.REFERENCE_DOCS.keys())
+def test_docs_routes_are_gone(client):
+    assert client.get("/api/dj/docs").status_code == 404
+    assert client.post("/api/dj/docs/readme/open").status_code == 404

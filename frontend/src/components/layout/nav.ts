@@ -1,10 +1,11 @@
 import {
   LayoutDashboard, MessageSquare, Cpu, Server,
-  Wrench, Upload, Palette, Brain, Music2, Share2, Clapperboard, Disc3,
+  Wrench, Upload, Palette, Brain, Music2, Share2, Clapperboard,
   type LucideIcon,
 } from 'lucide-react'
 
-export type NavLeaf = { to: string; icon: LucideIcon; label: string }
+/** `also`: other routes that belong to this destination, so it stays highlighted while you're on them. */
+export type NavLeaf = { to: string; icon: LucideIcon; label: string; also?: string[] }
 export type NavItem =
   | ({ kind?: 'link' } & NavLeaf)
   | { kind: 'group'; icon: LucideIcon; label: string; children: NavLeaf[] }
@@ -23,8 +24,8 @@ export const NAV: NavItem[] = [
   { to: '/publish', icon: Upload,       label: 'Publish'       },
   { to: '/tools',   icon: Wrench,       label: 'Tools'         },
   { to: '/design',  icon: Palette,      label: 'Design Center' },
-  { to: '/studio',  icon: Music2,       label: 'Music'         },
-  { to: '/dj',      icon: Disc3,        label: 'DJ Toolkit'    },
+  // /dj (the DJ Toolkit) is a tool reached from this page, deliberately not a sidebar entry of its own.
+  { to: '/studio',  icon: Music2,       label: 'Music', also: ['/dj'] },
   { to: '/video',   icon: Clapperboard, label: 'Video Studio'  },
   { to: '/social',  icon: Share2,       label: 'Social Media'  },
 ]

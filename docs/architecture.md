@@ -56,7 +56,8 @@ frontend/src/
     ├── Knowledge.tsx      — Semantic search / !learn-equivalent knowledge base UI
     ├── Studio.tsx         — Music Lab: AI generation (ACE-Step/MusicGen), jam with AI, stems, RVC, effects
     ├── DJStudio.tsx       — DJ Toolkit: launcher + built-in manual for Mixxx/Ardour/Hydrogen/
-    │                        Surge XT/Vital/Flatseal/Calf/LSP/Dragonfly/Geonkick (desktop apps, not web tools)
+    │                        Surge XT/Vital/Flatseal/Calf/LSP/Dragonfly/Geonkick (desktop apps, not web tools).
+    │                        A tool reached from a button on the Music page — not in the sidebar (`nav.ts`)
     ├── Social.tsx         — Social media OAuth + publishing
     └── Video.tsx          — Kdenlive automation, video generation/edit/caption jobs
 ```
@@ -281,8 +282,6 @@ GET  /tools/{id}                — full manual (quickstart + tips) + status for
 POST /tools/{id}/launch         — spawn the tool's GUI app; 400 if it's plugin-only
 GET  /sessions                  — session bundle definitions (e.g. "Production" = Ardour+Hydrogen)
 POST /sessions/{id}/start       — launch every tool in a session, skipping any already running
-GET  /docs                      — reference docs this router can open (DJ project's README/learning plan)
-POST /docs/{id}/open            — xdg-open a reference doc in the desktop's default app
 ```
 
 Tool registry (`DJ_TOOLS` in `backend/routers/dj.py`): Mixxx (DJ mixing, Flatpak),
@@ -291,9 +290,9 @@ PipeWire/JACK automatically), Surge XT (synth, Flatpak) + Vital (synth, native
 binary) + Geonkick (percussion synth, native binary) — all standalone-or-plugin,
 Flatseal (Flatpak sandbox permissions GUI), and Calf/LSP/Dragonfly Reverb
 (plugin-only — load inside Ardour, no standalone launcher). Manual content
-(quickstart steps, gotchas) is sourced from this machine's own DJ project
-`README.md`/`techno-learning-plan.md`, not invented — install state and
-free-tier claims there were verified firsthand.
+(quickstart steps, gotchas) is static reference material; install state is never assumed — status comes from
+the OS. (An earlier version also opened a `README.md`/learning plan from one machine's `~/Desktop/Music Album/DJ`
+folder and shipped that machine's installed version numbers; both were removed as personal, machine-specific data.)
 
 ---
 

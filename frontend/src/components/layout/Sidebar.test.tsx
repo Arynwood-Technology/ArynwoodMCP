@@ -24,6 +24,17 @@ describe('Sidebar', () => {
     expect(screen.getByRole('link', { name: /^Tools/ })).toBeInTheDocument()
   })
 
+  it('does not list the DJ Toolkit — it is a tool inside Music, not a destination', () => {
+    renderSidebar()
+    expect(screen.queryByRole('link', { name: /DJ Toolkit/ })).toBeNull()
+    expect(screen.getByRole('link', { name: /^Music/ })).toHaveAttribute('href', '/studio')
+  })
+
+  it('keeps Music highlighted while you are in the DJ Toolkit it launched', () => {
+    renderSidebar('/dj')
+    expect(screen.getByRole('link', { name: /Music \(current page\)/ })).toBeInTheDocument()
+  })
+
   it('keeps destination names accessible while collapsed', () => {
     renderSidebar()
     // Labels are sr-only in the rail, not removed — the accessible name must not

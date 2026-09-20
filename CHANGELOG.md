@@ -30,6 +30,15 @@ them as a summary, not a precise record.
   (they had none), a `generate_spreadsheet` tool for Glyph, and opt-in codebase tools
   (`ARYNWOOD_ENABLE_CODEBASE_TOOLS=1`).
 
+### Changed
+
+- **The DJ Toolkit is a tool inside Music, not a sidebar destination.** It's a small "DJ Toolkit" button
+  in the Music page's sidebar strip (next to Refresh) that opens the same page, with a "Back to Music" link, and
+  Music stays highlighted in the sidebar while you're there. It is a launcher for Flatpak/desktop apps on
+  Linux, so it no longer takes a top-level slot for everyone. Its content is now generic: the "open my DJ project's
+  README / learning plan" buttons (which read a fixed folder on one machine) and the hardcoded "installed
+  version" numbers and "already applied on this machine" tips were removed.
+
 ### Fixed
 
 - **Nothing played, and every download saved the wrong file, in the desktop app.** `main.tsx` patches

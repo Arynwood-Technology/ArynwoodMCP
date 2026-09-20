@@ -459,13 +459,3 @@ export const startDjSession = (id: string) =>
   request<{ session_id: string; results: { tool_id: string; launched: boolean; pid?: number; reason?: string }[] }>(
     `/dj/sessions/${id}/start`, { method: 'POST' }
   )
-
-export interface DjDoc {
-  id: string
-  label: string
-  description: string
-  exists: boolean
-}
-export const getDjDocs = () => request<DjDoc[]>('/dj/docs')
-export const openDjDoc = (id: string) =>
-  request<{ opened: string }>(`/dj/docs/${id}/open`, { method: 'POST' })
