@@ -339,3 +339,24 @@ from a different concurrent session sharing this same checkout (this machine has
 several other active/idle Claude Code sessions per `ListAgents`). Left in place
 rather than deleted — it isn't this session's file to remove on its own judgment,
 and it isn't staged or going to be committed either way.
+
+## Addendum, 2026-09-19 — desktop-app bugs that only a real WebKitGTK could show
+
+After the packaged app was used for real, a run of bugs turned up that no unit test, source run, Chrome session or
+`gst-launch` pipeline could have found. Each was reproduced in a real WebKitGTK (Python `gi` under Xvfb, the same engine
+version the AppImage bundles) before it was fixed, and checked again after. All are fixed and in `CHANGELOG.md`.
+
+| Symptom | Cause | Why nothing caught it |
+|---|---|---|
+| Window turns solid grey on first playback; app and backend keep running | AppImage shipped GStreamer's libraries but no plugins → no `autoaudiosink` → WebKit dereferenced NULL and its renderer died | Chrome plays audio natively; the source run uses the host's plugins |
+| Audio won't play, Download saves a tiny file named `audio` | Only `fetch()` was rewritten to the backend; `<audio src>`/`<a href>` resolved against `tauri://localhost` and got `index.html` | In dev, Vite proxies `/api` so relative URLs worked |
+| Download button does nothing | An `<a download>` to another origin is ignored by WebKit; the shell also renamed blobs to a bare UUID | Chrome honours cross-origin downloads differently |
+| Picked/recorded files never preview | CSP had no `media-src`, `default-src` lacks `blob:` | The CSP only exists in the Tauri build |
+| Record tab: "unsupported", then 0 bytes | `MediaRecorder` needs the `transcode`, `voaacenc`, `encoding` plugins (found by bisecting all 240 host plugins) | `gst-launch` pipelines pass without them; only WebKit's own logic needs them |
+| Mic "Invalid constraint" | Exact device id from a pre-permission (blank) enumeration; WebKit's error isn't a `DOMException` | Chrome accepts the same request |
+| Generate/Jam disabled after starting the sidecar | Provider list fetched only on tab mount | Tests mounted with the sidecar already up |
+
+**Lesson kept as process:** for anything media, download or permission related in the packaged app, the acceptance test
+is `scripts/check_webkit_media.py` against the *extracted AppImage's own* GStreamer, with the previous build as a control
+(it prints `GStreamer element autoaudiosink not found` and times out — the grey window). Still not automated: capture from
+a physical microphone in the packaged window, and a self-healing reload if the renderer ever dies again.

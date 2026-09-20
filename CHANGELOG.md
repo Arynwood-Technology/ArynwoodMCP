@@ -11,6 +11,12 @@ them as a summary, not a precise record.
 
 ### Added
 
+- **Release tooling for the desktop build:** `scripts/stage_gstreamer_plugins.sh` (the curated GStreamer plugin set the
+  AppImage bundles) and `scripts/check_webkit_media.py` (plays WAV/MP3/MP4 and records in a real WebKitGTK under any
+  plugin set — the acceptance test for a built AppImage). Both are described in `CLAUDE.md`.
+- `DownloadButton` / `lib/download.ts` (save a backend file under a chosen name), `apiUrl()` in `lib/api.ts`, `lib/mic.ts`
+  (`openMicStream`, `usableInputs`, `describeMicError`), and Music Lab's `useMusicCapabilities` / `FailedMusicJobs` —
+  each with tests (93 frontend tests now).
 - Two optional per-persona `models.json` fields: `app_aware: false` lets a
   persona built entirely around its own system instructions skip the
   app-environment preamble (GPU tools, Kdenlive control, etc.) it has no
@@ -63,7 +69,7 @@ them as a summary, not a precise record.
   bundled GStreamer's libraries but none of its plugins, and WebKitGTK does all media through GStreamer —
   so there was no audio sink (`GStreamer element autoaudiosink not found`), and WebKit crashed its renderer
   process on a NULL sink while the app and backend kept running. Music Lab playback, Video Studio preview and
-  microphone recording in the packaged app all depended on it. The AppImage now bundles the ~33 GStreamer
+  microphone recording in the packaged app all depended on it. The AppImage now bundles the ~40 GStreamer
   plugins a web view needs (`scripts/stage_gstreamer_plugins.sh`, `bundleMediaFramework`); the `.deb` was never
   affected (it uses the system's GStreamer).
 

@@ -25,6 +25,18 @@ Both bundle the frontend and a packaged backend — no separate `venv`/`npm inst
 step. **Ollama is not bundled** and must be installed separately (see
 [ollama.com](https://ollama.com)) — the app will tell you if it can't reach it.
 
+The AppImage is about 200 MB: it carries its own web engine and the GStreamer plugins that
+audio, video and microphone recording need.
+
+### Audio, video and downloads
+
+- **AppImage:** nothing to install — playback and recording work out of the box.
+- **.deb:** the app uses your system's GStreamer, so make sure the plugin packages are present,
+  or audio/video won't play and the Record tab can't record:
+  `sudo apt install gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-pulseaudio`
+- **Downloads** (the download arrow on a track, stem or render) are saved to your `~/Downloads` folder under
+  the name shown, and a desktop notification confirms it. If a download fails, the button says why.
+
 ### Features that don't work in the packaged build
 
 Read this before you install, not after a feature fails on you. Everything below

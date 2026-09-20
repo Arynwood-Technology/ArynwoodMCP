@@ -360,10 +360,20 @@ export function MyPage() {
 That one entry drives both the sidebar and the command palette (`NAV_DESTINATIONS`
 is derived from `NAV`), so there is no second list to keep in sync.
 
+A page that is a *tool reached from another page* rather than a destination (the DJ
+Toolkit is the example: a small button on Music opens `/dj`) skips this step. Give the
+parent's nav entry `also: ['/dj']` so it stays highlighted, and add a "Back to …" link on the
+tool page.
+
 4. Add the page's title to `ROUTE_TITLES` in
    `frontend/src/components/layout/AppShell.tsx`. Only do something else if the
    title depends on state — then call `usePageTitle()` from the page instead, the
    way `Chat` does for the active persona name.
+
+**Playing or downloading a backend file?** Use `apiUrl('/api/...')` for `<audio src>`,
+`<video src>`, `<img src>` and links, and `DownloadButton` for downloads — a relative `/api/...`
+there only works in a dev run, not in the packaged desktop app (see `docs/architecture.md`,
+"The packaged desktop app").
 
 **Do not render `TopBar` from the page.** It is mounted once by `AppShell`. Every
 page used to render its own, which is why there was nowhere to host the command

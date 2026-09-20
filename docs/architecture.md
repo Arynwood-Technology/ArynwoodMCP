@@ -119,6 +119,30 @@ in it. Data-driven colours stay inline, since Tailwind cannot generate dynamic c
 
 ---
 
+## The packaged desktop app: where it differs from a source run
+
+A source run (Vite + uvicorn) hides a class of bugs that only exist in the Tauri build, because there the page is
+served from `tauri://localhost` — not from the backend and not through Vite's `/api` proxy — inside WebKitGTK.
+What that means for frontend code (details and history in `CLAUDE.md`'s gotchas):
+
+- **`/api/...` URLs.** `main.tsx` patches `fetch()` so a string `/api/...` reaches `http://localhost:8010`, but
+  `<audio src>`, `<video src>`, `<img src>`, `new Audio()`, `<a href>` and `window.open()` can't be patched: a relative
+  path there resolves against `tauri://localhost` and gets the app's own `index.html` back. Wrap those URLs in
+  `apiUrl()` (`lib/api.ts`).
+- **Downloads.** In WebKitGTK an `<a download>` pointing at another origin is silently ignored; a `blob:` one is
+  honoured with its filename. Backend files are downloaded with `DownloadButton` / `downloadFile()` (fetch → blob →
+  anchor). The Tauri shell (`main.rs`) saves the result into `~/Downloads` and shows a notification.
+- **Content-Security-Policy** (`tauri.conf.json`) must allow `media-src` for `blob:`, or every locally-loaded clip and
+  recording preview fails with media error 4.
+- **Media stack.** WebKitGTK does all audio, video, `MediaRecorder` and microphone capture through GStreamer. The
+  AppImage bundles a curated plugin set (`scripts/stage_gstreamer_plugins.sh`); with none, the first `<audio>` element
+  crashes the renderer and the window goes solid grey. The `.deb` uses the system's GStreamer.
+- **Processes.** The backend and its sidecars run with a sanitized environment and die with the shell — see
+  "A packaged backend's environment is toxic to its children" in `CLAUDE.md`.
+
+Verify these in a real WebKitGTK (`scripts/check_webkit_media.py`, `scripts/smoke_packaged_backend.py`), not in Chrome:
+Chrome loads the same URLs, plays the same files and ignores the same CSP quirks differently.
+
 ## Backend Structure
 
 ### FastAPI Application (`backend/api.py`)

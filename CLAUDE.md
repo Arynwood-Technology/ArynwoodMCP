@@ -84,6 +84,10 @@ All source in `frontend/src/`.
   primitive's built-in classes instead of both landing in the output
 - **`lib/api.ts`** — typed fetch wrapper; all calls go through `request()` which prefixes `/api` (Vite proxies to `:8010`, including WebSocket)
 - **`lib/ws.ts`** — WebSocket client for streaming chat. Reconnects with 1s→10s backoff and ignores events from any socket that is no longer current (`ws.test.ts`); `Chat`/`Dashboard` reset in-flight state (and hand a failed message back to the composer) in their `onClose`. `disconnect()` is intentional teardown: no reconnect, no `onClose`
+- **`lib/api.ts` `apiUrl()`, `lib/download.ts`, `components/DownloadButton.tsx`, `lib/mic.ts`** — the pieces that make the
+  *packaged* app behave: absolute backend URLs for media elements and links, blob-based downloads, and microphone
+  helpers that survive WebKitGTK's quirks. See the "`fetch()` is patched…" gotcha below before adding any media or
+  download UI
 - **`store/useAppStore.ts`** — single Zustand store: system status, active persona/model/server, conversations, tools, `pageTitle` override, `sidebarExpanded`, palette/drawer open flags, the Dashboard's embedded Arynwood chat state. Wrapped in `persist` with a `partialize` that saves **only** `sidebarExpanded` — everything else is server state or per-session and must not survive a reload
 - **`lib/useMediaQuery.ts`** — `useSyncExternalStore` over `matchMedia`, for the few places a breakpoint changes behaviour rather than styling (the sidebar forces its rail under 900px regardless of the saved preference)
 - **`frontend/src-tauri/`** — Tauri v2 Rust shell for desktop packaging
@@ -515,7 +519,7 @@ CSP fix, before it actually worked.
   found` and a NULL-pointer `g_signal_connect_data` critical in `WebKitWebProcess`, then the process died —
   the window goes solid grey while `arynwood` and the backend keep running (`pgrep -f WebKitWebProcess` empty).
   Music Lab playback, Video Studio preview and mic recording all depend on it; none of it can be seen from a
-  source checkout or Chrome. `scripts/stage_gstreamer_plugins.sh` stages the ~41 plugins a web view needs
+  source checkout or Chrome. `scripts/stage_gstreamer_plugins.sh` stages the ~42 plugins a web view needs
   (playback, libav decode, pulse/alsa/pipewire, `transcode`+`voaacenc`+`encoding` for `MediaRecorder` — found by
   delta-debugging all 240 host plugins; without them it throws "unsupported" or records 0 bytes) and prints
   `GSTREAMER_PLUGINS_DIR` for the bundler; without it the bundler copies all 273 host plugins and their whole
@@ -630,6 +634,15 @@ so it looks behind again and gets seeked again (a storm — measured at 25 seeks
 (`planVideoSync`, unit-tested) encodes the rule: no correction while `video.seeking`; small drift is closed
 by nudging `playbackRate`; hard-seek only beyond 0.75s at ≤1 per 400ms; paused scrubbing stays frame-accurate.
 Same-source clips (the halves of a split) must not reassign `video.src` — it forces a reload.
+
+### A panel that depends on a sidecar must (re)load when the sidecar becomes ready
+`InstrumentGenerator` and `JamWithAI` used to fetch the provider list once, on mount — so starting the Song Generation
+sidecar *after* opening the tab left Generate/Jam disabled behind a stale "start the sidecar" warning until you switched
+tabs. Use `useMusicCapabilities(sidecarReady)`: it fetches on the false→true edge and retries an empty answer, because
+`/api/music/capabilities` returns **200 with an empty provider list** (not an error) while the sidecar is down or still
+probing. `useMusicJobPoll().start()` returns `{jobId}` or `{error}` carrying the backend's own `detail`, and
+`FailedMusicJobs` keeps a job that failed *inside* the sidecar visible until dismissed — a job that just vanishes from
+the "Generating" list looks exactly like nothing happening.
 
 ### Page roots are never `100vh`
 `AppShell` is `h-screen overflow-hidden` and spends 52px on the top bar, so a page root of `100vh` ends 52px

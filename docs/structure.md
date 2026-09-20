@@ -12,7 +12,8 @@ arynwood-mcp/
 ├── docs/                     Project documentation
 ├── frontend/                 React/Vite/Tauri desktop frontend
 ├── mcp/                      MCP persona definitions and config
-├── scripts/                  GPU tool runner scripts
+├── scripts/                  GPU tool runner scripts + release tooling (push guard, packaged-backend smoke test,
+│                             GStreamer plugin staging, real-WebKitGTK media check)
 ├── static/                   Static HTML tools served by FastAPI (design-center, terminal, etc.)
 ├── triggers/                 File-watching triggers for GPU jobs
 │
@@ -140,7 +141,10 @@ frontend/
 │   │                         reduced-motion block, form theming
 │   │
 │   ├── lib/
-│   │   ├── api.ts            Typed fetch wrapper (request() prefixes /api)
+│   │   ├── api.ts            Typed fetch wrapper (request() prefixes /api); apiUrl() makes /api URLs absolute in a
+│   │   │                     production build for <audio src>, <a href> etc., which the fetch patch can't reach
+│   │   ├── download.ts       saveBlob()/downloadFile(): fetch a file and save the blob (cross-origin <a download> is ignored)
+│   │   ├── mic.ts            Microphone helpers: openMicStream (ideal device + retry), usableInputs, describeMicError
 │   │   ├── ws.ts             WebSocket chat client (ws://localhost:8010/api/chat/ws)
 │   │   ├── cn.ts             clsx + tailwind-merge class merger
 │   │   └── useMediaQuery.ts  useSyncExternalStore over matchMedia
@@ -161,7 +165,9 @@ frontend/
 │   │   ├── DesignCenter.tsx  Iframe wrapping static/html-tools/design-center.html
 │   │   ├── Knowledge.tsx     Knowledge base search / management; PDF learn routes
 │   │   │                     through useKnowledgeJobPoll.ts (Sycamore parse job polling)
-│   │   ├── Studio.tsx        Music Lab: AI generation, jam with AI, stems, RVC, effects
+│   │   ├── Studio.tsx        Music Lab: AI generation, jam with AI, stems, RVC, effects; a small "DJ Toolkit" button
+│   │   │                     in its sidecar strip opens /dj
+│   │   ├── DJStudio.tsx      DJ Toolkit — a tool reached from Music (not in nav.ts), "Back to Music" link
 │   │   ├── Social.tsx        Social media publishing
 │   │   └── Video.tsx         Kdenlive automation, video jobs
 │   │
@@ -173,8 +179,10 @@ frontend/
 │   │   ├── CommandPalette.tsx  Ctrl/Cmd+K — pages, personas, models, conversations, tools, actions
 │   │   ├── StatusDrawer.tsx  Subsystem health with retry actions and fix hints
 │   │   ├── PageErrorBoundary.tsx  Route-keyed, so navigating away clears a crash
-│   │   ├── nav.ts            Single nav model — NAV (sidebar) + NAV_DESTINATIONS (palette)
+│   │   ├── nav.ts            Single nav model — NAV (sidebar) + NAV_DESTINATIONS (palette); `also` keeps an
+│   │   │                     entry highlighted on related routes (Music while in /dj)
 │   │   └── usePageTitle.ts   Page-level override of the route's TopBar title
+│   ├── components/DownloadButton.tsx  Button that fetches a backend file and saves it; shows why inline on failure
 │   ├── components/ui/        Shared primitives (Tailwind + CVA)
 │   │   ├── Button.tsx / IconButton.tsx   IconButton *requires* a label → aria-label + tooltip
 │   │   ├── StatusBadge.tsx   Renders Link / anchor / span to match its actual behaviour
@@ -189,12 +197,14 @@ frontend/
 │       ├── InstrumentGenerator.tsx    AI instrument/idea generation (ACE-Step/MusicGen)
 │       ├── JamWithAI.tsx              Melody-conditioned AI response to recorded/uploaded audio
 │       ├── MusicAssetCard.tsx         Shared asset card (waveform, play, rename, favorite, regenerate)
+│       ├── FailedMusicJobs.tsx        Jobs that failed inside the sidecar, shown until dismissed
+│       ├── useMusicCapabilities.ts    Provider list, refetched when the sidecar becomes ready (retries an empty answer)
 │       └── useMusicJobPoll.ts         Job-poll hook for Music Lab generation (see store/useMusicJobStore.ts)
 │
 └── src-tauri/                Tauri v2 desktop shell
     ├── Cargo.toml            Rust deps: tauri v2, tauri-plugin-shell
-    ├── tauri.conf.json       Window config
-    ├── src/main.rs           Tauri entry point
+    ├── tauri.conf.json       Window config, CSP (needs media-src blob:), AppImage bundleMediaFramework
+    ├── src/main.rs           Tauri entry point (backend sidecar, mic permission grant, download handler)
     └── icons/                App icons for all platforms
 ```
 
@@ -211,6 +221,7 @@ frontend/
 | `/design` | DesignCenter | Design canvas |
 | `/knowledge` | Knowledge | Semantic knowledge base |
 | `/studio` | Studio | Music Lab: AI generation, jam with AI, stems, RVC, effects |
+| `/dj` | DJStudio | DJ Toolkit — reached from a button on `/studio`, deliberately not in the sidebar or command palette |
 | `/social` | Social | Social media publishing |
 | `/video` | Video | Kdenlive automation, video jobs |
 
