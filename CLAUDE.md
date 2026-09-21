@@ -549,7 +549,7 @@ venv/bin/python scripts/smoke_packaged_backend.py dist/arynwood-backend   # GATE
 cp dist/arynwood-backend frontend/src-tauri/binaries/arynwood-backend-x86_64-unknown-linux-gnu
 eval "$(scripts/stage_gstreamer_plugins.sh "$TMPDIR/gst-plugins")"   # curated GStreamer set — see the gotcha below
 cd frontend && APPIMAGE_EXTRACT_AND_RUN=1 npx tauri build --bundles appimage \
-  --config '{"version":"0.4.2-dev.'$(git rev-parse --short HEAD)'"}'   # label it: it is NOT the published 0.4.2
+  --config '{"version":"0.4.3-dev.'$(git rev-parse --short HEAD)'"}'   # label it: it is NOT the published 0.4.3
 ```
 Output: `frontend/src-tauri/target/release/bundle/appimage/`. The `--config` version override only names the
 file, so the repo's version files stay in step (`tests/test_version_consistency.py`). Verify the artifact

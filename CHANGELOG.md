@@ -7,7 +7,7 @@ Entries before this file existed (everything under "0.4.0" and earlier) are
 reconstructed from git history for context, not a line-by-line commit log — treat
 them as a summary, not a precise record.
 
-## [Unreleased]
+## [0.4.3] — 2026-09-21
 
 ### Added
 

@@ -41,6 +41,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libfuse2
+          # GStreamer: WebKitGTK plays audio/video and records through it, and the AppImage
+          # only carries what is staged below (see the "Stage GStreamer plugins" step).
+          sudo apt-get install -y gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-pulseaudio
 
       # Backend sidecar: bundled as a standalone binary and placed where Tauri's
       # `externalBin` config (frontend/src-tauri/tauri.conf.json) expects it. See
@@ -51,6 +55,22 @@ jobs:
           pyinstaller arynwood-backend.spec
           mkdir -p frontend/src-tauri/binaries
           cp dist/arynwood-backend frontend/src-tauri/binaries/arynwood-backend-x86_64-unknown-linux-gnu
+
+      # The release gate from CLAUDE.md: runs the frozen binary under an AppImage-style
+      # environment (isolated port + data dir, fake sidecar). Unit tests can't see the
+      # failures this catches — every packaged-only bug found so far was invisible until a
+      # real binary ran. A failure here stops the release before anything is bundled.
+      - name: Smoke-test the frozen backend
+        run: python scripts/smoke_packaged_backend.py dist/arynwood-backend
+
+      # Without this, `bundleMediaFramework` copies every plugin on the runner (hundreds,
+      # plus VA-API/CUDA/WebRTC dependencies), and an AppImage with none at all has no audio
+      # sink — the window goes grey on the first <audio> element. This stages the ~40 plugins
+      # a web view uses; fails if a required one is missing rather than shipping without it.
+      - name: Stage GStreamer plugins
+        run: |
+          eval "$(scripts/stage_gstreamer_plugins.sh "$RUNNER_TEMP/gst-plugins")"
+          echo "GSTREAMER_PLUGINS_DIR=$GSTREAMER_PLUGINS_DIR" >> "$GITHUB_ENV"
 
       - name: Extract release notes from CHANGELOG.md
         id: notes

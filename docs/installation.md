@@ -17,8 +17,8 @@ chmod +x arynwood-mcp_*.AppImage
 sudo apt install ./arynwood-mcp_*.deb
 ```
 
-(Real filenames as of this writing: `arynwood-mcp_0.4.2_amd64.AppImage` and
-`arynwood-mcp_0.4.2_amd64.deb` — no spaces, confirmed against an actual local
+(Real filenames as of this writing: `arynwood-mcp_0.4.3_amd64.AppImage` and
+`arynwood-mcp_0.4.3_amd64.deb` — no spaces, confirmed against an actual local
 build; the glob above just tolerates the version number changing between releases.)
 
 Both bundle the frontend and a packaged backend — no separate `venv`/`npm install`

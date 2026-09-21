@@ -5,7 +5,7 @@ what doesn't work yet, so you can decide what to rely on. It is kept in step wit
 actually been tested — if something here reads more cautiously than the app feels, that is
 deliberate.
 
-**Last reviewed:** 2026-09-19, against v0.4.2 plus the unreleased changes in `CHANGELOG.md`.
+**Last reviewed:** 2026-09-19, against v0.4.3.
 
 ## How to read the tiers
 
