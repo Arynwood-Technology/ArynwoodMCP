@@ -25,6 +25,11 @@ def fake_sidecar(monkeypatch, tmp_path):
         script.write_text(script_body)
         monkeypatch.setattr(studio, "SIDECARS", {"fake": {
             "port": port, "script": str(script), "venv": sys.executable, "label": "Fake Sidecar"}})
+        # start_sidecar() Popen()s with cwd=MUSICSTUDIO_DIR unconditionally — the real
+        # value (~/GitHub/MusicStudio) only exists on a dev machine with that sibling repo
+        # checked out, not on a CI runner, so leaving it unpatched raised FileNotFoundError
+        # for the subprocess's cwd before it ever got to running our fake script.
+        monkeypatch.setattr(studio, "MUSICSTUDIO_DIR", str(tmp_path))
         monkeypatch.setattr(studio, "LOG_DIR", str(tmp_path / "logs"))
         monkeypatch.setattr(studio, "STARTUP_GRACE_SECONDS", 0.8)
         studio._procs.clear()
