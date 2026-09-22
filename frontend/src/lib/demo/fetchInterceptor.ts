@@ -7,7 +7,7 @@
 import { chatStore } from './chatStore'
 import {
   PERSONAS, STATUS, GPU_QUEUE, SERVERS, TOOLS, CHECKPOINTS, LORAS, OLLAMA_MODELS,
-  KNOWLEDGE_STATUS, KNOWLEDGE_SOURCES, MCP_SERVERS, SIDECARS,
+  KNOWLEDGE_STATUS, KNOWLEDGE_SOURCES, MCP_SERVERS, SIDECARS, DJ_TOOLS, DJ_SESSIONS,
 } from './fixtures'
 // `?inline` forces Vite to always base64-inline this asset (it's ~100KB, well past the
 // default 4KB assetsInlineLimit) rather than emit a separate hashed file — a plain
@@ -52,8 +52,11 @@ const STATIC: Record<string, Handler | undefined> = {
   'GET /video/library': () => ({ body: [] }),
   'GET /music/capabilities': () => ({ body: { providers: [], stems: { provider: '', sidecar_status: 'stopped', engines: [], stem_counts: [] } } }),
   'GET /music/assets': () => ({ body: [] }),
-  'GET /dj/tools': () => ({ body: [] }),
-  'GET /dj/sessions': () => ({ body: [] }),
+  // DJ Toolkit's tools/sessions are read-only real reference content — see DJ_TOOLS'
+  // comment in fixtures.ts. Nothing to "launch" in a browser, but the catalog/manual is
+  // a real feature worth showing, not a wall.
+  'GET /dj/tools': () => ({ body: DJ_TOOLS }),
+  'GET /dj/sessions': () => ({ body: DJ_SESSIONS }),
   // "AI image generation" gets a real, working response — a placeholder we made and
   // clearly labeled as a demo image (see assets/demo-generated-image.png), not a 403.
   // Shapes match the real A1111/rembg/Real-ESRGAN responses exactly (ToolLibrary.tsx
@@ -74,6 +77,23 @@ const DYNAMIC: { method: string; pattern: string; handler: Handler }[] = [
   { method: 'GET', pattern: '/chat/conversations/:id/messages', handler: (p) => ({ body: chatStore.getMessages(+p.id) }) },
   { method: 'DELETE', pattern: '/chat/conversations/:id', handler: (p) => ({ body: chatStore.deleteConversation(+p.id) }) },
   { method: 'GET', pattern: '/servers/:id/ping', handler: () => ({ body: { online: true } }) },
+  // "Launching" a native desktop app has no real meaning in a browser — this is honest
+  // about that (no fake pid pretending something opened) rather than either denying the
+  // click outright or silently lying that an app started.
+  {
+    method: 'POST', pattern: '/dj/tools/:id/launch',
+    handler: (p) => {
+      const tool = DJ_TOOLS.find(t => t.id === p.id)
+      return { status: 409, body: { detail: `${tool?.name ?? 'This tool'} would launch here on a real install — there's no desktop to open it on in a browser demo.` } }
+    },
+  },
+  {
+    method: 'POST', pattern: '/dj/sessions/:id/start',
+    handler: (p) => {
+      const session = DJ_SESSIONS.find(s => s.id === p.id)
+      return { status: 409, body: { detail: `${session?.label ?? 'This session'} would launch its tools here on a real install — there's no desktop to open them on in a browser demo.` } }
+    },
+  },
 ]
 
 function matchDynamic(method: string, path: string): { handler: Handler; params: Record<string, string> } | null {

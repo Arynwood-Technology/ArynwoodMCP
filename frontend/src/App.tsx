@@ -33,7 +33,9 @@ export default function App() {
           <Route path="/publish" element={DEMO ? <DemoUnavailable feature="Publish" reason="a real SFTP/SSH server to deploy to" /> : <Deploy />} />
           <Route path="/knowledge" element={<Knowledge />} />
           <Route path="/studio" element={DEMO ? <DemoUnavailable feature="Music Studio" reason="a real GPU running local audio models" /> : <Studio />} />
-          <Route path="/dj" element={DEMO ? <DemoUnavailable feature="DJ Toolkit" reason="launching real native desktop apps" /> : <DJStudio />} />
+          {/* Browsable in the demo — real catalog/manual content (see fixtures.ts's
+              DJ_TOOLS), just no real desktop to actually launch anything on. */}
+          <Route path="/dj" element={<DJStudio />} />
           <Route path="/social" element={DEMO ? <DemoUnavailable feature="Social Media" reason="real OAuth against live platforms" /> : <Social />} />
           <Route path="/video" element={DEMO ? <DemoUnavailable feature="Video Studio" reason="real GPU video generation" /> : <Video />} />
           {/* Design Center renders from AppShell's always-mounted overlay, not

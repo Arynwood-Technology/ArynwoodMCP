@@ -2,6 +2,14 @@
 
 Local-first AI creative studio. One app for multi-persona chat, GPU generation tools, video editing (Kdenlive automation), audio production, design, and social publishing - all running on your own hardware.
 
+**[Try the live demo →](https://arynwood-technology.github.io/ArynwoodMCP/)** - the real UI, running
+entirely in your browser with no install and no backend. Chat streams real scripted
+conversations (including a full destructive-tool approval walkthrough), image generation
+returns a real placeholder we made, and a banner makes clear throughout that it's demo
+data, not a live AI. Features that need a real backend or GPU on your own machine - video
+rendering, music generation, publishing, social OAuth - say so plainly and link back here
+instead of faking it.
+
 ---
 
 ## Table of Contents

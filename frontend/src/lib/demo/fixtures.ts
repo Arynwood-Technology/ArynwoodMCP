@@ -6,6 +6,7 @@
 import type {
   Persona, SystemStatus, Server, Tool, Conversation, Message,
   CheckpointList, ModelFileList, KnowledgeStatus, KnowledgeSource, Sidecar, McpServerInfo, GpuQueue,
+  DjTool, DjSession,
 } from '../api'
 
 export const PERSONAS: Persona[] = [
@@ -112,5 +113,149 @@ export const SEED_MESSAGES: Message[] = [
     id: 2, conversation_id: 1, role: 'assistant',
     content: "Found one leftover draft track — an unused voiceover take (\"draft-vo-2\") that isn't referenced anywhere else in the timeline. I'd like to delete it. Deleted draft-vo-2 — timeline is clean.",
     created_at: '2026-09-20 14:02:41',
+  },
+]
+
+// DJ Toolkit — the real catalog from backend/routers/dj.py's DJ_TOOLS/SESSIONS (public
+// reference content: real manuals, real tips, no personal paths or install state — that
+// file was already scrubbed for exactly this kind of general distribution). status is
+// always 'stopped' here since nothing is actually running on a demo visitor's machine —
+// the point of showing this page is the catalog/manual, not a live launcher.
+
+export const DJ_TOOLS: DjTool[] = [
+  {
+    id: "mixxx", name: "Mixxx", version: null,
+    category: "dj", role: "DJ mixing — beatmatching, EQ blending, live sets",
+    description: "Two-deck+ DJ mixing software with waveform display, headphone cueing, 3-band EQ, looping, and library management (crates, BPM/key analysis, cue points). The only actively-maintained DJ application with genuine native Linux support.",
+    kind: "flatpak", standalone: true, host: null,
+    launchable: true,
+    manual_url: "https://manual.mixxx.org/2.5/en/chapters/djing_with_mixxx.html", manual_label: "Mixxx Manual — DJing With Mixxx",
+    tutorial_url: null, tutorial_label: null,
+    quickstart: ["Drag tracks from the file browser panel (left side) into Deck 1 and Deck 2.", "Use each deck's headphone-cue icon to preview a track before bringing it into the main mix.", "Practice with Sync OFF first — manual beatmatching by ear is the core skill. Turn Sync on later, once you don't need it.", "Your track library isn't in the DJ project folder — Mixxx keeps its own library DB. Import from ~/Music or ~/Downloads."],
+    tips: ["Skill order: waveform reading + manual beatmatching -> phrase matching (8/16/32-bar counts) -> 3-band EQ blending (bass-swap transitions — the actual techno-DJ technique, not just crossfading) -> long/quick transitions -> a tagged, crated library -> reading set energy.", "If Mixxx can't see ~/Downloads (Flatpak sandbox), grant it read-only: flatpak override --user --filesystem=xdg-download:ro org.mixxx.Mixxx", "Launch with tracks preloaded into both decks: flatpak run org.mixxx.Mixxx track1.mp3 track2.mp3"],
+    status: 'stopped',
+  },
+  {
+    id: "ardour", name: "Ardour", version: null,
+    category: "daw", role: "DAW — arrangement, mixing, automation, export",
+    description: "Full production DAW. Genuinely free with no track/feature limits via this Flathub build (the official ardour.org binary nags for a donation or mutes audio after 10 min — Flathub's doesn't).",
+    kind: "flatpak", standalone: true, host: null,
+    launchable: true,
+    manual_url: null, manual_label: null,
+    tutorial_url: null, tutorial_label: null,
+    quickstart: ["Program drum patterns in Hydrogen first, then build the rest of the arrangement, automation, mixing and export here.", "Hit play in either Ardour or Hydrogen and both start together — shared transport over PipeWire's JACK layer, no manual routing.", "If a newly-installed plugin doesn't show up: Window -> Plugin Manager -> rescan."],
+    tips: ["Flatpak sandboxing can hide ~/.vst3 / ~/.lv2 plugins from Ardour. Fix it with: flatpak override --user --filesystem=home/.vst3:ro --filesystem=home/.lv2:ro org.ardour.Ardour — re-run after installing a new plugin folder Ardour still can't see.", "Calf, LSP, and Dragonfly Reverb are installed as system LV2 packages (apt), so Ardour finds them with no override needed.", "Techno arrangement shape: intro -> build -> drop/peak -> breakdown -> outro, in 8/16-bar blocks."],
+    status: 'stopped',
+  },
+  {
+    id: "hydrogen", name: "Hydrogen", version: null,
+    category: "daw", role: "Drum machine / pattern sequencer",
+    description: "Standalone pattern-based drum machine — the primary tool for programming techno grooves: 4-on-the-floor kicks, off-beat hats, clap/percussion layering, swing.",
+    kind: "flatpak", standalone: true, host: null,
+    launchable: true,
+    manual_url: null, manual_label: null,
+    tutorial_url: null, tutorial_label: null,
+    quickstart: ["Program a basic 4-on-the-floor kick + closed-hat pattern in the pattern editor to start.", "Layer claps/snares and other percussion once the kick+hat groove feels right.", "Export the pattern/song and continue arranging it in Ardour — both share transport automatically."],
+    tips: ["Groove refinement (swing, velocity variation, micro-timing) is what separates a flat loop from a groovy one — revisit a pattern after the rest of the arrangement exists, not just once."],
+    status: 'stopped',
+  },
+  {
+    id: "surge_xt", name: "Surge XT", version: null,
+    category: "synth", role: "Synth — basslines & leads (VST3/CLAP/standalone)",
+    description: "Deep subtractive/hybrid synthesis, a strong all-rounder for techno basslines and pads.",
+    kind: "flatpak", standalone: true, host: null,
+    launchable: true,
+    manual_url: null, manual_label: null,
+    tutorial_url: "https://www.youtube.com/c/loopop", tutorial_label: "Sound design deep-dives (loopop)",
+    quickstart: ["Run standalone for quick sound design/noodling, or load it as a plugin on an Ardour track for a real bassline.", "Learn subtractive synthesis fundamentals here (oscillators, filters, envelopes) — the same fundamentals carry over to Vital."],
+    tips: [],
+    status: 'stopped',
+  },
+  {
+    id: "vital", name: "Vital", version: null,
+    category: "synth", role: "Synth — wavetable, leads & basslines (VST3/LV2/standalone)",
+    description: "Wavetable synth, excellent for modulated leads and basslines. The free 'Basic' tier is permanent, not a trial — full synth engine, just fewer bundled presets/wavetables than the paid tiers.",
+    kind: "binary", standalone: true, host: null,
+    launchable: true,
+    manual_url: "https://vital.audio/", manual_label: "vital.audio",
+    tutorial_url: "https://www.youtube.com/c/loopop", tutorial_label: "Sound design deep-dives (loopop)",
+    quickstart: ["Run standalone for sound design, or load it as a plugin inside Ardour.", "Reinstalling is manual only — the developer blocks scripted downloads — grab the .deb from vital.audio again, not a package manager."],
+    tips: [],
+    status: 'stopped',
+  },
+  {
+    id: "geonkick", name: "Geonkick", version: null,
+    category: "synth", role: "Percussion synth — kicks, claps, hats (VST3/LV2/standalone)",
+    description: "Purpose-built percussion synthesizer (not sample-based) for designing kicks, claps and hats from scratch.",
+    kind: "binary", standalone: true, host: null,
+    launchable: true,
+    manual_url: null, manual_label: null,
+    tutorial_url: null, tutorial_label: null,
+    quickstart: ["Run standalone to design a kick/clap/hat from scratch, or drop it directly onto a drum track in Ardour as a plugin."],
+    tips: [],
+    status: 'stopped',
+  },
+  {
+    id: "flatseal", name: "Flatseal", version: null,
+    category: "utility", role: "Utility — Flatpak sandbox permissions GUI",
+    description: "GUI for adjusting what a Flatpak app can see on disk. Reach for this the moment a Flatpak app (Ardour, Mixxx) can't see a folder, drive, or plugin directory it should.",
+    kind: "flatpak", standalone: true, host: null,
+    launchable: true,
+    manual_url: null, manual_label: null,
+    tutorial_url: null, tutorial_label: null,
+    quickstart: ["Open Flatseal, pick the app (e.g. Ardour) from the list, then add or edit its Filesystem permissions.", "CLI equivalent, for one-off overrides: flatpak override --user --filesystem=/path/to/folder:ro org.example.App"],
+    tips: ["Typical grants: Ardour -> ~/.vst3 and ~/.lv2 (read-only); Mixxx -> ~/Downloads (read-only)."],
+    status: 'stopped',
+  },
+  {
+    id: "calf", name: "Calf Studio Gear", version: null,
+    category: "plugin", role: "Plugin — EQ / compression / mixing (LV2)",
+    description: "EQ, compressor, multiband, limiter, gate. Installed as a system LV2 package (apt), so Ardour finds it automatically with no sandbox override needed.",
+    kind: "plugin", standalone: false, host: "ardour",
+    launchable: false,
+    manual_url: null, manual_label: null,
+    tutorial_url: null, tutorial_label: null,
+    quickstart: ["Open Ardour and add it to a track or bus from the plugin browser — nothing to launch separately."],
+    tips: [],
+    status: 'stopped',
+  },
+  {
+    id: "lsp", name: "LSP Plugins", version: null,
+    category: "plugin", role: "Plugin — dynamics / filters / reverb (LV2/VST3)",
+    description: "Comprehensive dynamics, filter, and impulse-reverb suite. Installed as a system LV2 package.",
+    kind: "plugin", standalone: false, host: "ardour",
+    launchable: false,
+    manual_url: null, manual_label: null,
+    tutorial_url: null, tutorial_label: null,
+    quickstart: ["Open Ardour and add it to a track or bus from the plugin browser — nothing to launch separately."],
+    tips: [],
+    status: 'stopped',
+  },
+  {
+    id: "dragonfly_reverb", name: "Dragonfly Reverb", version: null,
+    category: "plugin", role: "Plugin — reverb (LV2/VST3)",
+    description: "Clean, low-CPU reverb for space and depth. Installed as a system LV2 package.",
+    kind: "plugin", standalone: false, host: "ardour",
+    launchable: false,
+    manual_url: null, manual_label: null,
+    tutorial_url: null, tutorial_label: null,
+    quickstart: ["Open Ardour and add it to a track or bus from the plugin browser — nothing to launch separately."],
+    tips: [],
+    status: 'stopped',
+  },
+]
+
+export const DJ_SESSIONS: DjSession[] = [
+  {
+    id: "dj_mixing", label: "DJ Mixing Session", description: "Beatmatching practice or a live mix.",
+    tool_ids: ["mixxx"],
+  },
+  {
+    id: "production", label: "Production Session", description: "Ardour + Hydrogen together — shared transport over PipeWire/JACK, hit play in either and both start.",
+    tool_ids: ["ardour", "hydrogen"],
+  },
+  {
+    id: "sound_design", label: "Sound Design Session", description: "Surge XT + Vital standalone, for patch noodling before dropping a sound into Ardour.",
+    tool_ids: ["surge_xt", "vital"],
   },
 ]
