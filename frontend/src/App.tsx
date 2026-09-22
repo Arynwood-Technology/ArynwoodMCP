@@ -1,5 +1,7 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, HashRouter, Routes, Route } from 'react-router-dom'
 import { AppShell } from './components/layout/AppShell'
+import { DemoUnavailable } from './components/demo/DemoUnavailable'
+import { DEMO } from './lib/demo/flag'
 import { Dashboard } from './pages/Dashboard'
 import { Chat } from './pages/Chat'
 import { ModelManager } from './pages/ModelManager'
@@ -12,9 +14,15 @@ import { DJStudio } from './pages/DJStudio'
 import { Social } from './pages/Social'
 import { Video } from './pages/Video'
 
+// GitHub Pages serves static files with no server-side history-fallback rewrite, so a
+// BrowserRouter route 404s on a hard refresh or direct link. HashRouter sidesteps that
+// with zero extra static files — only the demo build uses it; the real app (dev + Tauri
+// packaged) keeps BrowserRouter unchanged.
+const Router = DEMO ? HashRouter : BrowserRouter
+
 export default function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
         <Route element={<AppShell />}>
           <Route path="/" element={<Dashboard />} />
@@ -22,18 +30,20 @@ export default function App() {
           <Route path="/models" element={<ModelManager />} />
           <Route path="/servers" element={<Servers />} />
           <Route path="/tools" element={<ToolLibrary />} />
-          <Route path="/publish" element={<Deploy />} />
+          <Route path="/publish" element={DEMO ? <DemoUnavailable feature="Publish" reason="a real SFTP/SSH server to deploy to" /> : <Deploy />} />
           <Route path="/knowledge" element={<Knowledge />} />
-          <Route path="/studio" element={<Studio />} />
-          <Route path="/dj" element={<DJStudio />} />
-          <Route path="/social" element={<Social />} />
-          <Route path="/video" element={<Video />} />
+          <Route path="/studio" element={DEMO ? <DemoUnavailable feature="Music Studio" reason="a real GPU running local audio models" /> : <Studio />} />
+          <Route path="/dj" element={DEMO ? <DemoUnavailable feature="DJ Toolkit" reason="launching real native desktop apps" /> : <DJStudio />} />
+          <Route path="/social" element={DEMO ? <DemoUnavailable feature="Social Media" reason="real OAuth against live platforms" /> : <Social />} />
+          <Route path="/video" element={DEMO ? <DemoUnavailable feature="Video Studio" reason="real GPU video generation" /> : <Video />} />
           {/* Design Center renders from AppShell's always-mounted overlay, not
               here — it must survive navigation to keep its iframe alive. This
-              route exists only so the path matches and the shell can react. */}
-          <Route path="/design" element={null} />
+              route exists only so the path matches and the shell can react.
+              In demo mode AppShell never mounts that overlay, so this element
+              is what actually renders there instead. */}
+          <Route path="/design" element={DEMO ? <DemoUnavailable feature="Design Center" reason="a real local Stable Diffusion backend" /> : null} />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </Router>
   )
 }

@@ -6,7 +6,11 @@ import tailwindcss from '@tailwindcss/vite'
 // another port — point the proxy at it with ARYNWOOD_DEV_API=http://localhost:18010 npm run dev.
 const API = process.env.ARYNWOOD_DEV_API ?? 'http://localhost:8010'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  // GitHub Pages serves the demo from a project-page subpath, not the domain root.
+  // Only the `demo` mode (`vite build --mode demo`) sets this — Tauri's own build never
+  // passes --mode, so `tauri build`/`tauri dev` keep `base: '/'` unchanged.
+  base: mode === 'demo' ? '/ArynwoodMCP/' : '/',
   plugins: [react(), tailwindcss()],
   server: {
     port: 5180,
@@ -16,4 +20,4 @@ export default defineConfig({
       '/html-tools': { target: API, changeOrigin: true },
     },
   },
-})
+}))

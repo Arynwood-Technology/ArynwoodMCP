@@ -6,6 +6,8 @@ import { CommandPalette } from './CommandPalette'
 import { StatusDrawer } from './StatusDrawer'
 import { PageErrorBoundary } from './PageErrorBoundary'
 import { DesignCenter } from '../../pages/DesignCenter'
+import { DemoBanner } from '../demo/DemoBanner'
+import { DEMO } from '../../lib/demo/flag'
 import { useAppStore } from '../../store/useAppStore'
 import { getServers, getTools, getPersonas, getStatus } from '../../lib/api'
 
@@ -37,8 +39,10 @@ export function AppShell() {
   const location = useLocation()
 
   // Design Center stays mounted at all times to preserve its iframe state, and
-  // renders without a top bar — it supplies its own chrome.
-  const onDesign = location.pathname === '/design'
+  // renders without a top bar — it supplies its own chrome. In demo mode it never
+  // mounts at all (real iframe to a real backend tool, nothing to point it at) —
+  // App.tsx's /design route renders DemoUnavailable through the normal Outlet instead.
+  const onDesign = !DEMO && location.pathname === '/design'
   const title = pageTitle ?? ROUTE_TITLES[location.pathname] ?? 'Arynwood'
 
   useEffect(() => {
@@ -73,6 +77,7 @@ export function AppShell() {
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        {DEMO && <DemoBanner />}
         {!onDesign && <TopBar title={title} />}
         <main className="relative min-h-0 flex-1">
           <div className={onDesign ? 'absolute inset-0' : 'hidden'}>

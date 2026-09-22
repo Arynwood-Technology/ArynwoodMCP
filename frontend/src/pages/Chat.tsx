@@ -6,6 +6,8 @@ import { Button, IconButton, EmptyState, PageShell } from '../components/ui'
 import { cn } from '../lib/cn'
 import { useAppStore } from '../store/useAppStore'
 import { usePageTitle } from '../components/layout/usePageTitle'
+import { DEMO } from '../lib/demo/flag'
+import { PERSONA_SCENARIOS } from '../lib/demo/prompts'
 
 const ARYNWOOD = { name: 'Arynwood', color: '#7c6ef7' }
 import { getConversations, getMessages, deleteConversation, uploadFile } from '../lib/api'
@@ -582,14 +584,13 @@ export function Chat() {
     }
   }
 
-  const send = () => {
-    if ((!input.trim() && !attachment) || streaming || !wsReady || pendingApproval) return
-    const text = input.trim()
-    lastSentRef.current = { text, attachment }
-    const fullMessage = attachment
-      ? `[File: ${attachment.name}]\n\`\`\`\n${attachment.text}\n\`\`\`\n\n${text}`
+  const doSend = (text: string, withAttachment: { name: string; text: string } | null) => {
+    if ((!text.trim() && !withAttachment) || streaming || !wsReady || pendingApproval) return
+    lastSentRef.current = { text, attachment: withAttachment }
+    const fullMessage = withAttachment
+      ? `[File: ${withAttachment.name}]\n\`\`\`\n${withAttachment.text}\n\`\`\`\n\n${text}`
       : text
-    const displayText = attachment ? `📎 ${attachment.name}${text ? ` — ${text}` : ''}` : text
+    const displayText = withAttachment ? `📎 ${withAttachment.name}${text ? ` — ${text}` : ''}` : text
     setInput('')
     setAttachment(null)
     setNotice('')
@@ -605,6 +606,11 @@ export function Chat() {
       conversation_id: activeConversationId ?? undefined,
     })
   }
+
+  const send = () => doSend(input.trim(), attachment)
+  // Demo-mode prompt chips (see DemoPromptChips below) send a curated prompt directly,
+  // bypassing whatever's currently in the composer/attachment.
+  const sendPrompt = (text: string) => doSend(text, null)
 
   const respondToApproval = (approved: boolean) => {
     if (!pendingApproval) return
@@ -711,7 +717,27 @@ export function Chat() {
         {/* Messages */}
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-6 py-5">
           {messages.length === 0 && !streaming && (
-            <EmptyState className="flex-1" title={`Start a conversation with ${assistantName}`} />
+            <EmptyState
+              className="flex-1"
+              title={`Start a conversation with ${assistantName}`}
+              action={
+                DEMO && (PERSONA_SCENARIOS[activePersonaId]?.length ?? 0) > 0 ? (
+                  <div className="flex flex-wrap justify-center gap-1.5">
+                    {PERSONA_SCENARIOS[activePersonaId].map(s => (
+                      <button
+                        key={s.scenarioId}
+                        type="button"
+                        onClick={() => sendPrompt(s.prompt)}
+                        disabled={!wsReady || streaming}
+                        className="cursor-pointer rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-[11px] font-medium text-accent transition-colors hover:bg-accent/20 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                ) : undefined
+              }
+            />
           )}
           {messages.map(m => {
             const mine = m.role === 'user'
