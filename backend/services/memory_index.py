@@ -55,9 +55,9 @@ async def index_memory(
         return False
     vector = embs[0]
 
-    if not await _ensure_collection(qdrant_url, len(vector)):
-        return False
     try:
+        if not await _ensure_collection(qdrant_url, len(vector)):
+            return False
         async with httpx.AsyncClient(timeout=15.0) as client:
             r = await client.put(
                 f"{qdrant_url}/collections/{COLLECTION}/points",

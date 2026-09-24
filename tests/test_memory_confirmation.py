@@ -26,7 +26,7 @@ async def test_model_written_remember_block_is_provisional(client):
         await db.close()
 
 
-async def test_updating_a_confirmed_memory_via_remember_resets_to_provisional(client):
+async def test_updating_confirmed_memory_proposes_revision_without_overwriting(client):
     db = await _get_db()
     try:
         await db.execute(
@@ -40,8 +40,12 @@ async def test_updating_a_confirmed_memory_via_remember_resets_to_provisional(cl
 
         async with db.execute("SELECT content, status FROM arynwood_memory WHERE title=?", ("Confirm-Test-B",)) as cur:
             row = await cur.fetchone()
-        assert row["content"] == "new content"
-        assert row["status"] == "provisional"
+        assert row["content"] == "old"
+        assert row["status"] == "confirmed"
+        async with db.execute("SELECT * FROM memory_revisions WHERE title='Confirm-Test-B' AND state='pending'") as cur:
+            revision = await cur.fetchone()
+        assert revision['content'] == 'new content'
+        assert revision['base_content'] == 'old'
     finally:
         await db.close()
 

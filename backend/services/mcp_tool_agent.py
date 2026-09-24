@@ -26,8 +26,10 @@ still writes the reply the user sees.
 """
 
 from __future__ import annotations
+from backend.services import runtime_context, run_store
 
 import json
+import os
 import re
 import time
 from pathlib import Path
@@ -210,6 +212,57 @@ async def _gate_matches(message: str, gate: dict) -> bool:
         return False
 
 
+async def _route(message: str, candidates: dict[str, dict]) -> set[str]:
+    """Pick which of several tool systems a message needs, in ONE classifier call.
+
+    Asking each gate an isolated YES/NO misroutes whenever systems overlap: measured
+    against qwen2.5-coder:14b at temperature 0, "How many clips are on my Kdenlive
+    timeline?" was a YES for the Codebase gate 4/4 times (it *is* "inspecting a
+    system"), running a pointless codebase tool loop on every Kdenlive question.
+    Offering the systems side by side makes the choice discriminative, and costs one
+    model call per turn instead of one per registered server. Fails closed (no tools).
+    """
+    lines = []
+    for name, gate in candidates.items():
+        hints = ", ".join(gate.get("hints", [])[:8])
+        lines.append(f"- {name}: {gate.get('label', name)} (topics like: {hints})")
+    try:
+        result = await ollama_client.chat(
+            model=DEFAULT_AGENT_MODEL, host=DEFAULT_AGENT_OLLAMA_URL, timeout=15.0,
+            options={"temperature": 0},
+            messages=[{
+                "role": "user",
+                "content": (
+                    "Route a user's message to the tool systems it needs.\n\nSystems:\n" + "\n".join(lines) +
+                    f'\n\nMessage: "{message}"\n\n'
+                    "Which systems does the message clearly ask to inspect or control? Most messages need "
+                    "at most one, and ordinary conversation, general questions, or help with unrelated "
+                    "code need none. Reply with only the system names, comma-separated, or NONE."
+                ),
+            }],
+        )
+    except Exception:
+        return set()
+    words = set(re.findall(r"[a-z0-9_-]+", (result.get("output") or "").lower()))
+    return {name for name in candidates if name.lower() in words}
+
+
+def _server_enabled(name: str) -> bool:
+    # The codebase server is an opt-in developer feature: its router is only mounted
+    # with ARYNWOOD_ENABLE_CODEBASE_TOOLS=1, so a leftover mcp_servers.json entry must
+    # not make the gate fire (and the tool loop 404) or the prompt advertise it.
+    return name != "codebase" or os.environ.get("ARYNWOOD_ENABLE_CODEBASE_TOOLS") == "1"
+
+
+def available_servers() -> list[str]:
+    """Labels of tool servers that are both registered on this machine and gated —
+    i.e. what gather_context_for_message could actually reach this turn. Used to
+    describe real capabilities in the system prompt instead of a fixed list."""
+    gates = _load_gates() or {}
+    servers = _load_servers()
+    return [gate.get("label", name) for name, gate in gates.items() if name in servers and _server_enabled(name)]
+
+
 async def gather_context_for_message(
     message: str, approve: Optional[ApprovalCallback] = None,
 ) -> tuple[str, list[str]]:
@@ -234,12 +287,21 @@ async def gather_context_for_message(
         return "", []
     servers = _load_servers()
 
+    candidates = {n: g for n, g in gates.items() if n in servers and _server_enabled(n)}
+    if len(candidates) == 1:
+        (only, gate), = candidates.items()
+        selected = {only} if await _gate_matches(message, gate) else set()
+    elif candidates:
+        selected = await _route(message, candidates)
+    else:
+        selected = set()
+
     blocks: list[str] = []
     used: list[str] = []
     for server_name, gate in gates.items():
-        if server_name not in servers:
+        if server_name not in servers or not _server_enabled(server_name):
             continue
-        if not await _gate_matches(message, gate):
+        if server_name not in selected:
             continue
         label = gate.get("label", server_name)
         try:
@@ -265,7 +327,17 @@ def _extract_tool_calls(msg: dict) -> list[tuple[str, dict]]:
     (which chokes on "extra data" from a second object)."""
     tool_calls = msg.get("tool_calls") or []
     if tool_calls:
-        return [(tc["function"]["name"], tc["function"]["arguments"]) for tc in tool_calls]
+        calls = []
+        for tc in tool_calls:
+            fn = tc['function']
+            arguments = fn.get('arguments', {})
+            if isinstance(arguments, str):
+                try:
+                    arguments = json.loads(arguments)
+                except ValueError:
+                    arguments = {'__invalid_arguments__': arguments}
+            calls.append((fn['name'], arguments))
+        return calls
 
     content = (msg.get("content") or "").strip()
     # Prefer content inside a ```json fence if there is one — unambiguous, whereas
@@ -299,7 +371,18 @@ def _extract_tool_calls(msg: dict) -> list[tuple[str, dict]]:
 
 def _result_to_text(result: dict) -> str:
     parts = [c.get("text", "") for c in result.get("content", []) if c.get("type") == "text"]
-    return "\n".join(parts) if parts else "(no output)"
+    if result.get('structuredContent') is not None:
+        parts.append(json.dumps(result['structuredContent'], ensure_ascii=False))
+    for item in result.get('content', []):
+        if item.get('type') == 'resource_link':
+            parts.append(f"Resource: {item.get('name', '')} {item.get('uri', '')}")
+        elif item.get('type') == 'resource':
+            resource = item.get('resource', {})
+            parts.append(f"Resource {resource.get('uri', '')}: {resource.get('text', '[binary resource]')}")
+        elif item.get('type') in ('image', 'audio'):
+            parts.append(f"[{item['type']} result ({item.get('mimeType', '')}); visual/audio inspection has not been performed by this text agent]")
+    text = "\n".join(parts) if parts else "(no output)"
+    return ('ERROR: ' if result.get('isError') else '') + text
 
 
 _JSON_TYPE_CHECKS = {
@@ -370,8 +453,9 @@ async def run_tool_loop(
 
     try:
         tools_result = await _mcp_post(server_cfg, "tools/list", {})
-    except Exception:
-        return ""
+    except Exception as exc:
+        runtime_context.record_evidence("tool_service", server=server_name, outcome="unavailable", error=str(exc))
+        return f"[{label} — unavailable] {exc}"
     tools = [
         {
             "type": "function",
@@ -420,6 +504,7 @@ async def run_tool_loop(
         # self-correct from prose instructions alone, so short-circuit
         # verbatim repeats with a nudge instead of re-running them.
         seen_calls: set[str] = set()
+        read_calls: set[str] = set()
         stall_count = 0
         escalated = False
         for _ in range(max_rounds):
@@ -489,13 +574,24 @@ async def run_tool_loop(
                 else:
                     seen_calls.add(key)
                     call_start = time.monotonic()
+                    step_id = await run_store.start_step(f'{server_name}.{name}', arguments)
                     try:
                         result = await _mcp_post(server_cfg, "tools/call", {"name": name, "arguments": arguments})
                         text = _result_to_text(result or {})
-                        telemetry.record_tool_call(server_name, name, "success", time.monotonic() - call_start)
+                        outcome = 'error' if result and result.get('isError') else 'success'
+                        telemetry.record_tool_call(server_name, name, outcome, time.monotonic() - call_start)
+                        await run_store.finish_step(step_id, 'failed' if outcome == 'error' else 'unverified', text)
+                        runtime_context.record_evidence('tool', server=server_name, tool=name, outcome=outcome, result=text[:12000])
+                        if tier == TIER_READ_ONLY:
+                            read_calls.add(key)
+                        elif outcome == 'success':
+                            seen_calls.difference_update(read_calls)
+                            read_calls.clear()
                     except Exception as exc:
                         text = f"ERROR: {exc}"
                         telemetry.record_tool_call(server_name, name, "error")
+                        await run_store.finish_step(step_id, 'failed', text)
+                        runtime_context.record_evidence('tool', server=server_name, tool=name, outcome='error', result=text)
                 messages.append({"role": "tool", "content": text, "tool_name": name})
 
         # Round cap hit — force a tool-free final turn instead of
@@ -507,5 +603,6 @@ async def run_tool_loop(
         msg = await _chat(with_tools=False)
         content = (msg.get("content") or "").strip()
         return f"[{label} — live results]\n{content}" if content else ""
-    except Exception:
-        return ""
+    except Exception as exc:
+        runtime_context.record_evidence("tool_service", server=server_name, outcome="unavailable", error=str(exc))
+        return f"[{label} — unavailable] {exc}"

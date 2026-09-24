@@ -34,6 +34,7 @@ class ChunkIn(BaseModel):
 
 
 class LearnRequest(BaseModel):
+    project_id: int | None = None
     source_type: str               # "url" | "text" | "file"
     source: str                    # URL, filename, or short label
     text: Optional[str] = None     # required for "text" / "file", unless `chunks` is given
@@ -184,6 +185,8 @@ async def learn(req: LearnRequest, db=Depends(get_db)):
     takes priority over `text` — chunking already happened upstream, so this skips
     straight to embed+store instead of re-cutting by character count.
     """
+    from backend.services import runtime_context
+    token = runtime_context.project_id.set(req.project_id)
     source_type = req.source_type.lower()
 
     if source_type == "url":
@@ -219,6 +222,8 @@ async def learn(req: LearnRequest, db=Depends(get_db)):
         raise HTTPException(400, str(e))
     except RuntimeError as e:
         raise HTTPException(503, str(e))
+    finally:
+        runtime_context.project_id.reset(token)
 
 
 @router.get("/sources")
@@ -237,9 +242,15 @@ async def remove_source(source_id: int, db=Depends(get_db)):
 
 
 @router.get("/search")
-async def search(q: str, top_k: int = 5):
-    """Semantic search against the Qdrant vector store."""
-    return {"results": await knowledge.search(q, top_k=top_k)}
+async def search(q: str, top_k: int = 5, project_id: int | None = None):
+    """Hybrid search. Without project_id, searches every project (explicit cross-project
+    search); with one, the same scope chat uses (that project plus global sources)."""
+    from backend.services import runtime_context
+    token = runtime_context.project_id.set(project_id)
+    try:
+        return {"results": await knowledge.search(q, top_k=top_k, all_projects=project_id is None)}
+    finally:
+        runtime_context.project_id.reset(token)
 
 
 @router.get("/status")

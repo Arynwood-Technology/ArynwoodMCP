@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, MessageSquare, Cpu, Server,
-  Wrench, Upload, Palette, Brain, Music2, Share2, Clapperboard,
+  Wrench, Upload, Palette, Brain, Music2, Share2, Clapperboard, Users,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -28,6 +28,7 @@ export const NAV: NavItem[] = [
   { to: '/studio',  icon: Music2,       label: 'Music', also: ['/dj'] },
   { to: '/video',   icon: Clapperboard, label: 'Video Studio'  },
   { to: '/social',  icon: Share2,       label: 'Social Media'  },
+  { to: '/community', icon: Users,      label: 'Community'     },
 ]
 
 /** Every reachable destination, flattened — the command palette searches this so

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { LiveVoiceMonitor, makeLiveGraph } from './LiveVoiceMonitor'
+import { LiveVoiceMonitor, makeLiveGraph, type ActiveEffect } from './LiveVoiceMonitor'
 
 interface EffectParam {
   name: string; label: string; type: 'range' | 'select'
@@ -8,7 +8,6 @@ interface EffectParam {
   default: number | string
 }
 interface EffectDef { type: string; label: string; icon: string; params: EffectParam[] }
-interface ActiveEffect { type: string; params: Record<string, number | string> }
 
 const EFFECT_DEFS: EffectDef[] = [
   {

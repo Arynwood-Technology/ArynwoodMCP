@@ -24,8 +24,8 @@ import logging
 
 from backend.db import init_db, DB_PATH
 from backend.services.auth import ApiKeyMiddleware
-from backend.services import memory_index
-from backend.routers import chat, ollama, servers, tools, system, deploy, fs, memory, mcp_proxy, mcp_codebase, knowledge, studio, social, lora, video, models, music, dj, projects
+from backend.services import memory_index, index_jobs
+from backend.routers import chat, ollama, servers, tools, system, deploy, fs, memory, mcp_proxy, mcp_codebase, knowledge, studio, social, lora, video, models, music, dj, projects, community
 
 logger = logging.getLogger(__name__)
 
@@ -51,9 +51,16 @@ async def _backfill_memory_index():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    asyncio.create_task(_backfill_memory_index())
-    yield
-    studio.stop_all_sidecars()
+    tasks = []
+    if not os.getenv("ARYNWOOD_DISABLE_BACKGROUND_INDEX"):
+        tasks = [asyncio.create_task(_backfill_memory_index()), asyncio.create_task(index_jobs.worker())]
+    try:
+        yield
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        studio.stop_all_sidecars()
 
 
 app = FastAPI(title="Arynwood MCP", version="0.4.3", lifespan=lifespan)
@@ -140,6 +147,7 @@ app.include_router(models.router,   prefix="/api/models",    tags=["models"])
 app.include_router(music.router,    prefix="/api/music",     tags=["music"])
 app.include_router(dj.router,       prefix="/api/dj",        tags=["dj"])
 app.include_router(projects.router, prefix="/api/projects",  tags=["projects"])
+app.include_router(community.router, prefix="/api/community", tags=["community"])
 
 
 _SOCIAL_MEDIA_DIR = os.path.join(user_data_dir(), "static", "social-media")

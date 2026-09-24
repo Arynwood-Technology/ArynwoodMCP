@@ -9,6 +9,7 @@ import pytest
 _tmp_db_fd, _tmp_db_path = tempfile.mkstemp(prefix="arynwood_test_", suffix=".db")
 os.close(_tmp_db_fd)
 os.environ["ARYNWOOD_DB_PATH"] = _tmp_db_path
+os.environ["ARYNWOOD_DISABLE_BACKGROUND_INDEX"] = "1"
 
 
 @pytest.fixture()

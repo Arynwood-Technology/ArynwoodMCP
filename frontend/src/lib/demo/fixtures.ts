@@ -6,7 +6,7 @@
 import type {
   Persona, SystemStatus, Server, Tool, Conversation, Message,
   CheckpointList, ModelFileList, KnowledgeStatus, KnowledgeSource, Sidecar, McpServerInfo, GpuQueue,
-  DjTool, DjSession,
+  DjTool, DjSession, MusicProviderCapability,
 } from '../api'
 
 export const PERSONAS: Persona[] = [
@@ -89,10 +89,34 @@ export const MCP_SERVERS: McpServerInfo[] = [
   { name: 'Kdenlive', url: 'http://127.0.0.1:8420/mcp' },
 ]
 
+// All four "running" — this demo genuinely processes real audio (Effects Rack, Voice
+// Conversion's pitch-shift, Stem Separator's frequency split all run real Web Audio DSP;
+// Instrument Generator/Jam with AI/Vocal Booth's script-to-voice synthesize a real
+// placeholder clip) rather than showing a permanent "sidecar not running" wall.
 export const SIDECARS: Record<string, Sidecar> = {
-  'song-gen': { id: 'song-gen', label: 'Song Generation', port: 8003, status: 'stopped' },
-  'stem-sep': { id: 'stem-sep', label: 'Stem Separator', port: 8001, status: 'stopped' },
+  'song-gen': { id: 'song-gen', label: 'Song Generation', port: 8003, status: 'running' },
+  'stem-sep': { id: 'stem-sep', label: 'Stem Separator', port: 8004, status: 'running' },
+  'voice': { id: 'voice', label: 'Voice Conversion', port: 8001, status: 'running' },
+  'audio-fx': { id: 'audio-fx', label: 'Effects Rack', port: 8002, status: 'running' },
 }
+
+export const MUSIC_PROVIDERS: MusicProviderCapability[] = [
+  {
+    id: 'acestep', label: 'ACE-Step', installed: true, message: null, license: 'Apache-2.0',
+    supports: { text_to_music: true, instrumental: true, audio_conditioning: false, continuation: false, melody_conditioning: false },
+    max_duration_seconds: 30, vram_estimate_gb: 6,
+  },
+  {
+    id: 'musicgen', label: 'MusicGen', installed: true, message: null, license: 'CC-BY-NC-4.0',
+    supports: { text_to_music: true, instrumental: true, audio_conditioning: true, continuation: true, melody_conditioning: true },
+    max_duration_seconds: 30, vram_estimate_gb: 4,
+  },
+]
+
+export const VOICE_MODELS: { name: string; has_index: boolean }[] = [
+  { name: 'demo-narrator', has_index: true },
+  { name: 'demo-character', has_index: false },
+]
 
 // Chat: one seed conversation so the sidebar isn't empty on first load. Its messages are
 // intentionally the opening exchange of the Glyph approval scenario (see chatScenarios.ts)

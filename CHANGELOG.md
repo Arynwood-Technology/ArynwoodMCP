@@ -7,6 +7,18 @@ Entries before this file existed (everything under "0.4.0" and earlier) are
 reconstructed from git history for context, not a line-by-line commit log — treat
 them as a summary, not a precise record.
 
+## [Unreleased]
+
+### Changed
+
+- Added provider-aware chat execution, structured streamed tool-call preservation,
+  whole-request context budgeting, token-eviction history summaries, project-scoped
+  retrieval, revisioned memory proposals, durable index retries, staged knowledge
+  activation, typed MCP result handling, persistent run evidence, and cancellable
+  chat turns.
+- Added project selection, execution evidence, and Stop controls to Chat. See
+  `inprovements.md` for the complete implementation tracker and remaining work.
+
 ## [0.4.3] — 2026-09-21
 
 ### Added

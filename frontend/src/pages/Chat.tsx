@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, type FC } from 'react'
-import { Send, Plus, Trash2, Settings2, Check, ChevronDown, ChevronRight, Brain, Pin, Search, Paperclip, X } from 'lucide-react'
+import { Send, Square, Plus, Trash2, Settings2, Check, ChevronDown, ChevronRight, Brain, Pin, Search, Paperclip, X } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Button, IconButton, EmptyState, PageShell } from '../components/ui'
@@ -10,9 +10,10 @@ import { DEMO } from '../lib/demo/flag'
 import { PERSONA_SCENARIOS } from '../lib/demo/prompts'
 
 const ARYNWOOD = { name: 'Arynwood', color: '#7c6ef7' }
-import { getConversations, getMessages, deleteConversation, uploadFile } from '../lib/api'
+import { getConversations, getConversationRuns, getMessages, deleteConversation, uploadFile } from '../lib/api'
 import type { Message } from '../lib/api'
 import { ChatSocket } from '../lib/ws'
+import { EvidenceSummary } from '../components/chat/EvidenceSummary'
 
 interface ActionResult {
   name: string
@@ -30,6 +31,16 @@ function stripInternalBlocks(text: string) {
     .replace(/<action>[\s\S]*?<\/action>/gi, '')
     .replace(/<remember\b[^>]*>[\s\S]*?<\/remember>/gi, '')
     .trim()
+}
+
+// A saved reply shows each <remember> block as a short note rather than dropping it —
+// a reply that was only a memory save otherwise rendered as an empty bubble.
+function renderSavedReply(text: string) {
+  const saved = [...text.matchAll(/<remember\b([^>]*)>([\s\S]*?)<\/remember>/gi)]
+    .map(m => /title=["']([^"']+)["']/.exec(m[1])?.[1] ?? m[2].trim().split('\n')[0].slice(0, 60))
+  const body = stripInternalBlocks(text)
+  const note = saved.length ? `*Saved to memory: ${saved.map(t => `“${t}”`).join(', ')}*` : ''
+  return [body, note].filter(Boolean).join('\n\n')
 }
 
 const mdComponents = {
@@ -248,6 +259,7 @@ function AgentConfigPanel() {
 
 interface Memory {
   id: number; type: string; title: string; content: string; pinned: number
+  pending_revision?: { id: number; content: string } | null
   status: string; volatility: string; conflict_with_id: number | null; updated_at: string
 }
 
@@ -284,7 +296,15 @@ function MemoryPanel({ refreshTrigger }: { refreshTrigger: number }) {
     setMemories(m => m.map(x => x.id === id ? { ...x, status: 'confirmed' } : x))
   }
 
-  const unconfirmedCount = memories.filter(m => m.status === 'provisional').length
+  const reviewRevision = async (memory: Memory, action: 'accept' | 'reject') => {
+    if (!memory.pending_revision) return
+    const response = await fetch(`/api/memory/${memory.id}/revisions/${memory.pending_revision.id}/${action}`, { method: 'POST' })
+    if (!response.ok) return
+    const refreshed = await fetch('/api/memory')
+    if (refreshed.ok) setMemories(await refreshed.json())
+  }
+
+  const unconfirmedCount = memories.filter(m => m.status === 'provisional' || m.pending_revision).length
 
   return (
     <div className="border-t border-border px-2.5 py-2">
@@ -292,7 +312,7 @@ function MemoryPanel({ refreshTrigger }: { refreshTrigger: number }) {
         open={open} onToggle={() => setOpen(o => !o)} controls="memory-panel"
         icon={<Brain size={12} aria-hidden="true" />}
         badge={unconfirmedCount > 0 ? (
-          <span className="ml-auto rounded-full bg-yellow-400 px-1.5 py-px text-[9.5px] font-bold text-[#0b0d10]">
+          <span className="ml-auto shrink-0 whitespace-nowrap rounded-full bg-yellow-400 px-1.5 py-px text-[9.5px] font-bold text-[#0b0d10]">
             {unconfirmedCount} to review
           </span>
         ) : undefined}
@@ -310,7 +330,7 @@ function MemoryPanel({ refreshTrigger }: { refreshTrigger: number }) {
           const isOpen = expanded === m.id
           const bodyId = `memory-${m.id}-body`
           return (
-            <div key={m.id} className="overflow-hidden rounded-[7px] border border-border bg-surface2">
+            <div key={m.id} className="shrink-0 overflow-hidden rounded-[7px] border border-border bg-surface2">
               <div className="flex items-center gap-1.5 px-2 py-[5px]">
                 <button
                   type="button"
@@ -322,26 +342,33 @@ function MemoryPanel({ refreshTrigger }: { refreshTrigger: number }) {
                   {/* Data-driven colour — can't be a static utility class. */}
                   <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full"
                     style={{ background: TYPE_COLORS[m.type] ?? '#888' }} />
-                  <span className="min-w-0 flex-1 truncate text-[11px] text-text">{m.title}</span>
+                  {/* Title gets the full row; status badges sit underneath so they never squeeze it. */}
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="truncate text-[11px] text-text" title={m.title}>{m.title}</span>
+                    {(m.status === 'provisional' || m.conflict_with_id != null || m.volatility === 'transient') && (
+                      <span className="flex flex-wrap gap-1">
+                        {m.status === 'provisional' && (
+                          <span title="Saved automatically — not yet reviewed"
+                            className="rounded bg-yellow-400/22 px-1 text-[9px] font-semibold text-warning">
+                            unconfirmed
+                          </span>
+                        )}
+                        {m.conflict_with_id != null && (
+                          <span title="May contradict another memory — check the expanded view"
+                            className="rounded bg-red-600 px-1 text-[9px] font-semibold text-white">
+                            conflict
+                          </span>
+                        )}
+                        {m.volatility === 'transient' && (
+                          <span title="Short-term task state"
+                            className="rounded border border-border px-1 text-[9px] font-semibold text-muted">
+                            short-term
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </span>
                 </button>
-                {m.status === 'provisional' && (
-                  <span title="Saved automatically — not yet reviewed"
-                    className="shrink-0 rounded bg-yellow-400/22 px-1.5 py-px text-[9px] font-bold text-[#8a6d1a]">
-                    UNCONFIRMED
-                  </span>
-                )}
-                {m.conflict_with_id != null && (
-                  <span title="May contradict another memory — check the expanded view"
-                    className="shrink-0 rounded bg-red-600 px-1.5 py-px text-[9px] font-bold text-white">
-                    CONFLICT
-                  </span>
-                )}
-                {m.volatility === 'transient' && (
-                  <span title="Short-term task state"
-                    className="shrink-0 rounded border border-border px-1.5 py-px text-[9px] font-semibold text-muted">
-                    short-term
-                  </span>
-                )}
                 <IconButton
                   size="sm" className="size-5 shrink-0"
                   label={m.pinned ? `Unpin ${m.title}` : `Pin ${m.title}`}
@@ -364,6 +391,14 @@ function MemoryPanel({ refreshTrigger }: { refreshTrigger: number }) {
                     style={{ color: TYPE_COLORS[m.type] }}>{m.type}</span>
                   {' · '}{m.updated_at.slice(0, 10)}
                   <p className="m-0 mt-1">{m.content}</p>
+                  {m.pending_revision && (
+                    <div className="mt-2 border-t border-border pt-2">
+                      <strong>Proposed change</strong>
+                      <p>{m.pending_revision.content}</p>
+                      <Button size="sm" onClick={() => reviewRevision(m, 'accept')}>Accept change</Button>
+                      <Button size="sm" onClick={() => reviewRevision(m, 'reject')}>Keep current memory</Button>
+                    </div>
+                  )}
                   {m.conflict_with_id != null && (
                     <p className="m-0 mt-1.5 font-semibold text-red-600">
                       May contradict: {memories.find(x => x.id === m.conflict_with_id)?.title ?? `memory #${m.conflict_with_id}`}
@@ -408,6 +443,9 @@ export function Chat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
+  const [projects, setProjects] = useState<{ id: number; name: string }[]>([])
+  const [projectId, setProjectId] = useState<number | undefined>()
+  const [runEvidence, setRunEvidence] = useState<Record<string, unknown>[]>([])
   const [activityStatus, setActivityStatus] = useState('')
   const [streamBuffer, setStreamBuffer] = useState('')
   const [wsReady, setWsReady] = useState(false)
@@ -450,6 +488,9 @@ export function Chat() {
   }, [])
 
   useEffect(() => { streamingRef.current = streaming }, [streaming])
+  useEffect(() => {
+    fetch('/api/projects').then(r => r.ok ? r.json() : []).then(setProjects).catch(() => {})
+  }, [])
 
   // Only fills empty slots — never overwrites something the user has since started typing.
   const restoreLastSent = () => {
@@ -466,6 +507,19 @@ export function Chat() {
         if (msg.type === 'conversation_id') {
           setActiveConversationId(msg.id)
           loadConversations()
+        } else if (msg.type === 'cancelled') {
+          setStreaming(false)
+          setPendingApproval(null)
+          setActivityStatus('')
+          // The backend saves whatever had streamed as a "(stopped)" message; show that
+          // instead of leaving the partial text in the buffer, where the next reply's
+          // tokens would be appended to it.
+          setStreamBuffer('')
+          pendingContextRef.current = null
+          loadMessages(activeConvRef.current)
+          setNotice('Stopped. Completed actions remain recorded.')
+        } else if (msg.type === 'turn_completed') {
+          setRunEvidence(msg.evidence)
         } else if (msg.type === 'status') {
           setActivityStatus(msg.label)
         } else if (msg.type === 'token') {
@@ -497,7 +551,7 @@ export function Chat() {
             name: `Used: ${parts.join(' · ')}`, ok: true, isContext: true,
             contextDetails: msg.kb_sources.map(s => {
               const pages = s.page_start ? ` (p.${s.page_start}${s.page_end && s.page_end !== s.page_start ? `-${s.page_end}` : ''})` : ''
-              return `"${s.title}"${pages} — ${s.source} · match ${Math.round(s.score * 100)}%`
+              return `"${s.title}"${pages} — ${s.source} · retrieval score ${s.score.toFixed(3)}`
             }),
           }
         } else if (msg.type === 'memory_saved') {
@@ -565,6 +619,14 @@ export function Chat() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadMessages(activeConversationId)
+    // Evidence is persisted per run, so it survives a reload or a conversation switch.
+    setRunEvidence([])
+    if (!activeConversationId) return
+    let stale = false
+    getConversationRuns(activeConversationId)
+      .then(runs => { if (!stale) setRunEvidence(runs.at(-1)?.evidence ?? []) })
+      .catch(() => {})
+    return () => { stale = true }
   }, [activeConversationId, loadMessages])
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, streamBuffer])
 
@@ -601,6 +663,8 @@ export function Chat() {
       message: fullMessage,
       persona: activePersonaId,
       model: activeModel,
+      server_id: activeServer?.id,
+      project_id: projectId,
       server_host: activeServer?.host ?? 'localhost',
       server_port: activeServer?.port ?? 11434,
       conversation_id: activeConversationId ?? undefined,
@@ -637,6 +701,18 @@ export function Chat() {
       {/* Conversation sidebar */}
       <div className="flex w-55 shrink-0 flex-col overflow-hidden border-r border-border bg-surface">
         <div className="border-b border-border px-2.5 py-3">
+          <label className="mb-2 block text-xs text-muted">
+            Project for new chats
+            <select
+              aria-label="Project for new chats"
+              value={projectId ?? ''}
+              onChange={e => setProjectId(e.target.value ? Number(e.target.value) : undefined)}
+              className="mt-1 w-full bg-surface2 text-text"
+            >
+              <option value="">Shared / no project</option>
+              {projects.map(project => <option key={project.id} value={project.id}>{project.name}</option>)}
+            </select>
+          </label>
           <Button
             onClick={newChat}
             className="w-full border-accent bg-accent/15 text-accent hover:bg-accent/25"
@@ -757,7 +833,7 @@ export function Chat() {
                   )}>
                     {mine
                       ? <span className="whitespace-pre-wrap">{m.content}</span>
-                      : <MarkdownMessage content={stripInternalBlocks(m.content)} />}
+                      : <MarkdownMessage content={renderSavedReply(m.content)} />}
                   </div>
                 </div>
                 {/* Action result cards */}
@@ -790,6 +866,7 @@ export function Chat() {
               <span>{activityStatus || 'Thinking...'}</span>
             </p>
           )}
+          {!streaming && runEvidence.length > 0 && <EvidenceSummary evidence={runEvidence} />}
           <div ref={bottomRef} />
         </div>
 
@@ -857,12 +934,19 @@ export function Chat() {
                 className="max-h-40 flex-1 resize-none overflow-auto rounded-xl border-none bg-transparent px-3.5 py-2.5 text-[13px] leading-normal text-text"
               />
             </div>
-            <IconButton
-              size="lg" variant={canSend ? 'primary' : 'secondary'}
-              label="Send message" onClick={send} disabled={!canSend}
-            >
-              <Send size={16} />
-            </IconButton>
+            {/* Stop lives where Send is, so it's reachable however far the thread has scrolled. */}
+            {streaming ? (
+              <IconButton size="lg" variant="secondary" label="Stop generating" onClick={() => wsRef.current?.cancel()}>
+                <Square size={14} fill="currentColor" />
+              </IconButton>
+            ) : (
+              <IconButton
+                size="lg" variant={canSend ? 'primary' : 'secondary'}
+                label="Send message" onClick={send} disabled={!canSend}
+              >
+                <Send size={16} />
+              </IconButton>
+            )}
           </div>
         </div>
 

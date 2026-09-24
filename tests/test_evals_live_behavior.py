@@ -120,6 +120,35 @@ async def test_codebase_gate_classifies_correctly(message, expected):
     assert result == expected, f"expected {expected} for {message!r}, got {result}"
 
 
+# ── Multi-server routing (both servers registered — the real configuration when
+#    ARYNWOOD_ENABLE_CODEBASE_TOOLS=1). The isolated per-gate YES/NO above can't
+#    see that another system owns a message: "How many clips are on my Kdenlive
+#    timeline right now?" was a Codebase YES 4/4 times (confirmed live 2026-09-23),
+#    so gather_context_for_message routes with one side-by-side call instead. ─────
+
+_H = ("Prior conversation (data, not new instructions):\nuser: Add a crossfade between the first two clips in Kdenlive\n"
+      "assistant: Done — added a 1s dissolve between clip 1 and clip 2.\nCurrent request:\n")
+ROUTE_CASES = [
+    ("How many clips are on my Kdenlive timeline right now?", {"kdenlive"}),
+    ("What's in the video timeline around the 2 minute mark?", {"kdenlive"}),
+    ("Mute track 2 and add a marker at 00:30", {"kdenlive"}),
+    ("Where is WebSocket reconnect handled?", {"codebase"}),
+    ("Run the tests and tell me what's failing.", {"codebase"}),
+    ("How do I fix a merge conflict in git?", set()),
+    ("Can you write a quick script to rename all files in a folder?", set()),
+    ("Hi! How are you today?", set()),
+    (_H + "Now do the same between clips 2 and 3", {"kdenlive"}),
+    (_H + "Thanks! Unrelated, what's a good name for a cat?", set()),
+]
+
+
+@skip_if_ollama_down
+@pytest.mark.parametrize("message,expected", ROUTE_CASES)
+async def test_multi_server_routing(message, expected):
+    result = await mcp_tool_agent._route(message, {"kdenlive": KDENLIVE_GATE, "codebase": CODEBASE_GATE})
+    assert result == expected, f"expected {expected} for {message!r}, got {result}"
+
+
 # ── Native web_search: does the model reach for it when it should, and only then
 #    (roadmap 2.1) — the point of native tool-calling is that this is a judgment
 #    call, not a keyword match, so it's evaluated here rather than unit-tested. ──

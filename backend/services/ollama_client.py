@@ -16,7 +16,9 @@ from typing import Any, AsyncIterator, Optional, Sequence
 import httpx
 from ollama import AsyncClient, Client
 
-from backend.services import telemetry
+from backend.services import telemetry, providers
+from backend.services import context_budget
+from backend.services.context_budget import fit_request
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +62,46 @@ def get_client(host: Optional[str] = None, port: Optional[int] = None, timeout: 
 def get_async_client(
     host: Optional[str] = None, port: Optional[int] = None, timeout: Optional[float] = None
 ) -> AsyncClient:
-    return AsyncClient(host=resolve_host(host, port), timeout=timeout)
+    config = providers.for_endpoint(host, port)
+    return AsyncClient(host=resolve_host(host, port), timeout=timeout,
+                       headers=providers.headers(config) if config and config['type'] == 'ollama' else {})
+
+
+# Ollama keys a loaded model on its num_ctx: a request for the same model with a
+# different num_ctx (including an omitted one, which means the server default) unloads
+# and reloads it — measured ~3.5s for qwen2.5-coder:14b on the 12GB card, plus the lost
+# prompt cache. Small utility calls (gate classifier, memory-conflict check) don't care
+# about context size, so when a caller doesn't set num_ctx we reuse whatever the model was
+# last run with on that server instead of silently forcing a reload every chat turn.
+_resident_ctx: dict[tuple[str, str], int] = {}
+
+
+async def _ollama_options(model: str, host: Optional[str], port: Optional[int], options: Optional[dict]) -> dict:
+    merged = {**DEFAULT_OPTIONS, **(options or {})}
+    base = resolve_host(host, port)
+    key = (_normalize_host(base), model)
+    if merged.get("num_ctx"):
+        _resident_ctx[key] = int(merged["num_ctx"])
+        return merged
+    if key not in _resident_ctx:
+        # First call for this model in this process: adopt whatever it's already
+        # loaded with (e.g. by a previous backend run), if anything.
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                r = await client.get(f"{base}/api/ps")
+            for m in r.json().get("models", []):
+                if m.get("name") == model or m.get("model") == model:
+                    if m.get("context_length"):
+                        _resident_ctx[key] = int(m["context_length"])
+        except Exception:
+            pass
+    if key in _resident_ctx:
+        merged["num_ctx"] = _resident_ctx[key]
+    return merged
+
+
+def _normalize_host(url: str) -> str:
+    return url.rstrip("/").replace("://localhost", "://127.0.0.1")
 
 
 def _metadata_from_response(model: str, response: Any, starttime: datetime) -> dict:
@@ -89,12 +130,25 @@ async def chat(
 
     Returns a metadata dict: {model, output, wall_latency, in_tokens, out_tokens}.
     """
+    if options and options.get("num_ctx"):
+        messages, _ = fit_request(messages, tools, int(options["num_ctx"]), model=model)
+    config = providers.for_endpoint(host, port)
+    if config and config['type'] != 'ollama':
+        start = datetime.now()
+        try:
+            result = await providers.complete(config, model=model, messages=messages, options=options, tools=tools, timeout=timeout)
+            result['wall_latency'] = (datetime.now() - start).total_seconds()
+            telemetry.record_llm_call(model, 'success', result['wall_latency'], result['in_tokens'], result['out_tokens'])
+            return result
+        except Exception:
+            telemetry.record_llm_call(model, 'error')
+            raise
     client = get_async_client(host, port, timeout)
     start = datetime.now()
     try:
         response = await client.chat(
             model=model, messages=messages, tools=tools,
-            options={**DEFAULT_OPTIONS, **(options or {})},
+            options=await _ollama_options(model, host, port, options),
         )
     except httpx.TimeoutException as e:
         telemetry.record_llm_call(model, "error")
@@ -104,6 +158,7 @@ async def chat(
         raise
     ret = _metadata_from_response(model, response, start)
     telemetry.record_llm_call(model, "success", ret["wall_latency"], ret["in_tokens"], ret["out_tokens"])
+    context_budget.observe(model, messages, tools, ret["in_tokens"])
     logger.debug("Generated response from Ollama model: %s", ret)
     return ret
 
@@ -118,7 +173,7 @@ async def chat_stream(
     timeout: Optional[float] = None,
     tools: Optional[Sequence] = None,
 ) -> AsyncIterator[dict]:
-    """Streaming chat completion. Yields {"token": str, "done": bool} chunks.
+    """Streaming chat completion preserving text, structured calls and provider state.
 
     tools streams exactly like a normal call — verified empirically against this
     model/Ollama version: qwen2.5-coder:14b never populates the native tool_calls
@@ -128,12 +183,28 @@ async def chat_stream(
     responsible for peeking at the assembled content to tell a tool call apart from
     a real answer before forwarding tokens to a user — see chat.py's _stream_reply.
     """
+    if options and options.get("num_ctx"):
+        messages, _ = fit_request(messages, tools, int(options["num_ctx"]), model=model)
+    config = providers.for_endpoint(host, port)
+    if config and config['type'] != 'ollama':
+        start = datetime.now()
+        try:
+            async for event in providers.stream(config, model=model, messages=messages, options=options, tools=tools, timeout=timeout):
+                if event['done']:
+                    usage = event.get('usage') or {}
+                    telemetry.record_llm_call(model, 'success', (datetime.now() - start).total_seconds(),
+                                              usage.get('prompt_tokens', 0), usage.get('completion_tokens', 0))
+                yield event
+            return
+        except Exception:
+            telemetry.record_llm_call(model, 'error')
+            raise
     client = get_async_client(host, port, timeout)
     start = datetime.now()
     try:
         stream = await client.chat(
             model=model, messages=messages, stream=True, tools=tools,
-            options={**DEFAULT_OPTIONS, **(options or {})},
+            options=await _ollama_options(model, host, port, options),
         )
         async for chunk in stream:
             message = chunk.get("message") or {}
@@ -148,7 +219,16 @@ async def chat_stream(
                     chunk.get("prompt_eval_count") or 0,
                     chunk.get("eval_count") or 0,
                 )
-            yield {"token": message.get("content", ""), "done": done}
+                context_budget.observe(model, messages, tools, chunk.get("prompt_eval_count"))
+            calls = message.get("tool_calls") or []
+            yield {
+                "token": message.get("content", ""), "done": done,
+                "tool_calls": [c.model_dump(exclude_none=True) if hasattr(c, "model_dump") else dict(c) for c in calls],
+                "thinking": message.get("thinking", ""),
+                "finish_reason": chunk.get("done_reason"),
+                "usage": {"input_tokens": chunk.get("prompt_eval_count", 0),
+                          "output_tokens": chunk.get("eval_count", 0)} if done else None,
+            }
     except httpx.TimeoutException as e:
         telemetry.record_llm_call(model, "error")
         raise TimeoutError(str(e)) from e
@@ -168,7 +248,8 @@ def embed_texts(
     """Batched embeddings in a single request via Ollama's /api/embed."""
     client = get_client(host, port, timeout)
     try:
-        response = client.embed(model=model, input=texts)
+        options = None if os.environ.get("ARYNWOOD_EMBED_ON_GPU") == "1" else {"num_gpu": 0}
+        response = client.embed(model=model, input=texts, options=options)
     except httpx.TimeoutException as e:
         raise TimeoutError(str(e)) from e
     return [list(e) for e in response.embeddings]
@@ -182,10 +263,19 @@ async def aembed_texts(
     port: Optional[int] = None,
     timeout: Optional[float] = None,
 ) -> list[list[float]]:
-    """Async batched embeddings in a single request via Ollama's /api/embed."""
+    """Async batched embeddings in a single request via Ollama's /api/embed.
+
+    Runs the embedding model on CPU by default (num_gpu=0). On a 12GB card the chat
+    model (qwen2.5-coder:14b at num_ctx 8192 ≈ 11 GiB) and even the tiny nomic-embed
+    model don't fit together, so a GPU embed made Ollama evict the chat model and
+    reload it — twice per chat turn (retrieval embeds, then the reply). CPU embedding
+    is ~0.3s per query and ~6s per 100 chunks on this machine, and never touches
+    VRAM. Set ARYNWOOD_EMBED_ON_GPU=1 on a machine with VRAM to spare.
+    """
     client = get_async_client(host, port, timeout)
+    options = None if os.environ.get("ARYNWOOD_EMBED_ON_GPU") == "1" else {"num_gpu": 0}
     try:
-        response = await client.embed(model=model, input=texts)
+        response = await client.embed(model=model, input=texts, options=options)
     except httpx.TimeoutException as e:
         raise TimeoutError(str(e)) from e
     return [list(e) for e in response.embeddings]
@@ -226,6 +316,9 @@ async def context_length(
     isn't reachable — callers should treat that as "unknown, be conservative," not
     as a real measurement.
     """
+    config = providers.for_endpoint(host, port)
+    if config and config['type'] != 'ollama':
+        return config.get('context_window') or 8192
     base = resolve_host(host, port)
     cache_key = f"{base}::{model}"
     if cache_key in _context_length_cache:

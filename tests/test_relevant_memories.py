@@ -59,7 +59,7 @@ async def test_relevant_non_pinned_memories_included_in_relevance_order(client, 
         await db.close()
 
 
-async def test_falls_back_to_recency_when_nothing_pinned_or_relevant(client, monkeypatch):
+async def test_does_not_inject_unrelated_recent_memories(client, monkeypatch):
     db = await _db()
     try:
         # This test's premise is "nothing pinned" — the shared test DB persists rows
@@ -71,7 +71,7 @@ async def test_falls_back_to_recency_when_nothing_pinned_or_relevant(client, mon
         monkeypatch.setattr(chat_mod.memory_index, "search_relevant_memory_ids", _empty)
 
         result = await _load_relevant_memories(db, "query")
-        assert recent_id in {m["id"] for m in result}
+        assert recent_id not in {m["id"] for m in result}
     finally:
         await db.close()
 

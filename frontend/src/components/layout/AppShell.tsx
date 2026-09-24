@@ -26,6 +26,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dj':        'DJ Toolkit',
   '/video':     'Video Studio',
   '/social':    'Social Media',
+  '/community': 'Arynwood Community',
 }
 
 const STATUS_POLL_MS = 10_000

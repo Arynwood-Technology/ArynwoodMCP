@@ -9,13 +9,15 @@ of a source into a single /api/embed request instead of one call per chunk.
 """
 
 import os
+import json
+import aiosqlite
 import re
 import uuid
 from typing import Optional
 
 import httpx
 
-from backend.services import ollama_client
+from backend.services import ollama_client, runtime_context, index_jobs
 
 OLLAMA_URL_DEFAULT = "http://localhost:11434"
 QDRANT_URL_DEFAULT = os.getenv("QDRANT_URL", "http://localhost:6333")
@@ -307,53 +309,49 @@ async def _embed_and_store(
             f"Could not reach Qdrant at {qdrant_url}. Start it with: docker run -p 6333:6333 qdrant/qdrant"
         )
 
-    # Source versioning (roadmap 1.9): re-learning the same source used to just add
-    # an unrelated second row, with the stale content still searchable right
-    # alongside the fresh one. If an active (non-superseded) source with this exact
-    # `source` string already exists, this ingest supersedes it instead.
-    async with db.execute(
-        "SELECT id, version FROM knowledge_sources WHERE source=? AND source_type=? AND superseded_by IS NULL",
-        (source, source_type),
-    ) as c:
-        prior = await c.fetchone()
-    next_version = (prior["version"] + 1) if prior else 1
-
+    if len(embeddings) != len(chunk_texts):
+        raise RuntimeError("Embedding count does not match source chunks; previous source preserved")
+    scope = runtime_context.project_id.get()
     cur = await db.execute(
-        "INSERT INTO knowledge_sources (title, source, source_type, chunk_count, added_by, version) VALUES (?,?,?,?,?,?)",
-        (title, source, source_type, len(chunk_texts), added_by, next_version),
-    )
-    await db.commit()
+        "INSERT INTO knowledge_sources (title,source,source_type,chunk_count,added_by,project_id,index_state) VALUES (?,?,?,?,?,?,'staging')",
+        (title, source, source_type, len(chunk_texts), added_by, scope))
     source_id = cur.lastrowid
-
-    if prior:
-        await db.execute("UPDATE knowledge_sources SET superseded_by=? WHERE id=?", (source_id, prior["id"]))
-        await db.commit()
-        try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                await client.post(
-                    f"{qdrant_url}/collections/{COLLECTION}/points/delete",
-                    json={"filter": {"must": [{"key": "source_id", "match": {"value": prior["id"]}}]}},
-                )
-        except Exception:
-            pass  # the old row is still marked superseded even if point cleanup fails; harmless leftover vectors
-
     points = []
     for i, (chunk, emb) in enumerate(zip(chunk_texts, embeddings)):
-        payload = {
-            "source_id": source_id, "title": title, "source": source,
-            "source_type": source_type, "chunk_index": i, "text": chunk,
-        }
-        if chunk_extra is not None:
-            payload.update(chunk_extra[i])
-        points.append({"id": str(uuid.uuid4()), "vector": emb, "payload": payload})
-
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        r = await client.put(f"{qdrant_url}/collections/{COLLECTION}/points", json={"points": points})
-        r.raise_for_status()
-
+        payload = {"source_id": source_id, "title": title, "source": source,
+                   "source_type": source_type, "chunk_index": i, "text": chunk,
+                   "project_id": scope, **(chunk_extra[i] if chunk_extra is not None else {})}
+        point_id = str(uuid.uuid4())
+        points.append({"id": point_id, "vector": emb, "payload": payload})
+        await db.execute("INSERT INTO knowledge_chunks(id,source_id,text,payload) VALUES (?,?,?,?)",
+                         (point_id, source_id, chunk, json.dumps(payload)))
+    await db.commit()
+    try:
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            r = await client.put(f"{qdrant_url}/collections/{COLLECTION}/points?wait=true", json={"points": points})
+            r.raise_for_status()
+        # Serialize activation: concurrent ingests are versioned in completion order.
+        await db.execute("BEGIN IMMEDIATE")
+        async with db.execute(
+            "SELECT id,version FROM knowledge_sources WHERE source=? AND source_type=? AND project_id IS ? "
+            "AND index_state='active' AND superseded_by IS NULL ORDER BY version DESC LIMIT 1",
+            (source, source_type, scope)) as cur:
+            prior = await cur.fetchone()
+        next_version = prior['version'] + 1 if prior else 1
+        await db.execute("UPDATE knowledge_sources SET index_state='active',version=? WHERE id=?", (next_version, source_id))
+        if prior:
+            await db.execute("UPDATE knowledge_sources SET superseded_by=? WHERE id=?", (source_id, prior['id']))
+            await index_jobs.enqueue(db, 'knowledge_delete', prior['id'], {'qdrant_url': qdrant_url})
+        await db.commit()
+    except BaseException:
+        await db.rollback()
+        await db.execute("UPDATE knowledge_sources SET index_state='failed' WHERE id=?", (source_id,))
+        await index_jobs.enqueue(db, 'knowledge_delete', source_id, {'qdrant_url': qdrant_url})
+        await db.commit()
+        raise
     result = {"id": source_id, "title": title, "chunks": len(chunk_texts), "version": next_version}
     if prior:
-        result["superseded_source_id"] = prior["id"]
+        result['superseded_source_id'] = prior['id']
     return result
 
 
@@ -422,59 +420,80 @@ def _lexical_overlap(query_words: set[str], text: str) -> float:
 
 async def search(
     query: str, ollama_url: str = OLLAMA_URL_DEFAULT, qdrant_url: str = QDRANT_URL_DEFAULT,
-    top_k: int = 5, min_score: float = 0.55,
+    top_k: int = 5, min_score: float = 0.55, all_projects: bool = False,
 ) -> list[dict]:
-    """Hybrid semantic + lexical search over learned knowledge (roadmap 1.7).
+    """Independent lexical/vector candidates fused by rank; SQLite controls visibility.
 
-    Pulls a wider candidate pool at a lower similarity floor, reranks by blending in
-    lexical term overlap, then re-applies min_score against the *combined* score —
-    so a strong lexical match can rescue a borderline-similarity result without
-    abandoning the threshold entirely. Returns [] silently if Ollama/Qdrant are
-    unavailable.
-    """
-    emb = await get_embedding(query, ollama_url, timeout=10.0)
-    if emb is None:
-        return []
-    pool_size = max(top_k * 4, 20)
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            r = await client.post(
-                f"{qdrant_url}/collections/{COLLECTION}/points/search",
-                json={
-                    "vector": emb, "limit": pool_size, "with_payload": True,
-                    "score_threshold": min_score * LEXICAL_POOL_FLOOR_RATIO,
-                },
-            )
-            if r.status_code != 200:
-                return []
-            results = r.json().get("result", [])
-    except Exception:
-        return []
-
-    query_words = set(re.findall(r"[a-z0-9]+", query.lower()))
-    scored = []
-    for res in results:
-        payload = res.get("payload", {})
-        vector_score = res.get("score") or 0.0
-        combined = vector_score + LEXICAL_WEIGHT * _lexical_overlap(query_words, payload.get("text", ""))
-        if combined >= min_score:
-            scored.append((combined, payload))
-    scored.sort(key=lambda t: t[0], reverse=True)
-
+    Scoped to global sources plus the active project, unless all_projects (an explicit
+    cross-project search, e.g. the Knowledge page's search box)."""
+    from backend.db import DB_PATH
+    scope = runtime_context.project_id.get()
+    everywhere = 1 if all_projects else 0
+    words = set(re.findall(r"\w+", query.lower()))
+    # Always query the local corpus, including when the embedding server is offline.
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM knowledge_sources WHERE superseded_by IS NULL AND index_state='active' "
+            "AND (? OR project_id IS NULL OR project_id=?)", (everywhere, scope)) as cur:
+            active = {r['id']: dict(r) for r in await cur.fetchall()}
+        lexical = []
+        if words:
+            match = ' OR '.join('"' + w.replace('"', '""') + '"' for w in sorted(words)[:40])
+            async with db.execute(
+                "SELECT c.id,c.payload FROM knowledge_chunks_fts f JOIN knowledge_chunks c ON c.rowid=f.rowid "
+                "JOIN knowledge_sources s ON s.id=c.source_id WHERE knowledge_chunks_fts MATCH ? "
+                "AND s.superseded_by IS NULL AND s.index_state='active' AND (? OR s.project_id IS NULL OR s.project_id=?) "
+                "ORDER BY bm25(knowledge_chunks_fts) LIMIT ?", (match, everywhere, scope, max(20, top_k * 4))) as cur:
+                lexical = [(r['id'], json.loads(r['payload'])) for r in await cur.fetchall()]
+    vector = []
+    available = True
+    # Nothing learned (in scope) means nothing to find — skip the embedding round-trip,
+    # and don't report the vector index as offline just because it was never created.
+    emb = await get_embedding(query, ollama_url, timeout=10.0) if active else None
+    if not active:
+        pass
+    elif emb is None:
+        available = False
+    else:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(f"{qdrant_url}/collections/{COLLECTION}/points/search", json={
+                    "vector": emb, "limit": max(20, top_k * 4), "with_payload": True,
+                    "score_threshold": min_score,
+                })
+                if response.status_code == 404:
+                    response = None  # collection not created yet: no vectors, not an outage
+                else:
+                    response.raise_for_status()
+                vector = [] if response is None else [
+                    (str(r['id']), r.get('payload', {})) for r in response.json().get('result', [])
+                    if r.get('payload', {}).get('source_id') in active]
+        except Exception:
+            available = False
+    combined = {}
+    for ranking in (lexical, vector):
+        for rank, (key, payload) in enumerate(ranking):
+            if payload.get('source_id') not in active:
+                continue
+            entry = combined.setdefault(key, {'score': 0.0, **payload})
+            entry['score'] += 1 / (60 + rank + 1)
     out = []
-    for combined_score, payload in scored[:top_k]:
-        out.append({
-            "score": combined_score,
-            "title": payload.get("title"),
-            "source": payload.get("source"),
-            "source_id": payload.get("source_id"),
-            "text": payload.get("text"),
-            # Only present for element-aware chunks (see ingest_chunks()) — plain
-            # text/URL sources and older-than-Phase-3 points simply omit these.
-            "page_start": payload.get("page_start"),
-            "page_end": payload.get("page_end"),
-            "has_table": payload.get("has_table", False),
-        })
+    seen = set()
+    for item in sorted(combined.values(), key=lambda r: r['score'], reverse=True):
+        key = (item.get('source_id'), item.get('text'))
+        if key in seen:
+            continue
+        seen.add(key)
+        item.setdefault('page_start', None)
+        item.setdefault('page_end', None)
+        item.setdefault('has_table', False)
+        out.append(item)
+        if len(out) >= top_k:
+            break
+    runtime_context.record_evidence('knowledge', semantic_available=available,
+                                    sources=[{'source_id': r['source_id'], 'source': r.get('source'),
+                                              'title': r.get('title'), 'score': r['score']} for r in out])
     return out
 
 
@@ -504,14 +523,8 @@ async def list_sources(db) -> list[dict]:
 
 
 async def delete_source(db, source_id: int, qdrant_url: str = QDRANT_URL_DEFAULT) -> bool:
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            await client.post(
-                f"{qdrant_url}/collections/{COLLECTION}/points/delete",
-                json={"filter": {"must": [{"key": "source_id", "match": {"value": source_id}}]}},
-            )
-    except Exception:
-        pass
     cur = await db.execute("DELETE FROM knowledge_sources WHERE id=?", (source_id,))
+    await db.execute("DELETE FROM knowledge_chunks WHERE source_id=?", (source_id,))
+    await index_jobs.enqueue(db, 'knowledge_delete', source_id, {'qdrant_url': qdrant_url})
     await db.commit()
     return cur.rowcount > 0

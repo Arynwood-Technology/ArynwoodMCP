@@ -134,7 +134,7 @@ function ArynwoodChat() {
     const fullMessage = attachment ? `[File: ${attachment.name}]\n\`\`\`\n${attachment.text}\n\`\`\`\n\n${text}` : text
     setInput(''); setAttachment(null); setStreaming(true)
     setMsgs(p => [...p, { id: Date.now(), role: 'user', text: attachment ? `📎 ${attachment.name}${text ? ` — ${text}` : ''}` : text }])
-    wsRef.current?.send({ message: fullMessage, persona: 'central', model: activeModel, server_host: activeServer?.host ?? 'localhost', server_port: activeServer?.port ?? 11434, conversation_id: convRef.current ?? undefined })
+    wsRef.current?.send({ message: fullMessage, persona: 'central', model: activeModel, server_id: activeServer?.id, server_host: activeServer?.host ?? 'localhost', server_port: activeServer?.port ?? 11434, conversation_id: convRef.current ?? undefined })
   }, [input, attachment, streaming, wsReady, activeServer, activeModel, setMsgs])
 
   const ollamaServers = servers.filter(s => s.type === 'ollama' && s.enabled)

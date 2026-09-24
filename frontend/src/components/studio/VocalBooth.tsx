@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { AudioRecorder } from './AudioRecorder'
 import { apiUrl, request } from '../../lib/api'
 import { DownloadButton } from '../DownloadButton'
+import { DEMO } from '../../lib/demo/flag'
+import { getDemoAudioUrl } from '../../lib/demo/audioAssets'
 
 const UPLOAD_SENTINEL = '__upload_new__'
 
@@ -98,7 +100,10 @@ function ScriptToVoice({ onSendToEffects }: { onSendToEffects: (blob: Blob) => v
         const jobResponse = await fetch('/api/tools/jobs/' + created.job_id)
         const job = await jobResponse.json()
         if (job.status === 'done') {
-          setAudioUrl(apiUrl('/api/tools/jobs/' + created.job_id + '/file'))
+          // <audio src> (and DownloadButton/"Send to Effects" below, which all read this
+          // same state) bypasses window.fetch entirely — a real local blob: URL in demo
+          // mode instead of an /api/... path with nothing behind it.
+          setAudioUrl(DEMO ? (getDemoAudioUrl(created.job_id) ?? '') : apiUrl('/api/tools/jobs/' + created.job_id + '/file'))
           setStatus('')
           return
         }
@@ -173,6 +178,7 @@ function ScriptToVoice({ onSendToEffects }: { onSendToEffects: (blob: Blob) => v
       {status && <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--accent2)' }}>{status}</p>}
       {error && <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--danger)' }}>{error}</p>}
       {audioUrl && <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}><audio controls src={audioUrl} style={{ flex: '1 1 280px', height: 34 }} /><DownloadButton url={audioUrl} filename={(usingSaved ? selectedVoice : 'script') + '.wav'} style={stepButton}>Download WAV</DownloadButton><button type="button" onClick={() => void sendToEffects()} style={{ ...stepButton, borderColor: 'var(--accent)', color: 'var(--accent)' }}>Send to Effects Rack →</button></div>}
+      {audioUrl && DEMO && <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '6px 0 0' }}>Demo note: this is a procedurally synthesized placeholder, not the real Chatterbox voice-cloning model.</p>}
     </section>
   )
 }

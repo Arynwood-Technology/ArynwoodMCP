@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { Guitar, Loader2, Upload } from 'lucide-react'
 import { apiUrl, getMusicAssets } from '../../lib/api'
 import type { MusicAsset } from '../../lib/api'
+import { DEMO } from '../../lib/demo/flag'
+import { getDemoAudioUrl } from '../../lib/demo/audioAssets'
 import { useMusicJobStore } from '../../store/useMusicJobStore'
 import { useMusicJobPoll } from './useMusicJobPoll'
 import { useMusicCapabilities } from './useMusicCapabilities'
@@ -101,7 +103,11 @@ export function JamWithAI({ sidecarReady }: JamWithAIProps) {
 
   const inputPreviewUrl = useMemo(() => {
     if (pendingInputBlob) return URL.createObjectURL(pendingInputBlob)
-    if (selectedInputAssetId) return apiUrl(`/api/music/assets/${selectedInputAssetId}/audio`)
+    if (selectedInputAssetId) {
+      // <audio src> bypasses window.fetch entirely — resolve to a real local blob: URL
+      // in demo mode instead of an /api/... path with nothing behind it.
+      return DEMO ? (getDemoAudioUrl(selectedInputAssetId) ?? null) : apiUrl(`/api/music/assets/${selectedInputAssetId}/audio`)
+    }
     return null
   }, [pendingInputBlob, selectedInputAssetId])
   useEffect(() => () => { if (pendingInputBlob && inputPreviewUrl) URL.revokeObjectURL(inputPreviewUrl) }, [pendingInputBlob, inputPreviewUrl])

@@ -7,6 +7,7 @@ import { useAppStore } from '../../store/useAppStore'
 import {
   getStatus, getServers, getModels, getGpuQueue, getKnowledgeStatus,
   getMcpServers, getSidecars, startSidecar, pingServer, restartBackend,
+  getCommunityStatus, startCommunity, type CommunityStatus,
   type GpuQueue, type KnowledgeStatus, type McpServerInfo, type Sidecar, type Server,
 } from '../../lib/api'
 
@@ -75,6 +76,7 @@ function DrawerBody() {
   const [kb, setKb]             = useState<KnowledgeStatus | null>(null)
   const [mcp, setMcp]           = useState<McpServerInfo[] | null>(null)
   const [sidecars, setSidecars] = useState<Record<string, Sidecar> | null>(null)
+  const [community, setCommunity] = useState<CommunityStatus | null>(null)
   const [apiUp, setApiUp]       = useState<State>('unknown')
   // Starts true: the mount effect below is already fetching. Setting it in the
   // effect instead would be a synchronous setState on mount.
@@ -101,6 +103,7 @@ function DrawerBody() {
       settle(getKnowledgeStatus(), setKb),
       settle(getMcpServers(), setMcp),
       settle(getSidecars(), setSidecars),
+      settle(getCommunityStatus(), setCommunity),
       getModels(activeServer?.host ?? 'localhost', activeServer?.port ?? 11434)
         .then(r => setModels((r.models ?? []).map(m => m.name)))
         .catch(() => setModels(null)),
@@ -283,6 +286,25 @@ function DrawerBody() {
             detail="localhost:9090"
             fix="docker compose up -d prometheus"
           />
+          {community && (
+            <StatusRow
+              label="Arynwood Community (optional)"
+              state={community.status === 'running' ? 'ok'
+                : community.mode === 'local' && (!community.installed || community.setup_missing.length) ? 'warn' : 'down'}
+              detail={`${community.url} · ${community.status}${community.version ? ` · v${community.version}` : ''}`}
+              fix={community.mode === 'remote' ? 'Hosted — check its server, or ARYNWOOD_COMMUNITY_URL in .env.'
+                : !community.installed ? `Not installed at ${community.dir}. Set ARYNWOOD_COMMUNITY_DIR if it lives elsewhere.`
+                : community.setup_missing.length ? `cd ${community.dir} && ./setup.sh`
+                : community.status === 'failed' ? 'It crashed on start. Log: ~/.local/share/arynwood-mcp/logs/sidecar-community.log'
+                : 'Start it here, or from the Community page.'}
+              action={community.can_start ? (
+                <Button size="sm" variant="outline"
+                  onClick={() => { startCommunity().catch(() => {}); setTimeout(() => refresh(true), 2500) }}>
+                  Start
+                </Button>
+              ) : undefined}
+            />
+          )}
         </Section>
       </div>
     </Dialog.Content>

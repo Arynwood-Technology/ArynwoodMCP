@@ -51,6 +51,30 @@ export const getSidecars = () => request<Record<string, Sidecar>>('/studio/sidec
 export const startSidecar = (id: string) =>
   request<{ status: string }>(`/studio/sidecars/${id}/start`, { method: 'POST' })
 
+// Arynwood Community (optional sidecar — backend/routers/community.py)
+export interface CommunityStatus {
+  label: string
+  mode: 'local' | 'remote'
+  url: string
+  status: 'running' | 'starting' | 'stopped' | 'failed' | 'unreachable'
+  version: string | null
+  /** Home-relative ("~/…") — the backend never sends an absolute home path. */
+  dir: string | null
+  /** Official source repo. TODO(community-repo): placeholder until the repo exists. */
+  repo_url: string
+  installed: boolean | null
+  setup_missing: string[]
+  managed: boolean
+  can_start: boolean
+  can_stop: boolean
+  error: string | null
+}
+export const getCommunityStatus = () => request<CommunityStatus>('/community/status')
+export const startCommunity = () => request<{ status: string }>('/community/start', { method: 'POST' })
+export const stopCommunity = () => request<{ status: string }>('/community/stop', { method: 'POST' })
+export const openCommunity = (target: 'app' | 'repo' = 'app') =>
+  request<{ url: string }>(`/community/open?target=${target}`, { method: 'POST' })
+
 // Ollama
 export const getModels = (host = 'localhost', port = 11434) =>
   request<{ models: OllamaModel[] }>(`/ollama/models?host=${host}&port=${port}`)
@@ -83,6 +107,8 @@ export const uploadFile = async (file: File): Promise<{ filename: string; text: 
   return r.json()
 }
 export const getMessages = (id: number) => request<Message[]>(`/chat/conversations/${id}/messages`)
+export interface ChatRun { id: string; status: string; assistant_message_id: number | null; evidence: Record<string, unknown>[] }
+export const getConversationRuns = (id: number) => request<ChatRun[]>(`/chat/conversations/${id}/runs`)
 export const deleteConversation = (id: number) =>
   request<any>(`/chat/conversations/${id}`, { method: 'DELETE' })
 

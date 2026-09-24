@@ -5,10 +5,19 @@
 // apiUrl()→http://localhost:8010 rewrite ever runs. Non-/api requests (fonts, etc.)
 // fall through to the real fetch untouched.
 import { chatStore } from './chatStore'
+import { BACKEND_ORIGIN } from '../api'
 import {
   PERSONAS, STATUS, GPU_QUEUE, SERVERS, TOOLS, CHECKPOINTS, LORAS, OLLAMA_MODELS,
   KNOWLEDGE_STATUS, KNOWLEDGE_SOURCES, MCP_SERVERS, SIDECARS, DJ_TOOLS, DJ_SESSIONS,
+  MUSIC_PROVIDERS, VOICE_MODELS,
 } from './fixtures'
+import {
+  startMusicGenerate, startMusicJam, pollMusicJob, regenerateMusicAssetRoute,
+  listMusicAssetsRoute, patchMusicAssetRoute, deleteMusicAssetRoute, getMusicAssetAudio,
+  startStemSeparation, pollStemJob, getStemAudio,
+  startVoiceConvert, pollVoiceConvertJob, getVoiceConvertResult, applyEffectsChain,
+  startChatterboxJob, pollChatterboxJob, getChatterboxFile,
+} from './musicJobs'
 // `?inline` forces Vite to always base64-inline this asset (it's ~100KB, well past the
 // default 4KB assetsInlineLimit) rather than emit a separate hashed file — a plain
 // import wouldn't matter for code-splitting purposes either way (this module is only
@@ -19,8 +28,10 @@ import demoImageDataUrl from './assets/demo-generated-image.png?inline'
 
 const DEMO_IMAGE_BASE64 = demoImageDataUrl.replace(/^data:image\/png;base64,/, '')
 
-interface DemoReq { json?: unknown; formData?: FormData }
-interface Res { status?: number; body?: unknown }
+interface DemoReq { json?: unknown; formData?: FormData; search: URLSearchParams }
+interface JsonRes { status?: number; body?: unknown }
+interface BinaryRes { status?: number; blob: Blob; contentType?: string; filename?: string }
+type Res = JsonRes | BinaryRes
 type Handler = (params: Record<string, string>, req: DemoReq) => Res | Promise<Res>
 
 // A verb that would mutate real state on a real install, for any path not explicitly
@@ -50,8 +61,23 @@ const STATIC: Record<string, Handler | undefined> = {
   'GET /ollama/models': () => ({ body: { models: OLLAMA_MODELS } }),
   'GET /ollama/running': () => ({ body: { models: [] } }),
   'GET /video/library': () => ({ body: [] }),
-  'GET /music/capabilities': () => ({ body: { providers: [], stems: { provider: '', sidecar_status: 'stopped', engines: [], stem_counts: [] } } }),
-  'GET /music/assets': () => ({ body: [] }),
+  'GET /music/capabilities': () => ({
+    body: { providers: MUSIC_PROVIDERS, stems: { provider: 'demucs', sidecar_status: 'running', engines: ['demucs', 'spleeter'], stem_counts: [2, 4, 6] } },
+  }),
+  'GET /music/assets': (_p, req) => listMusicAssetsRoute(req.search),
+  'GET /studio/voice/models': () => ({ body: { models: VOICE_MODELS } }),
+  // Music Lab generate/jam and Vocal Booth's Chatterbox TTS are real job-start/poll
+  // simulations (frontend/src/lib/demo/jobSim.ts + musicJobs.ts) producing a genuinely
+  // synthesized placeholder clip (audioSynth.ts) — not a canned static file every time.
+  'POST /music/generate': (_p, req) => startMusicGenerate(req.formData!),
+  'POST /music/jam': (_p, req) => startMusicJam(req.formData!),
+  // Effects Rack's chain is fully synchronous on the real backend too (no job id) — real
+  // Web Audio DSP on the actual uploaded/recorded audio (audioDsp.ts), genuinely
+  // functional, not faked.
+  'POST /studio/effects/chain': (_p, req) => applyEffectsChain(req.formData!),
+  'POST /studio/stems': (_p, req) => startStemSeparation(req.formData!),
+  'POST /studio/voice/convert': (_p, req) => startVoiceConvert(req.formData!),
+  'POST /tools/chatterbox/jobs': (_p, req) => startChatterboxJob(req.formData!),
   // DJ Toolkit's tools/sessions are read-only real reference content — see DJ_TOOLS'
   // comment in fixtures.ts. Nothing to "launch" in a browser, but the catalog/manual is
   // a real feature worth showing, not a wall.
@@ -75,6 +101,8 @@ const STATIC: Record<string, Handler | undefined> = {
 
 const DYNAMIC: { method: string; pattern: string; handler: Handler }[] = [
   { method: 'GET', pattern: '/chat/conversations/:id/messages', handler: (p) => ({ body: chatStore.getMessages(+p.id) }) },
+  // The demo's simulated replies don't record a run/evidence trail.
+  { method: 'GET', pattern: '/chat/conversations/:id/runs', handler: () => ({ body: [] }) },
   { method: 'DELETE', pattern: '/chat/conversations/:id', handler: (p) => ({ body: chatStore.deleteConversation(+p.id) }) },
   { method: 'GET', pattern: '/servers/:id/ping', handler: () => ({ body: { online: true } }) },
   // "Launching" a native desktop app has no real meaning in a browser — this is honest
@@ -94,6 +122,25 @@ const DYNAMIC: { method: string; pattern: string; handler: Handler }[] = [
       return { status: 409, body: { detail: `${session?.label ?? 'This session'} would launch its tools here on a real install — there's no desktop to open them on in a browser demo.` } }
     },
   },
+
+  // Music Lab job polling + asset CRUD
+  { method: 'GET', pattern: '/music/jobs/:id', handler: (p) => pollMusicJob(p.id) },
+  { method: 'POST', pattern: '/music/assets/:id/regenerate', handler: (p) => regenerateMusicAssetRoute(p.id) },
+  { method: 'PATCH', pattern: '/music/assets/:id', handler: (p, req) => patchMusicAssetRoute(p.id, req.json) },
+  { method: 'DELETE', pattern: '/music/assets/:id', handler: (p) => deleteMusicAssetRoute(p.id) },
+  { method: 'GET', pattern: '/music/assets/:id/audio', handler: (p) => getMusicAssetAudio(p.id) },
+
+  // Stem Separator: job polling + per-stem real WAV bytes (audioDsp.ts's frequency split)
+  { method: 'GET', pattern: '/studio/stems/:id', handler: (p) => pollStemJob(p.id) },
+  { method: 'GET', pattern: '/studio/stems/:id/:name', handler: (p) => getStemAudio(p.id, p.name) },
+
+  // Voice Conversion: job polling + real pitch-shifted WAV bytes
+  { method: 'GET', pattern: '/studio/voice/convert/:id', handler: (p) => pollVoiceConvertJob(p.id) },
+  { method: 'GET', pattern: '/studio/voice/convert/:id/result', handler: (p) => getVoiceConvertResult(p.id) },
+
+  // Vocal Booth's Chatterbox TTS job (backend/routers/tools.py's generic job registry)
+  { method: 'GET', pattern: '/tools/jobs/:id', handler: (p) => pollChatterboxJob(p.id) },
+  { method: 'GET', pattern: '/tools/jobs/:id/file', handler: (p) => getChatterboxFile(p.id) },
 ]
 
 function matchDynamic(method: string, path: string): { handler: Handler; params: Record<string, string> } | null {
@@ -121,15 +168,24 @@ function sleep(ms: number) {
 export function installDemoFetch() {
   const passthrough = window.fetch.bind(window)
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+    const raw = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+    // apiUrl() (lib/api.ts) resolves /api/... to an absolute http://localhost:8010/api/...
+    // string whenever PROD is true — which `vite build --mode demo` also sets (Vite ties
+    // PROD/DEV to the build command, not --mode). DownloadButton/lib/download.ts and
+    // MusicAssetCard's manual fetch() both call apiUrl() themselves before fetching, so
+    // without this strip their already-absolute URL would miss the /api/ guard below and
+    // silently fall through to a real (nonexistent) network request.
+    const url = raw.startsWith(BACKEND_ORIGIN) ? raw.slice(BACKEND_ORIGIN.length) : raw
     if (!url.startsWith('/api/')) return passthrough(input, init)
 
     const method = (init?.method ?? 'GET').toUpperCase()
-    const path = url.slice('/api'.length).split('?')[0]
+    const [rawPath, queryString] = url.slice('/api'.length).split('?')
+    const path = rawPath
     const isForm = init?.body instanceof FormData
     const req: DemoReq = {
       formData: isForm ? (init!.body as FormData) : undefined,
       json: !isForm && typeof init?.body === 'string' ? safeParse(init.body) : undefined,
+      search: new URLSearchParams(queryString ?? ''),
     }
 
     await sleep(120 + Math.random() * 180) // visible loading states, not instant snaps
@@ -152,6 +208,12 @@ export function installDemoFetch() {
       result = { status: 404, body: { detail: 'Not available in this demo' } }
     }
 
+    if ('blob' in result) {
+      const { status = 200, blob, contentType, filename } = result
+      const headers: Record<string, string> = { 'Content-Type': contentType ?? blob.type ?? 'application/octet-stream' }
+      if (filename) headers['Content-Disposition'] = `attachment; filename="${filename}"`
+      return new Response(blob, { status, headers })
+    }
     const { status = 200, body = {} } = result
     return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
   }

@@ -2,7 +2,9 @@ import asyncio
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Literal
+from backend.services import providers
 from backend.db import get_db
 
 router = APIRouter()
@@ -14,6 +16,8 @@ class ServerCreate(BaseModel):
     port: int = 11434
     type: str = "ollama"
     auth_token: Optional[str] = None
+    context_window: int = Field(default=8192, ge=2048, le=1048576)
+    tools_mode: Literal["native", "text_json", "none"] = "native"
 
 
 class ServerUpdate(BaseModel):
@@ -23,19 +27,21 @@ class ServerUpdate(BaseModel):
     type: Optional[str] = None
     auth_token: Optional[str] = None
     enabled: Optional[int] = None
+    context_window: Optional[int] = Field(default=None, ge=2048, le=1048576)
+    tools_mode: Optional[Literal["native", "text_json", "none"]] = None
 
 
 async def ping_server(host: str, port: int, type: str, auth_token: Optional[str] = None) -> dict:
     """Check reachability of an Ollama or OpenAI-compatible server; returns {online, latency_ms}."""
-    url = f"http://{host}:{port}"
+    url = providers.base_url({"host": host, "port": port})
     try:
         headers = {}
         if auth_token:
             headers["Authorization"] = f"Bearer {auth_token}"
-        endpoint = f"{url}/api/tags" if type == "ollama" else f"{url}/v1/models"
+        endpoint = f"{url}/api/tags" if type == "ollama" else providers.endpoint({"host": host, "port": port}, "models")
         async with httpx.AsyncClient() as client:
             r = await client.get(endpoint, headers=headers, timeout=3.0)
-            return {"online": r.status_code < 500, "latency_ms": None}
+            return {"online": 200 <= r.status_code < 300, "latency_ms": None}
     except Exception:
         return {"online": False, "latency_ms": None}
 
@@ -52,8 +58,8 @@ async def list_servers(db=Depends(get_db)):
 async def create_server(body: ServerCreate, db=Depends(get_db)):
     """POST /servers — register a new model server and return the created row."""
     await db.execute(
-        "INSERT INTO servers (name, host, port, type, auth_token) VALUES (?,?,?,?,?)",
-        (body.name, body.host, body.port, body.type, body.auth_token)
+        "INSERT INTO servers (name, host, port, type, auth_token, context_window, tools_mode) VALUES (?,?,?,?,?,?,?)",
+        (body.name, body.host, body.port, body.type, body.auth_token, body.context_window, body.tools_mode)
     )
     await db.commit()
     async with db.execute("SELECT * FROM servers WHERE id = last_insert_rowid()") as cur:

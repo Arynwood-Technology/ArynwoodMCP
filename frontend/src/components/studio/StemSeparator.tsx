@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import { apiUrl, request } from '../../lib/api'
 import { DownloadButton } from '../DownloadButton'
+import { DEMO } from '../../lib/demo/flag'
+import { getDemoAudioUrl } from '../../lib/demo/audioAssets'
 
 const STEM_COLORS: Record<string, string> = {
   vocals: '#e86db7',
@@ -141,11 +143,18 @@ export function StemSeparator({ sidecarReady }: { sidecarReady: boolean }) {
       {status === 'completed' && Object.keys(stems).length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span style={LABEL}>Stems ready</span>
+          {DEMO && (
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>
+              Demo note: these stems are a simplified frequency split (band/high/low-pass filters), not real ML source separation — the real app uses Demucs v4.
+            </p>
+          )}
           {Object.entries(stems).map(([name]) => (
             <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px' }}>
               <span style={{ width: 10, height: 10, borderRadius: '50%', background: STEM_COLORS[name] ?? '#7c5cbf', flexShrink: 0, display: 'inline-block' }} />
               <span style={{ fontWeight: 600, fontSize: 13, minWidth: 60, textTransform: 'capitalize' }}>{name}</span>
-              <audio controls src={apiUrl(`/api/studio/stems/${jobId}/${name}`)} style={{ flex: 1, height: 28 }} />
+              {/* <audio src> bypasses window.fetch entirely — a real local blob: URL in
+                  demo mode instead of an /api/... path with nothing behind it. */}
+              <audio controls src={DEMO ? (getDemoAudioUrl(`${jobId}/${name}`) ?? '') : apiUrl(`/api/studio/stems/${jobId}/${name}`)} style={{ flex: 1, height: 28 }} />
               <DownloadButton url={`/api/studio/stems/${jobId}/${name}`} filename={`${name}.wav`} style={{ fontSize: 11, padding: '4px 10px', border: '1px solid var(--accent)', borderRadius: 6, color: 'var(--accent)', background: 'transparent', cursor: 'pointer', whiteSpace: 'nowrap' }}>↓ Download</DownloadButton>
             </div>
           ))}

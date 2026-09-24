@@ -4,6 +4,8 @@ import { apiUrl, renameMusicAsset, favoriteMusicAsset, deleteMusicAsset, regener
 import { DownloadButton } from '../DownloadButton'
 import type { MusicAsset } from '../../lib/api'
 import { computePeaks, drawWaveform } from '../../lib/waveform'
+import { DEMO } from '../../lib/demo/flag'
+import { getDemoAudioUrl } from '../../lib/demo/audioAssets'
 
 interface MusicAssetCardProps {
   asset: MusicAsset
@@ -25,7 +27,11 @@ export function MusicAssetCard({ asset, onChanged, onRegenerated, supportsExtend
   const [error, setError] = useState('')
 
   const audioPath = `/api/music/assets/${asset.id}/audio`
-  const audioUrl = apiUrl(audioPath)
+  // <audio src> (and this component's own manual fetch() below) are fetched by the
+  // browser's native media loader — never through the demo's monkey-patched
+  // window.fetch — so in demo mode this must resolve to a real local blob: URL instead
+  // of an /api/... path with nothing behind it. See lib/demo/audioAssets.ts.
+  const audioUrl = DEMO ? (getDemoAudioUrl(asset.id) ?? '') : apiUrl(audioPath)
 
   // Waveform thumbnail — decodes the asset once on mount and draws via the
   // shared lib/waveform.ts helpers (peak-cache + windowed draw), the same

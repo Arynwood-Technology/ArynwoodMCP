@@ -57,7 +57,7 @@ def test_multiple_matching_servers_concatenate():
         "orbit": {"label": "Orbit", "hints": ["render"]},
     }), patch.object(mcp_tool_agent, "_load_servers", return_value={
         "kdenlive": {"url": "http://x"}, "orbit": {"url": "http://y"},
-    }), patch.object(mcp_tool_agent, "_gate_matches", new_callable=AsyncMock, return_value=True), \
+    }), patch.object(mcp_tool_agent, "_route", new_callable=AsyncMock, return_value={"kdenlive", "orbit"}), \
          patch.object(mcp_tool_agent, "load_system_prompt", return_value="sys"), \
          patch.object(mcp_tool_agent, "run_tool_loop", new_callable=AsyncMock) as run_loop:
         run_loop.side_effect = ["[Kdenlive — live results]\nA", "[Orbit — live results]\nB"]
@@ -68,18 +68,19 @@ def test_multiple_matching_servers_concatenate():
     assert used == ["Kdenlive", "Orbit"]
 
 
-def test_only_the_gate_that_classifies_true_fires():
-    """Two gates sharing a hint word no longer have to collide — each is judged
-    independently (roadmap 2.2's actual point, distinct from plain substring overlap)."""
-    def fake_matches(message, gate):
-        return gate["label"] == "Kdenlive"
+def test_only_the_routed_server_fires():
+    """Two gates sharing a hint word no longer have to collide — with more than one
+    server registered, a single routing call picks between them side by side."""
+    async def fake_route(message, candidates):
+        assert set(candidates) == {"kdenlive", "orbit"}
+        return {"kdenlive"}
 
     with patch.object(mcp_tool_agent, "_load_gates", return_value={
         "kdenlive": {"label": "Kdenlive", "hints": ["render"]},
         "orbit": {"label": "Orbit", "hints": ["render"]},
     }), patch.object(mcp_tool_agent, "_load_servers", return_value={
         "kdenlive": {"url": "http://x"}, "orbit": {"url": "http://y"},
-    }), patch.object(mcp_tool_agent, "_gate_matches", side_effect=fake_matches), \
+    }), patch.object(mcp_tool_agent, "_route", side_effect=fake_route), \
          patch.object(mcp_tool_agent, "load_system_prompt", return_value="sys"), \
          patch.object(mcp_tool_agent, "run_tool_loop", new_callable=AsyncMock) as run_loop:
         run_loop.return_value = "[Kdenlive — live results]\nA"
@@ -117,3 +118,39 @@ def test_gate_matches_tolerates_extra_words_around_yes(monkeypatch):
         return {"output": "Yes, this is about Kdenlive."}
     monkeypatch.setattr(ollama_client, "chat", fake_chat)
     assert asyncio.run(mcp_tool_agent._gate_matches("edit my timeline", {"label": "Kdenlive", "hints": []})) is True
+
+
+# ── _route (multi-server) ─────────────────────────────────────────────────────────
+
+_TWO = {"kdenlive": {"label": "Kdenlive", "hints": ["timeline"]}, "codebase": {"label": "Codebase", "hints": ["source"]}}
+
+
+def test_route_parses_named_systems(monkeypatch):
+    async def fake_chat(**kwargs):
+        return {"output": "kdenlive"}
+    monkeypatch.setattr(ollama_client, "chat", fake_chat)
+    assert asyncio.run(mcp_tool_agent._route("how many clips on my timeline", _TWO)) == {"kdenlive"}
+
+
+def test_route_none_and_failure_select_nothing(monkeypatch):
+    async def none_chat(**kwargs):
+        return {"output": "NONE"}
+    monkeypatch.setattr(ollama_client, "chat", none_chat)
+    assert asyncio.run(mcp_tool_agent._route("hi there", _TWO)) == set()
+
+    async def broken_chat(**kwargs):
+        raise ConnectionError("ollama unreachable")
+    monkeypatch.setattr(ollama_client, "chat", broken_chat)
+    assert asyncio.run(mcp_tool_agent._route("anything", _TWO)) == set()
+
+
+def test_disabled_codebase_server_is_never_offered(monkeypatch):
+    monkeypatch.delenv("ARYNWOOD_ENABLE_CODEBASE_TOOLS", raising=False)
+    with patch.object(mcp_tool_agent, "_load_gates", return_value=_TWO), \
+         patch.object(mcp_tool_agent, "_load_servers", return_value={"kdenlive": {"url": "x"}, "codebase": {"url": "y"}}), \
+         patch.object(mcp_tool_agent, "_gate_matches", new_callable=AsyncMock, return_value=False) as gate, \
+         patch.object(mcp_tool_agent, "_route", new_callable=AsyncMock) as route:
+        assert mcp_tool_agent.available_servers() == ["Kdenlive"]
+        asyncio.run(mcp_tool_agent.gather_context_for_message("where is the websocket code"))
+    route.assert_not_called()          # only one enabled server left → single gate
+    assert gate.await_args.args[1]["label"] == "Kdenlive"

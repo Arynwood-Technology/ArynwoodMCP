@@ -12,6 +12,8 @@ export type WsMessage =
     }
   | { type: 'approval_request'; request_id: string; tool: string; arguments: Record<string, unknown>; tier: string }
   | { type: 'status'; label: string }
+  | { type: 'cancelled' }
+  | { type: 'turn_completed'; run_id: string; status: string; evidence: Record<string, unknown>[] }
 
 export type ChatPayload = {
   message: string
@@ -20,6 +22,8 @@ export type ChatPayload = {
   server_host: string
   server_port: number
   conversation_id?: number
+  server_id?: number
+  project_id?: number
 }
 
 // Reconnect delay: 1s, 2s, 4s, 8s, then 10s. Starting quickly matters — in the packaged
@@ -98,6 +102,10 @@ export class ChatSocket {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(payload))
     }
+  }
+
+  cancel() {
+    if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify({ type: 'cancel' }))
   }
 
   // Response to an 'approval_request' (roadmap 2.3) — a distinct send path from

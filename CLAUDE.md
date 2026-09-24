@@ -181,9 +181,13 @@ buffering trade, and only on tool-enabled rounds.
 
 **2. The external MCP tool-calling loop (any registered server, e.g. Kdenlive).**
 For every message, `chat_ws` calls `mcp_tool_agent.gather_context_for_message`, which
-checks the message against every server's gate in `mcp/config/local_agent/gates.json`
-— **an LLM classification call now, not keyword substring matching** — and on a
-match, runs a small bounded tool-calling loop *before* the streaming reply via
+checks the message against the gates in `mcp/config/local_agent/gates.json` for every
+server that is registered *and* enabled (`codebase` only with `ARYNWOOD_ENABLE_CODEBASE_TOOLS=1`)
+— **an LLM classification call, not keyword substring matching**. With one such server
+it asks that gate YES/NO (`_gate_matches`); with several it makes **one** side-by-side
+routing call (`_route`), because isolated YES/NO gates misroute overlapping systems (the
+Codebase gate said YES to "how many clips are on my Kdenlive timeline?" 4/4 times) — see
+`ROUTE_CASES` in the eval suite. On a match, it runs a small bounded tool-calling loop *before* the streaming reply via
 `mcp_tool_agent.run_tool_loop` (same "auto-injected context block" idiom as the
 web-search / knowledge-base injections in `chat.py`). This loop always uses the fixed
 local model in `mcp/config/local_agent/config.json` (currently `qwen2.5-coder:14b`)
@@ -266,14 +270,15 @@ All mounted under `/api/<domain>` by `backend/api.py`.
 | | `lora.py` | `/api/lora` | LoRA dataset prep + training job management |
 | | `video.py` | `/api/video` | Video generation/edit/caption jobs, video library |
 | | `dj.py` | `/api/dj` | DJ Toolkit — launcher + built-in manual for Mixxx/Ardour/Hydrogen/Surge XT/Vital/Flatseal/Calf/LSP/Dragonfly/Geonkick. Desktop GUI apps with no HTTP surface (unlike every other router here) — status comes from `flatpak ps` / `pgrep` on the backend host; launch just spawns and forgets (`start_new_session=True` so a `--reload` restart doesn't kill a running app). "Sessions" bundle multi-tool launches (e.g. Ardour+Hydrogen, which share transport over PipeWire/JACK). Deliberately not a sidebar destination: the Music page has a small "DJ Toolkit" button that opens `/dj` (see `nav.ts`'s `also`, which keeps Music highlighted there). Keep its content generic — no personal paths, no installed-version numbers; `tests/test_dj_router.py` fails if they come back |
+| | `community.py` | `/api/community` | **Arynwood Community** — optional sidecar for the separate Community app (private spaces: boards, chat, calendar, household, lists, notes). v1 is launcher + status only: `/status` (via Community's unauthenticated `/api/health`), `/start`, `/stop`, `/open?target=app|repo` (system browser via `xdg-open` — Community sends `X-Frame-Options: DENY`, so it can't be embedded, and its API is per-member cookie auth, so Arynwood doesn't read its data). **Unlike the MusicStudio sidecars it outlives Arynwood** (`start_new_session`, no `die_with_parent`) because members stay connected; a pidfile (`~/.local/share/arynwood-mcp/community.pid`, only honoured if that pid is Community's server in Community's folder) lets Stop work after a restart. `ARYNWOOD_COMMUNITY_DIR` (default `$PROJECTS/arynwood-community`) / `ARYNWOOD_COMMUNITY_URL` (a non-local URL = hosted instance, status + Open only). Paths reach the UI home-relative (`display_path`), never absolute. **TODO(community-repo):** `external_paths.COMMUNITY_REPO_URL` is a placeholder until the official repo exists under Arynwood-Technology on GitHub — update it and every `TODO(community-repo)` marker then |
 
 ## WebSocket Chat Protocol
 
-Two distinct message shapes travel from client to server on the same socket — a new
-chat turn, or a response to a pending approval — and the connection handler consumes
-exactly one `receive_text()` per pending decision (see the approval flow below), so a
-client must not send a new chat message while `approval_request` is outstanding; it
-will be consumed as that request's (denied) response instead of starting a new turn.
+Three message shapes travel from client to server on the same socket — a new chat
+turn, a response to a pending approval, or a cancel — and one receiver dispatches them
+by `type`: approval responses go to the paused turn, cancels stop the active turn, and
+anything else is queued as the next turn (up to 8). A chat message sent while an
+`approval_request` is outstanding is therefore queued, not consumed as a denial.
 
 Send a new turn: `{ message, persona, model, server_host, server_port, conversation_id?, project_id? }`
 (`project_id` only matters on new-conversation creation, i.e. when `conversation_id` is omitted)
@@ -282,12 +287,18 @@ Send an approval decision: `{ type: "approval_response", request_id, approved }`
 (`request_id` must match the pending `approval_request`; anything else — wrong id,
 malformed JSON, a disconnect — is treated as `approved: false`)
 
+Stop the active turn: `{ type: "cancel" }` — the server replies `cancelled` only after the
+turn has cleaned up; text already streamed is saved as an assistant message ending in
+`*(stopped)*` (unless the reply was already persisted), and the run is recorded as `interrupted`
+
 Receive JSON messages by `type`:
 - `"conversation_id"` — echoed on new conversation creation
 - `"status"` — a short human-readable label describing what's happening before the reply streams (e.g. "Checking your knowledge base…", "Using web_search…") — purely informational, no response expected
 - `"context_used"` — sent once, just before the reply streams, disclosing what actually informed it: `{ web_search: bool, kb_sources: [{title, source, source_id, score, page_start, page_end}], tool_servers: [label, ...] }`. Only sent when there's something to disclose
 - `"approval_request"` — the turn is paused waiting for a decision on a destructive/external-publish tool call: `{ request_id, tool, arguments, tier }`. Reply with the approval-decision send shape above before anything else
-- `"token"` — streaming token; `done: true` signals completion
+- `"token"` — streaming token; `done: true` signals completion, and is sent only *after* the reply is persisted and `turn_completed` is sent
+- `"turn_completed"` — `{ run_id, status, evidence }`: the run's evidence trail (memory ids, knowledge sources, web searches, tool calls, context budget/trimming). Also persisted — `GET /api/chat/conversations/{id}/runs` — and summarized in Chat's "What informed this reply"
+- `"cancelled"` — acknowledgement of a `cancel`
 - `"error"` — error string
 - `"memory_saved"` — persona emitted a `<remember>` block; items saved to `arynwood_memory` as `status: "provisional"` (never auto-confirmed — see `POST /api/memory/{id}/confirm`); an item may include `conflict_with` if it looked like it contradicted an existing trusted memory
 
@@ -298,16 +309,16 @@ Personas live in `mcp/config/models.json`, keyed by id:
 | Key | Name | Role | Model |
 |---|---|---|---|
 | `central` | Arynwood | Coordinator | `qwen2.5-coder:14b` |
-| `doc` | Doc | Architect | `qwen2.5` |
-| `kona` | Kona | Creative | `qwen2.5` |
-| `glyph` | Glyph | Automation | `qwen2.5` |
-| `estra` | Estra | Writer | `qwen2.5` |
+| `doc` | Doc | Architect | `qwen2.5-coder:14b` |
+| `kona` | Kona | Creative | `hermes3:8b` |
+| `glyph` | Glyph | Automation | `qwen2.5-coder:14b` |
+| `estra` | Estra | Writer | `qwen2.5-coder:14b` |
 
 The frontend does **not** hardcode this list — `GET /api/chat/personas` (see `backend/routers/chat.py`) reads `mcp/config/models.json` fresh on every call, overlays the user's own `personas.local.json` on top (see below), and the Chat page renders whatever comes back — so adding/editing a persona takes effect immediately with no frontend change and no restart.
 
 **Personal personas are data, not code.** `backend/routers/chat.py`'s `load_personas()` merges `personas_overlay_path()` — `ARYNWOOD_PERSONAS_FILE`, else `~/.local/share/arynwood-mcp/personas.local.json` (`_frozen.xdg_data_dir()`) — over the bundled set; an entry with a bundled id replaces it, a malformed file is ignored with one log line. It lives in the per-user data dir in *every* build (never the checkout) so it can't be committed. `tests/test_persona_overlay.py::test_bundled_personas_are_exactly_the_public_set` fails if a private persona is added to the bundled `models.json`. User-facing guide: `docs/customizing-personas.md`.
 
-Only `central` has native tool-calling, relevance-ranked memory, and MCP tool-server access (Kdenlive etc.) — the other four run on system-prompt-plus-history plus (as of recently) knowledge-base injection, which is now on for every persona by default (`knowledge_enabled: false` in a persona's `models.json` entry opts out). See "Tool-calling: two distinct mechanisms" above.
+Only `central` has relevance-ranked memory and MCP tool-server access (Kdenlive etc.); `central` and `glyph` (`NATIVE_TOOLS_PERSONAS`) have native tool-calling. The "Available capabilities" section of every app-aware persona's prompt is generated from what it can actually call (`_capability_lines`) — never hand-list a capability there that the persona can't reach — the other four run on system-prompt-plus-history plus (as of recently) knowledge-base injection, which is now on for every persona by default (`knowledge_enabled: false` in a persona's `models.json` entry opts out). See "Tool-calling: two distinct mechanisms" above.
 
 Two more optional per-persona `models.json` fields, both consumed by `build_system_prompt`
 in `backend/routers/chat.py`:
@@ -649,6 +660,23 @@ the "Generating" list looks exactly like nothing happening.
 below the visible area inside an `overflow-hidden` parent — its bottom controls were unreachable. Use
 `PageShell` (`h-full min-h-0`) or `height: '100%'`. A tall editor inside a scroll container wants
 `flex: 1 0 auto` (fill when there's room, never shrink below content), not a fixed `height: 100%`.
+
+### One 12GB GPU: keep the chat model resident (found 2026-09-23)
+`qwen2.5-coder:14b` at `num_ctx` 8192 needs ~11 GiB, so *anything* else Ollama loads on the GPU evicts
+it, and reloading costs ~3.5s plus the prompt cache. Two things used to do that on every turn: GPU
+embeddings (nomic-embed for memory/knowledge retrieval), and utility calls that omitted `num_ctx`
+(gate classifier, memory-conflict check), which Ollama treats as a different configuration
+(server default 4096) and reloads for. Now `aembed_texts` runs embeddings on CPU (`num_gpu: 0`,
+~0.3s/query, ~6s/100 chunks; `ARYNWOOD_EMBED_ON_GPU=1` opts out) and `ollama_client._ollama_options`
+reuses a model's last `num_ctx` (seeded from `/api/ps`) when a caller doesn't set one. Warm turn
+time-to-first-token went ~21s → ~9s. Check with `journalctl -u ollama | grep "runner started"` —
+more than one load per model per session means something reintroduced a different `num_ctx`.
+
+Token budgeting is calibrated from Ollama's real `prompt_eval_count` (`context_budget.observe`,
+persisted in `settings.token_calibration`): the conservative bytes/3 estimate overcounted central's
+prompt by ~48%, which — with a fixed 50% system-prompt share — silently trimmed *every* relevant
+memory out of Arynwood's prompt, so it answered memory questions by inventing them. The system
+prompt is now sized from what history/evidence leave (`_execute_turn`), in the same calibrated units.
 
 ### `mcp` name collision
 This repo's own top-level `mcp/` directory (`mcp/config/...`) shadows the real `mcp` PyPI package for anything run from the repo root. Never `pip install mcp` into this venv expecting `import mcp` to resolve to the SDK — it won't.

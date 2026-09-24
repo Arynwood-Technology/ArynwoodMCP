@@ -46,10 +46,10 @@ def test_trim_history_drops_oldest_first():
     assert trimmed == [history[-1]]
 
 
-def test_trim_history_keeps_at_least_the_last_message_even_if_oversized():
+def test_trim_history_drops_oversized_message_for_summary():
     history = [{"role": "user", "content": "x" * 10_000}]
     trimmed = _trim_history_to_tokens(history, budget_tokens=1)
-    assert trimmed == history
+    assert trimmed == []
 
 
 def test_trim_history_empty_input():

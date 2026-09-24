@@ -1,10 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { describeMicError } from '../../lib/mic'
 
-type ActiveEffect = { type: string; params: Record<string, number | string> }
+// Exported so audioDsp.ts (demo-mode offline rendering) and EffectsRack.tsx share one
+// definition instead of each declaring their own copy.
+export type ActiveEffect = { type: string; params: Record<string, number | string> }
 
 function dbToGain(value: number) { return 10 ** (value / 20) }
-function impulse(ctx: AudioContext, seconds: number, decay: number) {
+// BaseAudioContext (not AudioContext) so this also works with OfflineAudioContext —
+// AudioContext and OfflineAudioContext are siblings, not one a subtype of the other, but
+// every method used here (createBuffer, createBiquadFilter, createScriptProcessor, etc.)
+// is declared on their shared parent. The demo build's offline effects/pitch-shift
+// rendering (frontend/src/lib/demo/audioDsp.ts) depends on this widening.
+function impulse(ctx: BaseAudioContext, seconds: number, decay: number) {
   const length = Math.max(1, Math.floor(ctx.sampleRate * seconds))
   const buffer = ctx.createBuffer(2, length, ctx.sampleRate)
   for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
@@ -14,7 +21,7 @@ function impulse(ctx: AudioContext, seconds: number, decay: number) {
   return buffer
 }
 
-function liveProcessor(ctx: AudioContext, kind: "bitcrush" | "resample" | "noise_gate" | "pitch_shift", amount: number) {
+function liveProcessor(ctx: BaseAudioContext, kind: "bitcrush" | "resample" | "noise_gate" | "pitch_shift", amount: number) {
   const node = ctx.createScriptProcessor(1024, 1, 1)
   let held = 0
   let counter = 0
@@ -61,7 +68,7 @@ function liveProcessor(ctx: AudioContext, kind: "bitcrush" | "resample" | "noise
   return node
 }
 
-export function makeLiveGraph(ctx: AudioContext, input: AudioNode, chain: ActiveEffect[]) {
+export function makeLiveGraph(ctx: BaseAudioContext, input: AudioNode, chain: ActiveEffect[]) {
   let tail: AudioNode = input
   const renderedOnly: string[] = []
   for (const effect of chain) {

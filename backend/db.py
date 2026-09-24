@@ -264,6 +264,47 @@ _MIGRATIONS = [
     "ALTER TABLE conversations ADD COLUMN project_id INTEGER",
     "ALTER TABLE arynwood_memory ADD COLUMN project_id INTEGER",
     "ALTER TABLE knowledge_sources ADD COLUMN project_id INTEGER",
+    """CREATE TABLE IF NOT EXISTS memory_revisions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, memory_id INTEGER NOT NULL,
+        content TEXT NOT NULL, type TEXT NOT NULL, title TEXT NOT NULL,
+        status TEXT NOT NULL, volatility TEXT NOT NULL, state TEXT NOT NULL,
+        source_message_id INTEGER, base_content TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )""",
+    "CREATE INDEX IF NOT EXISTS memory_revision_lookup ON memory_revisions(memory_id, state)",
+    """CREATE TABLE IF NOT EXISTS index_jobs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, entity_id INTEGER NOT NULL,
+        payload TEXT NOT NULL DEFAULT '{}', attempts INTEGER NOT NULL DEFAULT 0,
+        error TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(kind, entity_id)
+    )""",
+    """CREATE TABLE IF NOT EXISTS knowledge_chunks (
+        id TEXT PRIMARY KEY, source_id INTEGER NOT NULL, text TEXT NOT NULL,
+        payload TEXT NOT NULL DEFAULT '{}'
+    )""",
+    "CREATE INDEX IF NOT EXISTS knowledge_chunk_source ON knowledge_chunks(source_id)",
+    "ALTER TABLE knowledge_sources ADD COLUMN index_state TEXT NOT NULL DEFAULT 'active'",
+    """CREATE TABLE IF NOT EXISTS chat_runs (
+        id TEXT PRIMARY KEY, conversation_id INTEGER, status TEXT NOT NULL,
+        evidence TEXT NOT NULL DEFAULT '[]', error TEXT, assistant_message_id INTEGER,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )""",
+    """CREATE TABLE IF NOT EXISTS run_steps (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL, tool TEXT NOT NULL,
+        arguments TEXT NOT NULL, status TEXT NOT NULL, result TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )""",
+
+    "CREATE VIRTUAL TABLE IF NOT EXISTS knowledge_chunks_fts USING fts5(text, content='knowledge_chunks', content_rowid='rowid')",
+    """CREATE TRIGGER IF NOT EXISTS knowledge_chunks_insert AFTER INSERT ON knowledge_chunks BEGIN
+        INSERT INTO knowledge_chunks_fts(rowid,text) VALUES (new.rowid,new.text); END""",
+    """CREATE TRIGGER IF NOT EXISTS knowledge_chunks_delete AFTER DELETE ON knowledge_chunks BEGIN
+        INSERT INTO knowledge_chunks_fts(knowledge_chunks_fts,rowid,text) VALUES ('delete',old.rowid,old.text); END""",
+
+    "ALTER TABLE servers ADD COLUMN context_window INTEGER NOT NULL DEFAULT 8192",
+    "ALTER TABLE servers ADD COLUMN tools_mode TEXT NOT NULL DEFAULT 'native'",
+
 ]
 
 async def init_db():

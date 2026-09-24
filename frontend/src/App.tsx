@@ -13,6 +13,7 @@ import { Studio } from './pages/Studio'
 import { DJStudio } from './pages/DJStudio'
 import { Social } from './pages/Social'
 import { Video } from './pages/Video'
+import { Community } from './pages/Community'
 
 // GitHub Pages serves static files with no server-side history-fallback rewrite, so a
 // BrowserRouter route 404s on a hard refresh or direct link. HashRouter sidesteps that
@@ -32,10 +33,16 @@ export default function App() {
           <Route path="/tools" element={<ToolLibrary />} />
           <Route path="/publish" element={DEMO ? <DemoUnavailable feature="Publish" reason="a real SFTP/SSH server to deploy to" /> : <Deploy />} />
           <Route path="/knowledge" element={<Knowledge />} />
-          <Route path="/studio" element={DEMO ? <DemoUnavailable feature="Music Studio" reason="a real GPU running local audio models" /> : <Studio />} />
+          {/* Genuinely functional in the demo — Effects Rack and Voice Conversion's
+              pitch-shift run real Web Audio DSP on your actual audio, Stem Separator
+              does a real (simplified) frequency split, and Instrument Generator/Jam
+              with AI/Vocal Booth's script-to-voice synthesize a real placeholder clip.
+              See frontend/src/lib/demo/{audioDsp,audioSynth,musicJobs}.ts. */}
+          <Route path="/studio" element={<Studio />} />
           {/* Browsable in the demo — real catalog/manual content (see fixtures.ts's
               DJ_TOOLS), just no real desktop to actually launch anything on. */}
           <Route path="/dj" element={<DJStudio />} />
+          <Route path="/community" element={DEMO ? <DemoUnavailable feature="Community" reason="the separate Arynwood Community app running on your computer" /> : <Community />} />
           <Route path="/social" element={DEMO ? <DemoUnavailable feature="Social Media" reason="real OAuth against live platforms" /> : <Social />} />
           <Route path="/video" element={DEMO ? <DemoUnavailable feature="Video Studio" reason="real GPU video generation" /> : <Video />} />
           {/* Design Center renders from AppShell's always-mounted overlay, not
