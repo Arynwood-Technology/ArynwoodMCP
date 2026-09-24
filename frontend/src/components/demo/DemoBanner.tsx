@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Sparkles, ChevronUp, ChevronDown, ExternalLink } from 'lucide-react'
 
-const REPO_URL = 'https://github.com/Arynwood-Technology/ArynwoodMCP'
+// Product page on arynwood.com: download, requirements and setup help in one place.
+const SITE_URL = 'https://arynwood.com/mcp/'
 
 /** Persistent, honest label that this is simulated data, not a real AI backend — rendered
  *  once in AppShell, above TopBar, outside <Outlet/> so it survives every navigation.
@@ -26,12 +27,12 @@ export function DemoBanner() {
     <div className="flex shrink-0 items-center justify-center gap-2 border-b border-border bg-accent/10 px-3 py-1.5 text-[11px] text-text">
       <Sparkles size={12} className="shrink-0 text-accent" />
       <span>
-        <strong className="font-semibold">Demo</strong> — simulated data, not a real AI backend.
+        <strong className="font-semibold">Demo</strong>: simulated data, not a real AI backend.
       </span>
       <a
-        href={REPO_URL}
+        href={SITE_URL}
         target="_blank"
-        rel="noreferrer"
+        rel="noopener"
         className="inline-flex items-center gap-0.5 font-medium text-accent hover:underline"
       >
         Get the real thing <ExternalLink size={10} />

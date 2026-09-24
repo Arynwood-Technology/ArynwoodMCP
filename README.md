@@ -10,6 +10,8 @@ data, not a live AI. Features that need a real backend or GPU on your own machin
 rendering, music generation, publishing, social OAuth - say so plainly and link back here
 instead of faking it.
 
+**Website:** [arynwood.com/mcp](https://arynwood.com/mcp/) (requirements, setup steps and FAQ) · **Help getting it running:** [Arynwood setup services](https://arynwood.com/#services)
+
 ---
 
 ## Table of Contents
