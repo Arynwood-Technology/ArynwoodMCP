@@ -9,7 +9,15 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Added
+
+- AppStream metadata (`frontend/src-tauri/linux/com.arynwood.mcp.metainfo.xml`), shipped in the AppImage and
+  `.deb` at `/usr/share/metainfo/`, so software catalogs such as AppImageHub can describe the app. The desktop
+  entry now has a category (Development) and a short description; it previously had an empty `Categories=`.
+
 ### Changed
+
+- README opening now describes the packaged alpha the same way arynwood.com/mcp/ does.
 
 - Added provider-aware chat execution, structured streamed tool-call preservation,
   whole-request context budgeting, token-eviction history summaries, project-scoped

@@ -1,6 +1,13 @@
 # Arynwood MCP
 
-Local-first AI creative studio. One app for multi-persona chat, GPU generation tools, video editing (Kdenlive automation), audio production, design, and social publishing - all running on your own hardware.
+Local-first AI workspace for the Linux desktop: multi-persona chat with local Ollama models, knowledge search
+and memory over your own documents, a design canvas, and Model Context Protocol (MCP) tool integrations,
+including Kdenlive editing through Cutroom's MCP server. A source checkout adds the GPU generation, audio
+production and publishing tools listed under [What's Inside](#whats-inside).
+
+**The packaged Linux alpha** (v0.4.3, AppImage and `.deb`) covers the core workspace. LoRA training, script-based
+GPU tools and the project file browser need a source checkout. Models and supporting services are installed
+separately. Requirements and limits: [arynwood.com/mcp](https://arynwood.com/mcp/).
 
 **[Try the live demo →](https://arynwood-technology.github.io/ArynwoodMCP/)** - the real UI, running
 entirely in your browser with no install and no backend. Chat streams real scripted

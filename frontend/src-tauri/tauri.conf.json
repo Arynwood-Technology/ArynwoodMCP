@@ -38,9 +38,19 @@
       "icons/icon.ico"
     ],
     "externalBin": ["binaries/arynwood-backend"],
+    "category": "DeveloperTool",
+    "shortDescription": "Local-first AI workspace for the Linux desktop",
     "linux": {
       "appimage": {
-        "bundleMediaFramework": true
+        "bundleMediaFramework": true,
+        "files": {
+          "/usr/share/metainfo/com.arynwood.mcp.metainfo.xml": "linux/com.arynwood.mcp.metainfo.xml"
+        }
+      },
+      "deb": {
+        "files": {
+          "/usr/share/metainfo/com.arynwood.mcp.metainfo.xml": "linux/com.arynwood.mcp.metainfo.xml"
+        }
       }
     }
   }
