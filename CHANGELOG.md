@@ -9,6 +9,8 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+## [0.4.4] — 2026-09-26
+
 ### Fixed
 
 - AppImage launchers are now readable/executable by every user, with a check of the
