@@ -14,7 +14,7 @@ import tempfile
 
 
 def check_tree(root):
-    for name in ('AppRun', 'AppRun.wrapped', 'usr/bin/arynwood-mcp', 'usr/bin/arynwood-backend'):
+    for name in ('AppRun', 'AppRun.wrapped', 'usr/bin/arynwood', 'usr/bin/arynwood-backend'):
         path = root / name
         if not path.is_file() or stat.S_IMODE(path.stat().st_mode) & 0o555 != 0o555:
             raise RuntimeError(f'{name} must be readable and executable by every user')

@@ -12,7 +12,7 @@ SPEC.loader.exec_module(MODULE)
 
 
 def tree(root):
-    for name in ('AppRun', 'AppRun.wrapped', 'usr/bin/arynwood-mcp', 'usr/bin/arynwood-backend'):
+    for name in ('AppRun', 'AppRun.wrapped', 'usr/bin/arynwood', 'usr/bin/arynwood-backend'):
         path = root / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('#!/bin/sh\nexit 0\n')
