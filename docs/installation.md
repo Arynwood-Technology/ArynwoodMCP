@@ -123,3 +123,14 @@ This is the path this repo actually supports today — see the main
 Delete the cloned directory. If you set `ARYNWOOD_DB_PATH` or otherwise pointed the
 database outside the repo, remove that path separately — it's not touched by
 deleting the checkout.
+
+### Building Linux release artifacts
+
+Release CI uses Ubuntu 22.04 to keep the system glibc baseline at 2.35; builds on
+newer distributions can require newer glibc. AppImages still depend on the host
+C library. Use `make package` for a local build (requires `squashfs-tools` as well
+as the Tauri/GStreamer dependencies). It runs `scripts/finalize_appimage.py` after
+bundling to repair launcher permissions and check the resulting archive. When
+calling Tauri directly, run that script on the output AppImage before computing
+checksums or uploading it. It is for unsigned images only; any signing must
+happen afterward.

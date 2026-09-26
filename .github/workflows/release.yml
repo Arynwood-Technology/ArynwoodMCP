@@ -7,6 +7,7 @@ name: Release (Linux)
 # don't add a signing step that silently no-ops without them.
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*.*.*'
@@ -20,9 +21,11 @@ jobs:
 
   build:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
 
       - uses: actions/setup-python@v5
         with:
@@ -40,7 +43,7 @@ jobs:
       - name: Install Tauri Linux build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libfuse2
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libfuse2 squashfs-tools
           # GStreamer: WebKitGTK plays audio/video and records through it, and the AppImage
           # only carries what is staged below (see the "Stage GStreamer plugins" step).
           sudo apt-get install -y gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
@@ -69,7 +72,8 @@ jobs:
       # a web view uses; fails if a required one is missing rather than shipping without it.
       - name: Stage GStreamer plugins
         run: |
-          eval "$(scripts/stage_gstreamer_plugins.sh "$RUNNER_TEMP/gst-plugins")"
+          gst_env=$(scripts/stage_gstreamer_plugins.sh "$RUNNER_TEMP/gst-plugins")
+          eval "$gst_env"
           echo "GSTREAMER_PLUGINS_DIR=$GSTREAMER_PLUGINS_DIR" >> "$GITHUB_ENV"
 
       - name: Extract release notes from CHANGELOG.md
@@ -82,29 +86,19 @@ jobs:
             found{print}
           ' CHANGELOG.md > release-notes.md
           echo "Extracted notes:"; cat release-notes.md
-          # tauri-action@v0 has no releaseBodyFile input (only releaseBody, a plain
-          # string) — pass the extracted notes through a GITHUB_OUTPUT multiline
-          # value instead of a file path.
           delimiter="$(openssl rand -hex 8)"
           echo "body<<$delimiter" >> "$GITHUB_OUTPUT"
           cat release-notes.md >> "$GITHUB_OUTPUT"
           echo "$delimiter" >> "$GITHUB_OUTPUT"
 
       - name: Build Tauri bundles (AppImage + .deb)
-        uses: tauri-apps/tauri-action@v0
+        working-directory: frontend
         env:
-          # linuxdeploy/appimagetool (which AppImage bundling shells out to) are
-          # themselves distributed as AppImages that need to mount via FUSE to
-          # run — GitHub's runners often can't load the FUSE kernel module even
-          # with libfuse2 installed (containerized/sandboxed), so this makes them
-          # self-extract and run instead of mounting. Standard fix for this exact
-          # failure mode, not specific to anything in this repo.
           APPIMAGE_EXTRACT_AND_RUN: "1"
-        with:
-          projectPath: frontend
-          args: --bundles appimage,deb
-          releaseDraft: true
-          releaseBody: ${{ steps.notes.outputs.body }}
+        run: npm run tauri:build -- --bundles appimage,deb
+
+      - name: Fix and verify AppImage launcher permissions
+        run: python scripts/finalize_appimage.py frontend/src-tauri/target/release/bundle/appimage/*.AppImage
 
       - name: Generate SHA-256 checksums
         run: |
@@ -112,8 +106,22 @@ jobs:
           find . -type f \( -name "*.AppImage" -o -name "*.deb" \) -exec sha256sum {} \; > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
-      - name: Upload checksums to the release
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-desktop
+          path: |
+            frontend/src-tauri/target/release/bundle/SHA256SUMS.txt
+            frontend/src-tauri/target/release/bundle/appimage/*.AppImage
+            frontend/src-tauri/target/release/bundle/deb/*.deb
+
+      - name: Upload verified artifacts and checksums
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           draft: true
-          files: frontend/src-tauri/target/release/bundle/SHA256SUMS.txt
+          body: ${{ steps.notes.outputs.body }}
+          files: |
+            frontend/src-tauri/target/release/bundle/SHA256SUMS.txt
+            frontend/src-tauri/target/release/bundle/appimage/*.AppImage
+            frontend/src-tauri/target/release/bundle/deb/*.deb

@@ -9,6 +9,14 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Fixed
+
+- AppImage launchers are now readable/executable by every user, with a check of the
+  repacked archive before checksums and upload. This fixes `AppRun.wrapped: Permission denied`
+  when the runtime mounts the image with a different owner.
+- Linux releases build on Ubuntu 22.04 instead of a moving runner, lowering the glibc
+  baseline. GStreamer staging also supports its separate video conversion/scaling plugins.
+
 ### Added
 
 - AppStream metadata (`frontend/src-tauri/linux/com.arynwood.mcp.metainfo.xml`), shipped in the AppImage and

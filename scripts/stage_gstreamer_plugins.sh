@@ -23,7 +23,7 @@ SRC="${GSTREAMER_PLUGINS_DIR:-/usr/lib/$(uname -m)-linux-gnu/gstreamer-1.0}"
 #  plugins: without the first two `new MediaRecorder(stream)` throws "unsupported on this platform", without
 #  `encoding` (encodebin2) it records 0 bytes; Music Lab's Record tab depends on it)
 REQUIRED="coreelements typefindfunctions playback app audioconvert audioresample audioparsers volume
-  videoconvertscale autodetect pulseaudio isomp4 matroska ogg vorbis opus wavparse libav vpx debugutilsbad
+  autodetect pulseaudio isomp4 matroska ogg vorbis opus wavparse libav vpx debugutilsbad
   videofilter transcode voaacenc encoding"
 # Nice to have; the app still plays audio and video without them.
 OPTIONAL="alsa pipewire flac mpg123 id3demux apetag icydemux opusparse videoparsersbad videorate audiorate
@@ -31,6 +31,13 @@ OPTIONAL="alsa pipewire flac mpg123 id3demux apetag icydemux opusparse videopars
 
 [ -d "$SRC" ] || { echo "no GStreamer plugin directory at $SRC (install gstreamer1.0-plugins-{base,good,bad,ugly}, -libav, -pulseaudio)" >&2; exit 1; }
 rm -rf "$OUT" && mkdir -p "$OUT"
+
+# GStreamer 1.20 (Ubuntu 22.04) has separate conversion/scaling plugins.
+if [ -f "$SRC/libgstvideoconvertscale.so" ]; then
+  REQUIRED="$REQUIRED videoconvertscale"
+else
+  REQUIRED="$REQUIRED videoconvert videoscale"
+fi
 
 missing=()
 for name in $REQUIRED; do

@@ -40,7 +40,10 @@ build:
 	cd frontend && npm run build
 
 package: package-backend
-	cd frontend && npm run tauri:build
+	venv/bin/python scripts/smoke_packaged_backend.py dist/arynwood-backend
+	gst_stage=$$(mktemp -d /tmp/arynwood-gst.XXXXXX); trap 'rm -rf "$$gst_stage"' EXIT; \
+	  gst_env=$$(scripts/stage_gstreamer_plugins.sh "$$gst_stage") && eval "$$gst_env" && cd frontend && APPIMAGE_EXTRACT_AND_RUN=1 npm run tauri:build
+	python3 scripts/finalize_appimage.py frontend/src-tauri/target/release/bundle/appimage/*.AppImage
 
 # Builds the PyInstaller backend sidecar and places it where tauri.conf.json's
 # externalBin expects it. Not folded into `package`'s own recipe as a `run:` step
