@@ -9,6 +9,15 @@ macOS and Windows are **not currently supported**. The Tauri shell (`frontend/sr
 is cross-platform-capable in principle, but nothing here has been built, run, or
 tested on either — don't infer support from the underlying framework.
 
+## Linux runtime baseline
+
+Version 0.4.4 release builds use Ubuntu 22.04 (glibc 2.35). The AppImage requires
+host glibc 2.35 or newer; it does not bundle the C library. This is a minimum ABI
+requirement, not a guarantee that every Linux distribution has been tested.
+The `.deb` also needs compatible system WebKitGTK 4.1 and GStreamer packages.
+Build on Ubuntu 22.04 when preparing release artifacts: compiling on a newer
+system can raise the required glibc version.
+
 ## Hardware
 
 | Component | Minimum | Notes |

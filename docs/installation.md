@@ -5,8 +5,8 @@ only, GPU features need an NVIDIA card.
 
 ## Packaged build (AppImage / .deb)
 
-> **Status:** published. Download from the repo's Releases page — get the latest
-> `v*.*.*` tag, not an older one; each release lists what changed in that version.
+> Download published builds from [GitHub Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases).
+> These instructions use version 0.4.4; confirm that version is published before downloading.
 
 ```bash
 # AppImage — download the .AppImage asset from the release, then:
@@ -17,15 +17,15 @@ chmod +x arynwood-mcp_*.AppImage
 sudo apt install ./arynwood-mcp_*.deb
 ```
 
-(Real filenames as of this writing: `arynwood-mcp_0.4.3_amd64.AppImage` and
-`arynwood-mcp_0.4.3_amd64.deb` — no spaces, confirmed against an actual local
-build; the glob above just tolerates the version number changing between releases.)
+(Version 0.4.4 filenames: `arynwood-mcp_0.4.4_amd64.AppImage` and
+`arynwood-mcp_0.4.4_amd64.deb` — no spaces. The globs above tolerate version changes;
+keep only the package you intend to run in the current directory.)
 
 Both bundle the frontend and a packaged backend — no separate `venv`/`npm install`
 step. **Ollama is not bundled** and must be installed separately (see
 [ollama.com](https://ollama.com)) — the app will tell you if it can't reach it.
 
-The AppImage is about 200 MB: it carries its own web engine and the GStreamer plugins that
+The AppImage is a few hundred MB: it carries its own web engine and the GStreamer plugins that
 audio, video and microphone recording need.
 
 ### Audio, video and downloads
@@ -68,10 +68,11 @@ Qdrant + Ollama reachable), social publishing — works the same as running from
 source. See `docs/release-readiness-audit.md` §3 for the technical reason (these
 features assume a live git checkout + `venv`, which packaging doesn't change).
 
-Verify the download against `SHA256SUMS.txt` on the same release before running it:
+Save the package and `SHA256SUMS.txt` from the same release in one folder, then verify
+the download before running it (missing packages are skipped):
 
 ```bash
-sha256sum -c SHA256SUMS.txt
+sha256sum --ignore-missing -c SHA256SUMS.txt
 ```
 
 ### Where the app stores its data

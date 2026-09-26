@@ -5,7 +5,7 @@ and memory over your own documents, a design canvas, and Model Context Protocol 
 including Kdenlive editing through Cutroom's MCP server. A source checkout adds the GPU generation, audio
 production and publishing tools listed under [What's Inside](#whats-inside).
 
-**The packaged Linux alpha** (v0.4.3, AppImage and `.deb`) covers the core workspace. LoRA training, script-based
+**The packaged Linux alpha** (v0.4.4, AppImage and `.deb`) covers the core workspace. LoRA training, script-based
 GPU tools and the project file browser need a source checkout. Models and supporting services are installed
 separately. Requirements and limits: [arynwood.com/mcp](https://arynwood.com/mcp/).
 
@@ -48,7 +48,13 @@ instead of faking it.
 
 ## Release & Packaging
 
-Linux desktop alpha (AppImage + `.deb`) - see:
+Version **0.4.4** fixes AppImage launcher permissions and builds on Ubuntu 22.04
+with a glibc 2.35 baseline. The app still needs the host C library and separately
+installed models/services. Download published packages from [GitHub Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases).
+
+Linux desktop alpha (AppImage + `.deb`) — see:
+
+- [`docs/releases/0.4.4.md`](docs/releases/0.4.4.md) — package details and upload checklist
 - [`docs/supported-platforms.md`](docs/supported-platforms.md) - OS/hardware requirements
 - [`docs/installation.md`](docs/installation.md) - install, first run, uninstall
 - [`docs/troubleshooting.md`](docs/troubleshooting.md) - common problems
@@ -84,14 +90,14 @@ palette**, and a **system status drawer**. See [Getting Around](#getting-around)
 ### Prerequisites
 
 - Python 3.10+
-- Node.js 18+
+- Node.js 20.19+ or 22.12+
 - [Ollama](https://ollama.com) running locally or on a remote server
 
 ### 1. Clone & set up
 
 ```bash
-git clone https://github.com/Arynwood-Technology/Arynwood-MCP.git
-cd Arynwood-MCP
+git clone https://github.com/Arynwood-Technology/ArynwoodMCP.git
+cd ArynwoodMCP
 
 python3 -m venv venv
 source venv/bin/activate

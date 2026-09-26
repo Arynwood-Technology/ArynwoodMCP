@@ -79,10 +79,10 @@ jobs:
       - name: Extract release notes from CHANGELOG.md
         id: notes
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION=$(python -c 'import json; print(json.load(open("frontend/package.json"))["version"])')
           awk -v ver="$VERSION" '
             BEGIN{found=0}
-            /^## \[/{ if (found) exit; if ($0 ~ "\\[" ver "\\]" || $0 ~ "\\[Unreleased\\]") found=1; next }
+            /^## \[/{ if (found) exit; if ($0 ~ "\\[" ver "\\]") found=1; next }
             found{print}
           ' CHANGELOG.md > release-notes.md
           echo "Extracted notes:"; cat release-notes.md
@@ -103,7 +103,7 @@ jobs:
       - name: Generate SHA-256 checksums
         run: |
           cd frontend/src-tauri/target/release/bundle
-          find . -type f \( -name "*.AppImage" -o -name "*.deb" \) -exec sha256sum {} \; > SHA256SUMS.txt
+          sha256sum appimage/*.AppImage deb/*.deb | sed 's@  .*/@  @' > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Upload build artifacts

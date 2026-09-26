@@ -5,7 +5,10 @@ what doesn't work yet, so you can decide what to rely on. It is kept in step wit
 actually been tested — if something here reads more cautiously than the app feels, that is
 deliberate.
 
-**Last reviewed:** 2026-09-19, against v0.4.3.
+**Feature review:** 2026-09-19, against v0.4.3.
+**Packaging update:** 2026-09-26, for v0.4.4: launcher permissions are checked in the
+finished AppImage, and release builds use a glibc 2.35 baseline. This packaging
+update does not imply that every feature below was retested.
 
 ## How to read the tiers
 

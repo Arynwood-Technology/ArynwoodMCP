@@ -13,6 +13,8 @@ them as a summary, not a precise record.
 
 ### Fixed
 
+- Release notes select the requested version even when `[Unreleased]` is empty;
+  checksum filenames match packages downloaded together from GitHub Releases.
 - AppImage launchers are now readable/executable by every user, with a check of the
   repacked archive before checksums and upload. This fixes `AppRun.wrapped: Permission denied`
   when the runtime mounts the image with a different owner.

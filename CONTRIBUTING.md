@@ -31,3 +31,9 @@ updated if and when it does.
   neither a source run nor the unit tests can. Then build the AppImage (recipe in `CLAUDE.md`, including
   `scripts/stage_gstreamer_plugins.sh`) and run `scripts/check_webkit_media.py` against the extracted bundle: audio,
   video and the recorder must work in a real WebKitGTK.
+
+Release packages use the Ubuntu 22.04 workflow (`Release (Linux)`); a manual run
+builds and uploads CI artifacts without publishing a release. `make package` also
+stages GStreamer, runs the backend smoke gate, and finalizes launcher permissions.
+Run `scripts/finalize_appimage.py` after direct Tauri builds, before checksums or
+signing. See [the 0.4.4 release checklist](docs/releases/0.4.4.md).

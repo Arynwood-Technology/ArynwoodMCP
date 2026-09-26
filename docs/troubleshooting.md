@@ -1,5 +1,16 @@
 # Troubleshooting
 
+## AppImage reports `AppRun.wrapped: Permission denied`
+
+Use the corrected 0.4.4 package. Earlier images could contain a launcher with mode
+`770`, which fails when mounted with a different owner. Changing permissions on
+the outer AppImage cannot fix files inside it. Version 0.4.4 sets both launchers
+to `755` and checks the repacked archive before upload.
+
+If the outer file itself is not executable, run `chmod +x arynwood-mcp_0.4.4_amd64.AppImage`.
+For a `GLIBC_* not found` error, check `ldd --version`: the release baseline is
+glibc 2.35. A local build made on a newer distribution may need a newer version.
+
 ## The app won't start / a port is already in use
 
 The backend runs on `:8010`, the frontend dev server on `:5180` (see
