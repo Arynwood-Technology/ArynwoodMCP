@@ -24,6 +24,14 @@ lsof -i :8010
 lsof -i :5180
 ```
 
+## AppImage plays audio but MP4 reports an unsupported format
+
+Run the app from a terminal and check for a GStreamer plugin load error mentioning
+`libasound.so.2`. The bundled decoder needs the host ALSA runtime. Install your
+distribution's package providing that library (`libasound2` on Ubuntu 22.04), then
+relaunch the app. This dependency can be absent in minimal containers even when
+it is already present on a normal desktop.
+
 ## Every API call fails / chat won't connect
 
 - Confirm the backend is actually up: `curl http://localhost:8010/` should return

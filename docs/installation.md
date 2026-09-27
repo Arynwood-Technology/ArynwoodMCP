@@ -30,7 +30,9 @@ audio, video and microphone recording need.
 
 ### Audio, video and downloads
 
-- **AppImage:** nothing to install — playback and recording work out of the box.
+- **AppImage:** media plugins are bundled. The host still needs the ALSA runtime
+  (`libasound.so.2`), normally present on desktop Linux; on a minimal Ubuntu 22.04
+  system, install it with `sudo apt install libasound2`.
 - **.deb:** the app uses your system's GStreamer, so make sure the plugin packages are present,
   or audio/video won't play and the Record tab can't record:
   `sudo apt install gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-pulseaudio`

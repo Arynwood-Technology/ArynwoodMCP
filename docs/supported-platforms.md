@@ -14,6 +14,8 @@ tested on either — don't infer support from the underlying framework.
 Version 0.4.4 release builds use Ubuntu 22.04 (glibc 2.35). The AppImage requires
 host glibc 2.35 or newer; it does not bundle the C library. This is a minimum ABI
 requirement, not a guarantee that every Linux distribution has been tested.
+The AppImage also uses the host ALSA runtime (`libasound.so.2`, provided by
+`libasound2` on Ubuntu 22.04); minimal containers may not include it.
 The `.deb` also needs compatible system WebKitGTK 4.1 and GStreamer packages.
 Build on Ubuntu 22.04 when preparing release artifacts: compiling on a newer
 system can raise the required glibc version.
