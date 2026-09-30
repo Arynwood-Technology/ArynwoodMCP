@@ -30,7 +30,11 @@ URLs: App → http://localhost:5180 | API → http://localhost:8010 | API docs �
 This is the source-checkout dev workflow. The packaged Linux desktop build
 (AppImage/`.deb`, what actually ships to users) is a separate path — see
 `docs/installation.md` for end-user instructions and the "Tauri packaging" gotcha
-below for how it's built and its packaged-build-only failure modes.
+below for how it's built and its packaged-build-only failure modes. Since 0.4.5 there
+is also a Windows x64 alpha (per-user NSIS installer, WebView2, app data in
+`%LOCALAPPDATA%\arynwood-mcp`), built by `scripts/package-windows.ps1` and the
+`Windows desktop` workflow; `start-windows.ps1` is the Windows dev launcher. Its
+setup, build and open validation items are in `docs/windows.md`.
 
 > **Port mismatch fixed 2026-09-10.** `start.sh` and `arynwood-desktop.sh` used to
 > launch uvicorn on `:8000` while `frontend/vite.config.ts` pins the dev server to
@@ -560,7 +564,7 @@ venv/bin/python scripts/smoke_packaged_backend.py dist/arynwood-backend   # GATE
 cp dist/arynwood-backend frontend/src-tauri/binaries/arynwood-backend-x86_64-unknown-linux-gnu
 eval "$(scripts/stage_gstreamer_plugins.sh "$TMPDIR/gst-plugins")"   # curated GStreamer set — see the gotcha below
 cd frontend && APPIMAGE_EXTRACT_AND_RUN=1 npx tauri build --bundles appimage \
-  --config '{"version":"0.4.4-dev.'$(git rev-parse --short HEAD)'"}'   # label it: it is NOT the release 0.4.4
+  --config '{"version":"0.4.5-dev.'$(git rev-parse --short HEAD)'"}'   # label it: it is NOT the release 0.4.5
 ```
 Run `python3 scripts/finalize_appimage.py frontend/src-tauri/target/release/bundle/appimage/*.AppImage`
 from the repository root after direct Tauri builds, before checksums or signing.

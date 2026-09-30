@@ -2,14 +2,21 @@
 
 ## AppImage reports `AppRun.wrapped: Permission denied`
 
-Use the corrected 0.4.4 package. Earlier images could contain a launcher with mode
+Use version 0.4.4 or later. Earlier images could contain a launcher with mode
 `770`, which fails when mounted with a different owner. Changing permissions on
-the outer AppImage cannot fix files inside it. Version 0.4.4 sets both launchers
-to `755` and checks the repacked archive before upload.
+the outer AppImage cannot fix files inside it. Since 0.4.4, both launchers are set
+to `755` and the repacked archive is checked before upload.
 
-If the outer file itself is not executable, run `chmod +x arynwood-mcp_0.4.4_amd64.AppImage`.
+If the outer file itself is not executable, run `chmod +x arynwood-mcp_0.4.5_amd64.AppImage`.
 For a `GLIBC_* not found` error, check `ldd --version`: the release baseline is
 glibc 2.35. A local build made on a newer distribution may need a newer version.
+
+## Windows says "Windows protected your PC" when you run the installer
+
+The 0.4.5 Windows installer is unsigned, so Microsoft Defender SmartScreen warns
+before it runs. Check the file's hash first (see [Windows setup](windows.md#install-the-published-release)),
+then choose **More info** → **Run anyway**. If the hash doesn't match, delete the file
+and download it again from the release page.
 
 ## The app won't start / a port is already in use
 

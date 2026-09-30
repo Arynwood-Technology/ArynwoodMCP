@@ -1,11 +1,11 @@
 # Arynwood MCP
 
-Local-first AI workspace for the Linux desktop: multi-persona chat with local Ollama models, knowledge search
+Local-first AI workspace for Linux and Windows desktops: multi-persona chat with local Ollama models, knowledge search
 and memory over your own documents, a design canvas, and Model Context Protocol (MCP) tool integrations,
 including Kdenlive editing through Cutroom's MCP server. A source checkout adds the GPU generation, audio
 production and publishing tools listed under [What's Inside](#whats-inside).
 
-**The packaged Linux alpha** (v0.4.4, AppImage and `.deb`) covers the core workspace. LoRA training, script-based
+**The packaged alpha** (v0.4.5: AppImage and `.deb` for Linux x86_64, and a new Windows x64 installer) covers the core workspace. LoRA training, script-based
 GPU tools and the project file browser need a source checkout. Models and supporting services are installed
 separately. Requirements and limits: [arynwood.com/mcp](https://arynwood.com/mcp/).
 
@@ -48,16 +48,17 @@ instead of faking it.
 
 ## Release & Packaging
 
-Version **0.4.4** fixes AppImage launcher permissions and builds on Ubuntu 22.04
-with a glibc 2.35 baseline. The app still needs the host C library and separately
-installed models/services. Download published packages from [GitHub Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases).
+Version **0.4.5** adds a Windows x64 desktop alpha (an unsigned per-user installer)
+alongside the Linux AppImage and `.deb`, which keep the Ubuntu 22.04 / glibc 2.35
+baseline. Models and supporting services are installed separately on both. Download published packages from [GitHub Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases).
 
-Linux desktop alpha (AppImage + `.deb`) — see:
+Desktop alpha packages — see:
 
-- [`docs/releases/0.4.4.md`](docs/releases/0.4.4.md) — package details and upload checklist
+- [`docs/releases/0.4.5.md`](docs/releases/0.4.5.md) — packages, checksums and what still needs testing
+- [`docs/releases/0.4.4.md`](docs/releases/0.4.4.md) — the maintainer upload checklist
 - [`docs/supported-platforms.md`](docs/supported-platforms.md) - OS/hardware requirements
 - [`docs/installation.md`](docs/installation.md) - install, first run, uninstall
-- [`docs/windows.md`](docs/windows.md) - Windows 0.4.5 alpha build, install and limitations
+- [`docs/windows.md`](docs/windows.md) - Windows 0.4.5 alpha install, build and limitations
 - [`docs/troubleshooting.md`](docs/troubleshooting.md) - common problems
 - [`docs/release-readiness-audit.md`](docs/release-readiness-audit.md) - current gaps/status
 - [`docs/third-party-notices.md`](docs/third-party-notices.md) - dependency license inventory

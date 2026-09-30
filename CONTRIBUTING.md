@@ -36,4 +36,5 @@ Release packages use the Ubuntu 22.04 workflow (`Release (Linux)`); a manual run
 builds and uploads CI artifacts without publishing a release. `make package` also
 stages GStreamer, runs the backend smoke gate, and finalizes launcher permissions.
 Run `scripts/finalize_appimage.py` after direct Tauri builds, before checksums or
-signing. See [the 0.4.4 release checklist](docs/releases/0.4.4.md).
+signing. See [the release checklist](docs/releases/0.4.4.md) (written for 0.4.4) and, for
+the Windows installer, [`docs/windows.md`](docs/windows.md).

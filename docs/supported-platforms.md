@@ -2,15 +2,16 @@
 
 ## Officially supported
 
-**Linux x86_64**, packaged as an AppImage and a `.deb` in the published 0.4.4 release.
+**Linux x86_64**, packaged as an AppImage and a `.deb` (current release: 0.4.5).
 
-**Windows x64** has a 0.4.5 alpha build path with an NSIS installer; see
-[Windows setup and limitations](windows.md). This does not imply Windows support
-for every optional GPU tool or external integration. macOS remains unsupported.
+**Windows x64** alpha, first published in 0.4.5 as an unsigned per-user NSIS
+installer; see [Windows setup and limitations](windows.md). This does not imply
+Windows support for every optional GPU tool or external integration. macOS remains
+unsupported.
 
 ## Linux runtime baseline
 
-Version 0.4.4 release builds use Ubuntu 22.04 (glibc 2.35). The AppImage requires
+Linux release builds (since 0.4.4) use Ubuntu 22.04 (glibc 2.35). The AppImage requires
 host glibc 2.35 or newer; it does not bundle the C library. This is a minimum ABI
 requirement, not a guarantee that every Linux distribution has been tested.
 The AppImage also uses the host ALSA runtime (`libasound.so.2`, provided by
@@ -66,8 +67,8 @@ None of the GPU-bound services are bundled with the desktop app — see
 The GPU tools, LoRA training, Whisper, SadTalker, Chatterbox, the A1111 model folders, the
 MusicStudio sidecars and the Sycamore PDF parser are separate checkouts/venvs. By default
 Arynwood looks under your home directory; every location can be overridden in the `.env`
-file (repo root for a source checkout, `~/.local/share/arynwood-mcp/.env` for the packaged
-app). A path that doesn't exist just leaves that one feature unavailable.
+file (repo root for a source checkout; for the packaged app, `~/.local/share/arynwood-mcp/.env`
+on Linux or `%LOCALAPPDATA%\arynwood-mcp\.env` on Windows). A path that doesn't exist just leaves that one feature unavailable.
 
 | Setting | Default | Used for |
 |---|---|---|

@@ -9,15 +9,19 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+## [0.4.5] — 2026-09-29
+
 ### Added
 
-- Windows x64 desktop alpha build for 0.4.5: per-user NSIS installer, PowerShell
-  launch/build scripts, packaged-backend smoke test, and Windows CI artifacts.
+- Windows x64 desktop alpha (`arynwood-mcp_0.4.5_x64-setup.exe`): unsigned per-user
+  NSIS installer, PowerShell launch/build scripts, packaged-backend smoke test, and
+  Windows CI artifacts. Linux AppImage and `.deb` packages are published alongside it.
 - Native Windows user-data and virtual-environment paths, browser opening, and
   desktop process-tree cleanup through a Windows Job Object.
 - Explicit errors for optional Linux-only tool installation and Community launch.
 
-See `docs/windows.md` for build instructions and remaining release validation.
+See `docs/windows.md` for installation, build instructions and the checks still
+outstanding on Windows.
 
 ## [0.4.4] — 2026-09-26
 
