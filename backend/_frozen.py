@@ -20,14 +20,17 @@ def app_base_dir() -> str:
 
 
 def xdg_data_dir() -> str:
-    """Per-user data dir for this app (XDG_DATA_HOME or ~/.local/share, + arynwood-mcp).
+    """Per-user data dir: LOCALAPPDATA on Windows, XDG_DATA_HOME elsewhere.
 
     The same place in a source checkout and a packaged build, and never inside the repo —
     unlike user_data_dir(), which is the repo root when running from source. Use it for
     things that must live OUTSIDE the checkout (e.g. the private persona overlay), so they
     can't be committed by accident. Creates nothing.
     """
-    data_home = os.environ.get("XDG_DATA_HOME") or os.path.join(os.path.expanduser("~"), ".local", "share")
+    if sys.platform == "win32":
+        data_home = os.environ.get("LOCALAPPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Local")
+    else:
+        data_home = os.environ.get("XDG_DATA_HOME") or os.path.join(os.path.expanduser("~"), ".local", "share")
     return os.path.join(data_home, "arynwood-mcp")
 
 
@@ -76,13 +79,19 @@ def sanitize_environ_for_children(environ=None) -> list[str]:
     libraries shadow the system's for tools like ffmpeg. Only bundle-rooted components are dropped —
     a user's own entries (e.g. a CUDA lib dir) survive — and a variable left empty is removed.
 
-    The running process is unaffected: the loader read LD_LIBRARY_PATH at exec time. No-op when the
-    process is neither an AppImage nor PyInstaller-frozen, so it is safe to call unconditionally.
+    On Windows also clear PyInstaller's process-wide SetDllDirectory setting so child Python
+    interpreters do not load DLLs from this bundle. On POSIX the running process is unaffected:
+    the loader read LD_LIBRARY_PATH at exec time. No-op when the process is not bundled.
     """
     environ = os.environ if environ is None else environ
     prefixes = _bundle_prefixes(environ)
     if not prefixes:
         return []
+
+    if sys.platform == "win32":
+        # Environment cleanup cannot undo the process-wide DLL search path set by
+        # the PyInstaller bootloader; sidecars can use a different Python version.
+        ctypes.windll.kernel32.SetDllDirectoryW(None)
 
     def in_bundle(component: str) -> bool:
         norm = os.path.normpath(component) if component else ""

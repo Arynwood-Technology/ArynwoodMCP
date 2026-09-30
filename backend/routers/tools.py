@@ -608,13 +608,18 @@ async def open_tool(tool_id: str):
     target = script if script.endswith(".html") and os.path.exists(script) else url
     if not target:
         raise HTTPException(400, "Nothing to open for this tool")
-    await asyncio.create_subprocess_exec("xdg-open", target)
+    if os.name == "nt":
+        os.startfile(target)
+    else:
+        await asyncio.create_subprocess_exec("xdg-open", target)
     return {"opened": target}
 
 
 @router.get("/{tool_id}/install/stream")
 async def install_tool_stream(tool_id: str):
     """Run a tool's install command and stream stdout+stderr as plain text."""
+    if os.name == "nt":
+        raise HTTPException(501, "Automatic tool installation currently requires Linux. Install the tool using its Windows instructions.")
     if tool_id not in TOOLS:
         raise HTTPException(404, "Tool not found")
     info = TOOLS[tool_id]

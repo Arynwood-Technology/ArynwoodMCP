@@ -9,6 +9,16 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Added
+
+- Windows x64 desktop alpha build for 0.4.5: per-user NSIS installer, PowerShell
+  launch/build scripts, packaged-backend smoke test, and Windows CI artifacts.
+- Native Windows user-data and virtual-environment paths, browser opening, and
+  desktop process-tree cleanup through a Windows Job Object.
+- Explicit errors for optional Linux-only tool installation and Community launch.
+
+See `docs/windows.md` for build instructions and remaining release validation.
+
 ## [0.4.4] — 2026-09-26
 
 ### Fixed

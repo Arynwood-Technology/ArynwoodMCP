@@ -2,12 +2,11 @@
 
 ## Officially supported
 
-**Linux x86_64**, packaged as an AppImage and a `.deb`. This is the only platform
-this project builds, tests, and supports for the desktop alpha.
+**Linux x86_64**, packaged as an AppImage and a `.deb` in the published 0.4.4 release.
 
-macOS and Windows are **not currently supported**. The Tauri shell (`frontend/src-tauri/`)
-is cross-platform-capable in principle, but nothing here has been built, run, or
-tested on either — don't infer support from the underlying framework.
+**Windows x64** has a 0.4.5 alpha build path with an NSIS installer; see
+[Windows setup and limitations](windows.md). This does not imply Windows support
+for every optional GPU tool or external integration. macOS remains unsupported.
 
 ## Linux runtime baseline
 

@@ -1,6 +1,6 @@
 [package]
 name = "arynwood"
-version = "0.4.4"
+version = "0.4.5"
 description = "Arynwood MCP Desktop"
 authors = []
 edition = "2021"
@@ -15,6 +15,9 @@ tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri-plugin-notification = "2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security", "Win32_System_JobObjects", "Win32_System_Threading"] }
 
 # WebKitGTK denies every getUserMedia() request by default (no built-in
 # permission-prompt UI) unless the app hooks the "permission-request" signal

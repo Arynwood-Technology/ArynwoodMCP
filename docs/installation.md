@@ -1,7 +1,8 @@
 # Installation
 
-See [`docs/supported-platforms.md`](supported-platforms.md) first — Linux x86_64
-only, GPU features need an NVIDIA card.
+See [`docs/supported-platforms.md`](supported-platforms.md) first. The published
+0.4.4 packages are Linux x86_64; for the 0.4.5 Windows alpha build, see
+[Windows setup](windows.md). GPU features need their separate dependencies.
 
 ## Packaged build (AppImage / .deb)
 

@@ -153,7 +153,7 @@ async def status():
         "installed": installed if local else None,
         "setup_missing": missing,
         "managed": pid is not None,
-        "can_start": local and installed and not missing and state in ("stopped", "failed"),
+        "can_start": os.name != "nt" and local and installed and not missing and state in ("stopped", "failed"),
         "can_stop": pid is not None,
         "error": _failure if state == "failed" else None,
     }
@@ -162,6 +162,8 @@ async def status():
 @router.post("/start")
 async def start():
     global _proc, _failure
+    if os.name == "nt":
+        raise HTTPException(501, "Community's local launcher requires Linux. Start Community separately and configure ARYNWOOD_COMMUNITY_URL.")
     url = community_url()
     if not is_local(url):
         raise HTTPException(400, f"Community is hosted at {url}; it isn't started from this computer.")
@@ -236,8 +238,11 @@ async def open_in_browser(target: str = "app"):
     env = os.environ.copy()
     sanitize_environ_for_children(env)
     try:
-        subprocess.Popen(["xdg-open", url], env=env, stdin=subprocess.DEVNULL,
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        if os.name == "nt":
+            os.startfile(url)
+        else:
+            subprocess.Popen(["xdg-open", url], env=env, stdin=subprocess.DEVNULL,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     except OSError as e:
         raise HTTPException(501, f"Couldn't open a browser ({e}). Open {url} yourself.")
     return {"url": url}

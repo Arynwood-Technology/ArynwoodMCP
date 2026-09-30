@@ -148,6 +148,8 @@ async def start_sidecar(sidecar_id: str):
 
     cfg = SIDECARS[sidecar_id]
     python = os.path.join(MUSICSTUDIO_DIR, cfg["venv"])
+    if os.name == "nt":
+        python = external_paths.venv_python(os.path.dirname(os.path.dirname(python)))
     script = os.path.join(MUSICSTUDIO_DIR, cfg["script"])
 
     if not os.path.exists(python):
@@ -171,7 +173,8 @@ async def start_sidecar(sidecar_id: str):
             stdin=subprocess.DEVNULL,
             stdout=log,
             stderr=subprocess.STDOUT,
-            preexec_fn=die_with_parent,     # never outlive this backend: it would keep its port and GPU memory
+            **({"creationflags": subprocess.CREATE_NO_WINDOW} if os.name == "nt"
+               else {"preexec_fn": die_with_parent}),
         )
     _procs[sidecar_id] = proc
 

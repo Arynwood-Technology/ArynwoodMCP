@@ -57,6 +57,7 @@ Linux desktop alpha (AppImage + `.deb`) — see:
 - [`docs/releases/0.4.4.md`](docs/releases/0.4.4.md) — package details and upload checklist
 - [`docs/supported-platforms.md`](docs/supported-platforms.md) - OS/hardware requirements
 - [`docs/installation.md`](docs/installation.md) - install, first run, uninstall
+- [`docs/windows.md`](docs/windows.md) - Windows 0.4.5 alpha build, install and limitations
 - [`docs/troubleshooting.md`](docs/troubleshooting.md) - common problems
 - [`docs/release-readiness-audit.md`](docs/release-readiness-audit.md) - current gaps/status
 - [`docs/third-party-notices.md`](docs/third-party-notices.md) - dependency license inventory

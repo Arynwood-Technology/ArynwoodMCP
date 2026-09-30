@@ -11,7 +11,48 @@ static BACKEND: OnceLock<Mutex<Option<Child>>> = OnceLock::new();
 // A separate static rather than reusing BACKEND's type because tauri_plugin_shell's
 // CommandChild isn't a std::process::Child — exactly one of these two is ever
 // populated in a given run, decided by cfg!(debug_assertions).
-static SIDECAR_BACKEND: OnceLock<Mutex<Option<tauri_plugin_shell::process::CommandChild>>> = OnceLock::new();
+static SIDECAR_BACKEND: OnceLock<Mutex<Option<tauri_plugin_shell::process::CommandChild>>> =
+    OnceLock::new();
+
+// Keep the desktop and all backend descendants in a kernel-managed lifetime.
+// The non-inheritable job handle stays open until this process exits, including
+// crashes; Windows then terminates the PyInstaller worker and managed sidecars.
+#[cfg(windows)]
+fn contain_windows_children() -> std::io::Result<()> {
+    use windows_sys::Win32::{
+        Foundation::CloseHandle,
+        System::{
+            JobObjects::{
+                AssignProcessToJobObject, CreateJobObjectW, JobObjectExtendedLimitInformation,
+                SetInformationJobObject, JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
+                JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+            },
+            Threading::GetCurrentProcess,
+        },
+    };
+    unsafe {
+        let job = CreateJobObjectW(std::ptr::null(), std::ptr::null());
+        if job.is_null() {
+            return Err(std::io::Error::last_os_error());
+        }
+        let mut limits: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = std::mem::zeroed();
+        limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+        if SetInformationJobObject(
+            job,
+            JobObjectExtendedLimitInformation,
+            &limits as *const _ as *const std::ffi::c_void,
+            std::mem::size_of_val(&limits) as u32,
+        ) == 0
+            || AssignProcessToJobObject(job, GetCurrentProcess()) == 0
+        {
+            let error = std::io::Error::last_os_error();
+            CloseHandle(job);
+            return Err(error);
+        }
+        // Intentionally retain the handle for the process lifetime.
+    }
+    Ok(())
+}
 
 /// Walk up from the compiled manifest dir to find the repo root.
 /// Falls back to checking relative to the running executable (for packaged builds).
@@ -101,18 +142,30 @@ fn start_backend() {
         if venv_py.exists() {
             venv_py.to_string_lossy().to_string()
         } else {
-            eprintln!("[arynwood] venv not found at {:?}, falling back to system python3", venv_py);
-            "python3".to_string()
+            eprintln!(
+                "[arynwood] venv not found at {:?}, falling back to system python3",
+                venv_py
+            );
+            if cfg!(windows) { "python" } else { "python3" }.to_string()
         }
     };
 
     let env_vars = parse_env_file(&root);
 
     let mut cmd = std::process::Command::new(&python);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+    }
     cmd.args([
-        "-m", "uvicorn", "backend.api:app",
-        "--host", "127.0.0.1",
-        "--port", "8010",
+        "-m",
+        "uvicorn",
+        "backend.api:app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8010",
     ])
     .current_dir(&root);
 
@@ -201,7 +254,9 @@ fn start_backend_sidecar(app: &tauri::AppHandle) {
                         let line = match &event {
                             CommandEvent::Stdout(bytes) => Some(bytes.clone()),
                             CommandEvent::Stderr(bytes) => Some(bytes.clone()),
-                            CommandEvent::Error(msg) => Some(format!("[error] {msg}\n").into_bytes()),
+                            CommandEvent::Error(msg) => {
+                                Some(format!("[error] {msg}\n").into_bytes())
+                            }
                             CommandEvent::Terminated(payload) => {
                                 Some(format!("[terminated] {:?}\n", payload).into_bytes())
                             }
@@ -226,7 +281,10 @@ fn start_backend_sidecar(app: &tauri::AppHandle) {
     for i in 0..30 {
         std::thread::sleep(std::time::Duration::from_millis(500));
         if port_open(8010) {
-            println!("[arynwood] Backend sidecar ready after ~{}ms", (i + 1) * 500);
+            println!(
+                "[arynwood] Backend sidecar ready after ~{}ms",
+                (i + 1) * 500
+            );
             return;
         }
     }
@@ -269,8 +327,8 @@ fn kill_backend() {
     target_os = "openbsd"
 ))]
 fn allow_media_permissions(window: &tauri::WebviewWindow) {
-    use webkit2gtk::{PermissionRequestExt, WebViewExt};
     use webkit2gtk::glib::prelude::*;
+    use webkit2gtk::{PermissionRequestExt, WebViewExt};
 
     let result = window.with_webview(|platform_webview| {
         let webview = platform_webview.inner();
@@ -289,6 +347,8 @@ fn allow_media_permissions(window: &tauri::WebviewWindow) {
 }
 
 fn main() {
+    #[cfg(windows)]
+    contain_windows_children().expect("could not establish backend process lifetime");
     // WebKitGTK's DMA-BUF renderer produces a blank/gray window on a real chunk of
     // Linux GPU+driver combinations (a well-known upstream WebKitGTK issue, not
     // something wrong with this app's own code) — confirmed happening on a real

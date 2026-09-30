@@ -68,5 +68,7 @@ COMMUNITY_REPO_URL = "https://github.com/Arynwood-Technology/arynwood-community"
 
 
 def venv_python(venv_dir: str) -> str:
-    """Interpreter inside a venv directory (Linux layout — this app is Linux-only)."""
+    """Interpreter inside a native virtual environment."""
+    if os.name == "nt":
+        return os.path.join(venv_dir, "Scripts", "python.exe")
     return os.path.join(venv_dir, "bin", "python")
