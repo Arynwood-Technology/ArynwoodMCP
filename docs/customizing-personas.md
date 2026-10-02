@@ -31,6 +31,11 @@ A JSON object of persona id → persona, the same shape as `models.json`:
 - `name` and `llm.model` are required for it to appear in the persona picker.
 - `app_aware: false` drops the app-capabilities preamble for a persona that has no use for it.
 - `llm.num_ctx` raises the context ceiling for one persona (mind your VRAM).
+- Optional `llm.num_predict` sets the maximum reply tokens, overriding a model's
+  baked-in output limit. Positive integers only; the app clamps it to one quarter
+  of the active context window and reserves that space when fitting history. For
+  example, `"num_ctx": 16384, "num_predict": 2048` leaves room for longer scenes
+  without increasing the context window. It is a token ceiling, not a word-count target.
 - An entry with the same id as a bundled persona **replaces** it.
 
 ## Behaviour
@@ -38,3 +43,16 @@ A JSON object of persona id → persona, the same shape as `models.json`:
 - Changes take effect on the next request — no restart.
 - A missing file is normal. A malformed one is ignored (one warning in the backend log) and
   never affects chat; the bundled personas keep working.
+
+## Testing a private writing persona
+
+With Ollama running, opt into synthetic writing tests for your own persona IDs:
+
+```bash
+ARYNWOOD_WRITER_PERSONAS=writer_a,writer_b venv/bin/python -m pytest tests/test_evals_live_private_writers.py -m eval -v -s
+```
+
+The tests exercise a complete scene, a narrowly scoped revision, an explicitly
+requested list, and honesty about an unavailable manuscript. They use your local
+persona settings but do not store test conversations or copy private instructions
+into the repository. Live-model behavior can vary between runs.

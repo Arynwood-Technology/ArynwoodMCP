@@ -147,3 +147,20 @@ def test_context_used_event_discloses_tool_servers(client, monkeypatch):
     ctx_events = [m for m in msgs if m["type"] == "context_used"]
     assert len(ctx_events) == 1
     assert ctx_events[0]["tool_servers"] == ["Kdenlive"]
+
+
+def test_persona_reply_tokens_reach_generation(client, monkeypatch):
+    from backend.routers import chat
+    monkeypatch.setattr(chat, 'get_personas', lambda: {'writer': {
+        'name': 'Writer', 'app_aware': False, 'knowledge_enabled': False,
+        'llm': {'model': 'test-writer', 'num_ctx': 8192, 'num_predict': 1800},
+    }})
+    seen = []
+    async def capture(*, model, messages, host, port, options=None, tools=None):
+        seen.append(options)
+        yield {'token': 'Finished scene.', 'done': True}
+    monkeypatch.setattr(ollama_client, 'chat_stream', capture)
+    with client.websocket_connect('/api/chat/ws') as ws:
+        ws.send_json({'message': SAFE_MESSAGE, 'persona': 'writer'})
+        _run_until_done(ws)
+    assert seen == [{'num_ctx': 8192, 'num_predict': 1800}]

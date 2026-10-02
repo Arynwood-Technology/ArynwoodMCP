@@ -199,3 +199,42 @@ async def test_native_web_search_decision(monkeypatch, message, expected_search)
         f"message={message!r} expected web_search called={expected_search}, got {called_search} "
         f"(tools called: {called_tools})"
     )
+
+
+@skip_if_ollama_down
+async def test_checklist_walkthrough_survives_search_results(monkeypatch):
+    """A search result must not turn a concrete walkthrough into an SEO summary."""
+    from backend.routers.chat import _untrusted_block
+    from backend.services.context_budget import fit_request
+
+    persona = get_personas()['central']
+    messages = [
+        {'role': 'system', 'content': build_system_prompt(persona, has_native_tools=True)},
+        {'role': 'user', 'content': (
+            'Help me through this list one step at a time with copy paste boxes. '
+            'Start with Search Console, then redirects. I already have the verified '
+            'arynwood.com Domain property open. Give me the first sitemap to paste '
+            'and wait for my result. '
+            '[ ] Submit https://arynwood.com/sitemap.xml, '
+            'https://dev.arynwood.com/sitemap.xml, https://social.arynwood.com/sitemap.xml '
+            'and https://almanac.arynwood.com/sitemap.xml. '
+            '[ ] Redirect old /blog pages. [x] Community license is done. '
+            '[ ] Register chat rooms. [ ] Select moderators. [ ] Company listings.'
+        )},
+        {'role': 'assistant', 'content': '', 'tool_calls': [
+            {'function': {'name': 'web_search', 'arguments': {'query': 'Search Console sitemaps'}}}
+        ]},
+        {'role': 'tool', 'tool_name': 'web_search', 'content': _untrusted_block(
+            'web_search', 'Search Console has a Sitemaps report. Redirects can be 301 or 302. '
+            'Page with redirect is an indexing status. A redirect spreadsheet can track old URLs.')},
+    ]
+    messages, _ = fit_request(messages, None, 8192, model='qwen2.5-coder:14b')
+    ws = _RecordingWebSocket()
+    reply = await _stream_reply(ws, messages, 'qwen2.5-coder:14b', 'localhost', 11434,
+                                8192, db=None, tools=None)
+    print('\nChecklist response:\n' + reply)
+    assert '```' in reply, reply
+    assert 'https://arynwood.com/sitemap.xml' in reply, reply
+    assert 'submit' in reply.lower(), reply
+    assert '301' not in reply and '302' not in reply, reply
+    assert not any(e['type'] == 'error' for e in ws.sent), ws.sent

@@ -9,6 +9,19 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Fixed
+
+- Optional per-persona `llm.num_predict` overrides short model output caps while
+  reserving matching context space, allowing writing models to finish longer scenes.
+- Evidence-handling instructions distinguish supplied tags from original prose.
+- Arynwood's conversation instructions now prioritize the user's task, checklist
+  order, and copyable output over generic topic summaries and persona referrals.
+  Shorter instructions also leave more context space for the conversation.
+- Conversation summaries retain the pending step, user corrections, and requested
+  pace/format; empty memory results no longer imply the current chat is forgotten.
+- Native tool round-limit replies preserve the real user request and requested
+  format, and fit the final request to the context budget before generation.
+
 ## [0.4.5] — 2026-09-29
 
 ### Added

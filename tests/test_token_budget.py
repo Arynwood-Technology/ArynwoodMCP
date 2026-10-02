@@ -54,3 +54,11 @@ def test_trim_history_drops_oversized_message_for_summary():
 
 def test_trim_history_empty_input():
     assert _trim_history_to_tokens([], budget_tokens=1000) == []
+
+
+def test_persona_reply_tokens_clamps_to_reserved_context_and_ignores_invalid_values():
+    from backend.routers.chat import _persona_reply_tokens
+    assert _persona_reply_tokens({'llm': {'num_predict': 2048}}, 16384) == 2048
+    assert _persona_reply_tokens({'llm': {'num_predict': 99999}}, 4096) == 1024
+    for value in (None, True, -1, 0, '2048', 1.5):
+        assert _persona_reply_tokens({'llm': {'num_predict': value}}, 8192) is None

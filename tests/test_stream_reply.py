@@ -227,3 +227,56 @@ async def test_disconnect_mid_stream_returns_partial_text_instead_of_raising(mon
     # was produced up to the failure point (see roadmap 0.1).
     result = await _stream_reply(ws, [{"role": "user", "content": "hi"}], "m", "h", 1, 8192, db=None, tools=None)
     assert result == "Hello!"
+
+
+async def test_round_cap_keeps_request_and_bounds_large_final_result(monkeypatch):
+    from backend.services.context_budget import request_tokens
+
+    request = "Walk me through this checklist one step at a time in copyable code blocks."
+    final_messages = []
+
+    async def fake_chat_stream(*, model, messages, host, port, options=None, tools=None):
+        if tools:
+            yield {"token": '{"name":"web_search","arguments":{"query":"sitemap"}}', "done": True}
+        else:
+            final_messages.extend(messages)
+            assert request_tokens(messages) <= options['num_ctx'] - 1024
+            yield {"token": "Open the property selector.", "done": True}
+
+    async def fake_tool(*args):
+        return "Search evidence " * 4000
+
+    monkeypatch.setattr(ollama_client, "chat_stream", fake_chat_stream)
+    monkeypatch.setattr(chat_mod, "_call_native_tool", fake_tool)
+    ws = FakeWebSocket()
+    reply = await _stream_reply(
+        ws, [{"role": "system", "content": "Help with the user's task."},
+             {"role": "user", "content": request}],
+        "m", "h", 1, 8192, db=None, tools=_NATIVE_TOOLS, max_tool_rounds=1,
+    )
+    assert reply == "Open the property selector."
+    assert [m['content'] for m in final_messages if m['role'] == 'user'] == [request]
+    assert any(m['role'] == 'tool' for m in final_messages)
+    assert not any(m['type'] == 'error' for m in ws.sent)
+
+
+async def test_persona_reply_budget_overrides_model_cap_and_reserves_room(monkeypatch):
+    from backend.services.context_budget import request_tokens
+
+    seen = []
+    async def fake_chat_stream(*, model, messages, host, port, options=None, tools=None):
+        seen.append(options)
+        assert options['num_predict'] == 2048
+        assert request_tokens(messages) <= options['num_ctx'] - 2048
+        yield {'token': 'A complete ending.', 'done': True}
+
+    monkeypatch.setattr(ollama_client, 'chat_stream', fake_chat_stream)
+    ws = FakeWebSocket()
+    result = await _stream_reply(ws, [
+        {'role': 'system', 'content': 'Write the requested scene.'},
+        {'role': 'user', 'content': 'Old scene: ' + 'x' * 16000},
+        {'role': 'assistant', 'content': 'Previous draft.'},
+        {'role': 'user', 'content': 'Now write the ending.'},
+    ], 'm', 'h', 1, 8192, db=None, reply_tokens=2048)
+    assert result == 'A complete ending.'
+    assert seen
