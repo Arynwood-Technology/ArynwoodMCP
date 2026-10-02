@@ -33,12 +33,37 @@ def _config_path() -> str:
 _CONFIG_PATH = _config_path()
 
 
+# Servers this backend hosts itself, dispatched in-process (see _mcp_post) rather than over
+# HTTP. "codebase" used to be registered in mcp_servers.json as http://127.0.0.1:8010/...,
+# which only works in the process that owns :8010 — the headless gateway daemon (another
+# port) would have called into the desktop backend, or into nothing when it isn't running.
+# A built-in entry replaces any mcp_servers.json entry of the same name.
+_IN_PROCESS_HANDLERS = {
+    "codebase": "backend.routers.mcp_codebase:handle_rpc",
+}
+
+
+def _builtin_servers() -> dict:
+    if os.environ.get("ARYNWOOD_ENABLE_CODEBASE_TOOLS") == "1":  # same opt-in as its router
+        return {"codebase": {"in_process": "codebase"}}
+    return {}
+
+
 def _load_servers() -> dict:
-    """Load the MCP server registry from mcp/config/mcp_servers.json."""
-    if not os.path.exists(_CONFIG_PATH):
-        return {}
-    with open(_CONFIG_PATH) as f:
-        return json.load(f).get("mcpServers", {})
+    """Load the MCP server registry from mcp/config/mcp_servers.json, plus this backend's
+    own built-in servers."""
+    servers = {}
+    if os.path.exists(_CONFIG_PATH):
+        with open(_CONFIG_PATH) as f:
+            servers = json.load(f).get("mcpServers", {})
+    return {**servers, **_builtin_servers()}
+
+
+async def _in_process_post(name: str, body: dict) -> Any:
+    import importlib
+    module_name, func_name = _IN_PROCESS_HANDLERS[name].split(":")
+    handler = getattr(importlib.import_module(module_name), func_name)
+    return await handler(body)
 
 
 class ToolCallRequest(BaseModel):
@@ -59,13 +84,18 @@ def _parse_mcp_response(text: str, content_type: str) -> Any:
 
 async def _mcp_post(server_cfg: dict, method: str, params: dict, req_id: int = 1) -> Any:
     """Send a JSON-RPC 2.0 request to an MCP server and return the result."""
+    body = {"jsonrpc": "2.0", "method": method, "params": params, "id": req_id}
+    if server_cfg.get("in_process"):
+        data = await _in_process_post(server_cfg["in_process"], body)
+        if "error" in data:
+            raise HTTPException(502, f"MCP error: {data['error']}")
+        return data.get("result")
     url = server_cfg["url"]
     headers = {
         **server_cfg.get("headers", {}),
         "Content-Type": "application/json",
         "Accept": "application/json, text/event-stream",
     }
-    body = {"jsonrpc": "2.0", "method": method, "params": params, "id": req_id}
     async with httpx.AsyncClient(timeout=15.0) as client:
         r = await client.post(url, json=body, headers=headers)
         r.raise_for_status()
@@ -79,7 +109,7 @@ async def _mcp_post(server_cfg: dict, method: str, params: dict, req_id: int = 1
 async def list_mcp_servers():
     """List all configured MCP servers with their names and base URLs."""
     servers = _load_servers()
-    return [{"name": k, "url": v["url"]} for k, v in servers.items()]
+    return [{"name": k, "url": v.get("url") or "in-process"} for k, v in servers.items()]
 
 
 @router.get("/servers/{server_name}/tools")

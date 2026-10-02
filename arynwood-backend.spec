@@ -30,6 +30,8 @@ datas = [
     ("mcp/config/local_agent/AGENT.md", "mcp/config/local_agent"),
     ("mcp/config/local_agent/gates.json", "mcp/config/local_agent"),
     ("mcp/config/local_agent/kdenlive.md", "mcp/config/local_agent"),
+    ("mcp/config/gateway/config.json", "mcp/config/gateway"),
+    ("mcp/config/gateway/guest.md", "mcp/config/gateway"),
 ]
 binaries = []
 hiddenimports = [

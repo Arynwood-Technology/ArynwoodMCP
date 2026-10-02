@@ -304,6 +304,26 @@ _MIGRATIONS = [
 
     "ALTER TABLE servers ADD COLUMN context_window INTEGER NOT NULL DEFAULT 8192",
     "ALTER TABLE servers ADD COLUMN tools_mode TEXT NOT NULL DEFAULT 'native'",
+    # Headless gateway (backend/gateway/sessions.py): one row per outside conversation
+    # key (an API client, an IRC nick or channel, a scheduled job) -> the conversation
+    # it continues, so a session picks up where it left off after a restart.
+    """CREATE TABLE IF NOT EXISTS gateway_sessions (
+        key TEXT PRIMARY KEY,
+        conversation_id INTEGER,
+        persona TEXT NOT NULL DEFAULT 'central',
+        model TEXT,
+        server_id INTEGER,
+        project_id INTEGER,
+        label TEXT NOT NULL DEFAULT '',
+        source TEXT NOT NULL DEFAULT 'api',
+        meta TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        last_active_at TEXT
+    )""",
+    # Who the gateway believes it's talking to in a session: owner / known / stranger
+    # (backend/gateway/sessions.py). Decides what private context and which tools a turn
+    # gets. Defaults to the least trusted level; only the owner raises it.
+    "ALTER TABLE gateway_sessions ADD COLUMN trust_level TEXT NOT NULL DEFAULT 'stranger'",
 
 ]
 

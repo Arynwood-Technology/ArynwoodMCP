@@ -1,0 +1,56 @@
+{
+  "_comment": "Headless gateway (backend/gateway/). Shared defaults only — personal settings (and later the IRC server/nick) go in the overlay file outside the repo, see README.md.",
+  "bind_host": "127.0.0.1",
+  "port": 8020,
+  "session_defaults": {
+    "persona": "central",
+    "model": null,
+    "server_id": null,
+    "project_id": null
+  },
+  "max_concurrent_turns": 1,
+  "max_queued_per_session": 8,
+  "approval_timeout_seconds": 300,
+  "turn_timeout_seconds": 1200,
+  "_trust_comment": "What each trust level's turns may use. A missing key is false. web_search sends the query to DuckDuckGo, the one thing that leaves this machine, so only the owner has it by default. Destructive/publish tool calls additionally need an owner turn AND an owner approver, whatever this says.",
+  "_file_memory_comment": "MEMORY.md + daily/YYYY-MM-DD.md (backend/gateway/file_memory.py). dir null = <data dir>/memory, outside the repo. Read on turns with the memories grant, written on turns with memory_writes, for the personas listed.",
+  "file_memory": {
+    "dir": null,
+    "personas": ["central"],
+    "daily_days": 2,
+    "context_share": 0.15,
+    "extract_facts": true
+  },
+  "_irc_comment": "IRC adapter (backend/gateway/irc.py), daemon only. Put host, network, nick, channels, owner_accounts and any passwords in the overlay (<data dir>/gateway.json), never here. See docs/gateway.md.",
+  "irc": {
+    "enabled": false,
+    "network": null,
+    "host": null,
+    "port": null,
+    "tls": true,
+    "tls_verify": true,
+    "nick": null,
+    "username": null,
+    "realname": "Arynwood MCP",
+    "sasl": null,
+    "nickserv_password": null,
+    "server_password": null,
+    "channels": [],
+    "channel_mode": "mention",
+    "owner_accounts": [],
+    "known_accounts": [],
+    "answer_strangers": false,
+    "persona": "central",
+    "max_reply_lines": 8,
+    "flood_burst": 4,
+    "flood_interval_seconds": 1.0,
+    "ping_interval_seconds": 120,
+    "reconnect_min_seconds": 5,
+    "reconnect_max_seconds": 300
+  },
+  "trust_levels": {
+    "owner":    {"app_environment": true,  "memories": true,  "recent_conversations": true,  "agent_notes": true,  "knowledge_base": true,  "web_search": true,  "local_tools": true,  "memory_writes": true},
+    "known":    {"app_environment": false, "memories": false, "recent_conversations": false, "agent_notes": false, "knowledge_base": false, "web_search": false, "local_tools": false, "memory_writes": false},
+    "stranger": {"app_environment": false, "memories": false, "recent_conversations": false, "agent_notes": false, "knowledge_base": false, "web_search": false, "local_tools": false, "memory_writes": false}
+  }
+}

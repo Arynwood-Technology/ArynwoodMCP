@@ -248,9 +248,15 @@ def _start_background_index(commit: str) -> None:
 
 
 async def _find_symbol_fallback(name: str, reason: str) -> dict:
-    pattern = r"\b(def|class|function|const|let|var|interface|type)\s+" + re.escape(name) + r"\b"
+    # Declarations, plus a module-level assignment (`SESSION_KEY_RE = re.compile(...)`), which
+    # the keyword list alone never matched: a constant always came back "(no matches)".
+    pattern = (r"\b(def|class|function|const|let|var|interface|type)\s+" + re.escape(name) + r"\b"
+               + r"|^\s*" + re.escape(name) + r"\s*(:[^=]*)?=[^=]")
     result = await _grep(pattern, ".", None, 20, regex=True)
     body = result["content"][0]["text"]
+    if body.rstrip().endswith("(no matches)"):
+        body += ("\nfind_symbol only finds declarations and assignments of that exact name. Next, call "
+                 "search_code with the name or a keyword from the question before concluding it doesn't exist.")
     note = f"[heuristic text match — not verified against a real symbol table ({reason})]\n"
     return _tool_text(note + body)
 
@@ -539,7 +545,14 @@ async def mcp_codebase_rpc(request: Request):
         body = await request.json()
     except Exception:
         return {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}}
+    return await handle_rpc(body)
 
+
+async def handle_rpc(body: dict) -> dict:
+    """The JSON-RPC dispatch itself, callable in-process. mcp_proxy calls this directly for
+    the built-in "codebase" server, so whichever process runs the tool loop (the desktop
+    backend or the headless gateway daemon) uses its own tools instead of an HTTP round
+    trip to a fixed port that may belong to another process, or to nothing."""
     req_id = body.get("id", 1)
     method = body.get("method")
     params = body.get("params") or {}

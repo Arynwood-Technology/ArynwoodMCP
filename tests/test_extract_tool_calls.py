@@ -62,3 +62,19 @@ def test_multiple_back_to_back_tool_calls():
 def test_empty_content_returns_empty():
     assert _extract_tool_calls({"content": ""}) == []
     assert _extract_tool_calls({}) == []
+
+
+def test_call_in_a_later_fenced_block_after_a_quoted_one():
+    """Found live: the model quoted a file's last line in one fence and put the call in the
+    next. Only the first fence was read, so the call never ran and its JSON became the reply."""
+    msg = {"content": (
+        "The last line of `docs/gateway.md` is:\n\n```\nDepends on the uncommitted work.\n```\n\n"
+        "I will now append the line.\n\n```json\n"
+        '{"name": "apply_patch", "arguments": {"diff": "+Gateway demo line."}}\n```'
+    )}
+    assert _extract_tool_calls(msg) == [("apply_patch", {"diff": "+Gateway demo line."})]
+
+
+def test_fenced_code_that_is_not_a_call_is_not_one():
+    msg = {"content": 'Here is the config:\n\n```json\n{"port": 8020}\n```'}
+    assert _extract_tool_calls(msg) == []

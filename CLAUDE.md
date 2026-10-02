@@ -146,7 +146,7 @@ outline, so keyboard users previously had no focus indicator anywhere.
 |---|---|
 | `config/arynwood.db` | SQLite runtime state (all tables) |
 | `mcp/config/models.json` | Persona definitions (Arynwood, Doc, Kona, Glyph, Estra — see Personas below) — loaded at runtime by `chat.py` |
-| `mcp/config/mcp_servers.json` | External MCP tool server registry (name → HTTP URL, currently configured for just `kdenlive` when present), read by `mcp_proxy.py`. Gitignored/personal — not tracked in git, shared across branches on this machine, and **not guaranteed to exist** on a given checkout (its absence silently disables all MCP tool dispatch — see gotcha below) |
+| `mcp/config/mcp_servers.json` | External MCP tool server registry (name → HTTP URL, currently configured for just `kdenlive` when present), read by `mcp_proxy.py`. The `codebase` server is **built in** (`mcp_proxy._builtin_servers`, in-process via `mcp_codebase.handle_rpc`, only with `ARYNWOOD_ENABLE_CODEBASE_TOOLS=1`) and overrides any file entry, so whichever backend process runs a turn uses its own tools. Gitignored/personal — not tracked in git, shared across branches on this machine, and **not guaranteed to exist** on a given checkout (its absence silently disables all MCP tool dispatch — see gotcha below) |
 | `mcp/config/local_agent/` | Config + instructions for the local tool-calling model (see below) — `config.json` (`model`, `ollama_url`, `max_tool_rounds`, optional `fallback_model` for stall escalation), `AGENT.md` (shared rules: tool-call discipline, untrusted-tool-result framing, pre/post-action self-check), `gates.json` (one entry per server — `hints` are descriptive context for the LLM classifier now, not a substring allowlist), `<server>.md` per registered server (currently `kdenlive.md`, includes worked example call sequences) |
 
 ### Layer 4 — External Services
@@ -236,6 +236,15 @@ prompt, paired with a standing system-prompt rule to never treat delimited conte
 instructions — a scraped page or a maliciously-named clip is exactly the kind of
 thing that could contain text engineered to look like a command.
 
+**3. The conversational loop (gateway only).** `mcp_tool_agent.run_agent_loop` attaches native tools and the gated
+servers' tools to the conversation itself; the model calls them mid-reply until it answers (`max_agent_rounds` is a
+backstop). It shares `_CallRunner` with `run_tool_loop` — repeat short-circuit + `FALLBACK_MODEL` escalation, schema
+validation, tiers/approval, telemetry/run steps — so a rule change there applies to both. `prepare_toolset` applies the
+24-schema cap across native + all servers (round-robin), but every tool in an attached server's catalog stays callable
+by exact name. Tool results are wrapped in `<untrusted-data>`; the loop's DENIED/INVALID notes are not. Runs on the
+pinned model at temperature 0, at `MAX_TOOL_NUM_CTX` when servers are attached (measured ~7k tokens of prompt + 24
+Kdenlive schemas + instructions before history — doesn't fit 8192).
+
 A small live eval suite (`tests/test_evals_live_behavior.py`, excluded from the
 default `pytest` run — see `pytest.ini`'s `-m "not eval"`) checks both mechanisms'
 actual decisions against real Ollama: gate classification accuracy and native
@@ -274,7 +283,37 @@ All mounted under `/api/<domain>` by `backend/api.py`.
 | | `lora.py` | `/api/lora` | LoRA dataset prep + training job management |
 | | `video.py` | `/api/video` | Video generation/edit/caption jobs, video library |
 | | `dj.py` | `/api/dj` | DJ Toolkit — launcher + built-in manual for Mixxx/Ardour/Hydrogen/Surge XT/Vital/Flatseal/Calf/LSP/Dragonfly/Geonkick. Desktop GUI apps with no HTTP surface (unlike every other router here) — status comes from `flatpak ps` / `pgrep` on the backend host; launch just spawns and forgets (`start_new_session=True` so a `--reload` restart doesn't kill a running app). "Sessions" bundle multi-tool launches (e.g. Ardour+Hydrogen, which share transport over PipeWire/JACK). Deliberately not a sidebar destination: the Music page has a small "DJ Toolkit" button that opens `/dj` (see `nav.ts`'s `also`, which keeps Music highlighted there). Keep its content generic — no personal paths, no installed-version numbers; `tests/test_dj_router.py` fails if they come back |
+| **Gateway** | `gateway.py` | `/api/gateway` | Headless gateway (`backend/gateway/`) — persistent sessions (key → conversation + `trust_level`, `gateway_sessions` table, survives restarts) running agent turns with no UI: `POST /inbound`, session CRUD/reset/cancel, approvals, and a `/ws` event stream. Turns use the conversational tool loop and are trust-gated. `python -m backend.gateway` runs the whole backend headless as the always-on daemon (`:8020` by default; `is_daemon()` gates daemon-only work). Config `mcp/config/gateway/` + overlay `~/.local/share/arynwood-mcp/gateway.json`. See `docs/gateway.md` |
 | | `community.py` | `/api/community` | **Arynwood Community** — optional sidecar for the separate Community app (private spaces: boards, chat, calendar, household, lists, notes). v1 is launcher + status only: `/status` (via Community's unauthenticated `/api/health`), `/start`, `/stop`, `/open?target=app|repo` (system browser via `xdg-open` — Community sends `X-Frame-Options: DENY`, so it can't be embedded, and its API is per-member cookie auth, so Arynwood doesn't read its data). **Unlike the MusicStudio sidecars it outlives Arynwood** (`start_new_session`, no `die_with_parent`) because members stay connected; a pidfile (`~/.local/share/arynwood-mcp/community.pid`, only honoured if that pid is Community's server in Community's folder) lets Stop work after a restart. `ARYNWOOD_COMMUNITY_DIR` (default `$PROJECTS/arynwood-community`) / `ARYNWOOD_COMMUNITY_URL` (a non-local URL = hosted instance, status + Open only). Paths reach the UI home-relative (`display_path`), never absolute. **TODO(community-repo):** `external_paths.COMMUNITY_REPO_URL` is a placeholder until the official repo exists under Arynwood-Technology on GitHub — update it and every `TODO(community-repo)` marker then |
+
+## Headless gateway (always-on agent)
+
+`backend/gateway/` (`sessions.py`, `runner.py`, `turn.py`, `file_memory.py`, `irc.py`, `config.py`, `__main__.py`) plus `backend/routers/gateway.py`.
+A **session key** (`api:<name>`, `irc:<net>:#chan`, `schedule:<job>`) maps to one conversation row, so history,
+summaries, runs and evidence are the desktop chat's own. `turn.py` is the gateway's turn executor: it builds the prompt
+from `chat.py`'s helpers (it does not call `chat._run_turn`/`_execute_turn`, and `chat.py` is not modified for it) and
+differs in two places — **trust** and the **conversational tool loop**. Keep it in step when `_execute_turn` changes.
+
+- **Trust** (`owner`/`known`/`stranger`, default `stranger`, raised only by `PUT /sessions/{key}`, lowered per message
+  by an adapter) gates shared memories, other conversations' recent messages, Agent Config notes, KB, web search,
+  local tools and memory writes, via `trust_levels` in `mcp/config/gateway/config.json` (missing = no). Non-owner turns
+  get `guest.md` in the system prompt.
+- **Approvals fail closed, and only for the owner** (in code, not config): a destructive/publish call is put to an
+  approver only on an owner turn, only an owner-trust approver may answer (`resolve_approval(..., trust=)`), and it's
+  denied at once with nobody to answer, on timeout, or when the last approver leaves. A chat adapter must verify the
+  person (NickServ) before answering as owner.
+- Turns are ordered per session and limited globally by `max_concurrent_turns` (default 1 — one 12GB GPU).
+- **File memory** (`file_memory.py`): `MEMORY.md` + `daily/YYYY-MM-DD.md` in `<data dir>/memory` (outside the repo).
+  Read into owner turns (budgeted, relevance-picked); written back *after* the reply in a background task — explicit
+  `<remember>` blocks, else one extraction call that may only record user-stated facts. Tests must never touch the real
+  dir: `tests/conftest.py` points `ARYNWOOD_GATEWAY_CONFIG` at a temp overlay — keep it that way.
+- **IRC** (`irc.py`, daemon only, `irc` config section; server details only in the overlay): trust by services
+  *account* (IRCv3 `account-tag`, else WHOIS 330), never by nick; DM sessions keyed `~account`, unidentified nicks get a
+  separate stranger session; channel trust from config, each message at min(channel, sender). Approvals are relayed as
+  `approve <code>` / `deny <code>` and count only from an identified owner account. Tested against a fake ircd in
+  `tests/test_irc_adapter.py` (with and without CAP).
+
+Full reference: `docs/gateway.md`.
 
 ## WebSocket Chat Protocol
 

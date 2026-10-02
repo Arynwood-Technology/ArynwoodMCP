@@ -25,7 +25,8 @@ import logging
 from backend.db import init_db, DB_PATH
 from backend.services.auth import ApiKeyMiddleware
 from backend.services import memory_index, index_jobs
-from backend.routers import chat, ollama, servers, tools, system, deploy, fs, memory, mcp_proxy, mcp_codebase, knowledge, studio, social, lora, video, models, music, dj, projects, community
+from backend.gateway import get_gateway, is_daemon, shutdown_gateway
+from backend.routers import chat, ollama, servers, tools, system, deploy, fs, memory, mcp_proxy, mcp_codebase, knowledge, studio, social, lora, video, models, music, dj, projects, community, gateway
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +55,12 @@ async def lifespan(app: FastAPI):
     tasks = []
     if not os.getenv("ARYNWOOD_DISABLE_BACKGROUND_INDEX"):
         tasks = [asyncio.create_task(_backfill_memory_index()), asyncio.create_task(index_jobs.worker())]
+    if is_daemon():
+        await get_gateway().start_adapters()  # chat networks: exactly one process may hold the nick
     try:
         yield
     finally:
+        await shutdown_gateway()  # stop gateway turns first: they hold DB connections and the GPU slot
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
@@ -148,6 +152,7 @@ app.include_router(music.router,    prefix="/api/music",     tags=["music"])
 app.include_router(dj.router,       prefix="/api/dj",        tags=["dj"])
 app.include_router(projects.router, prefix="/api/projects",  tags=["projects"])
 app.include_router(community.router, prefix="/api/community", tags=["community"])
+app.include_router(gateway.router,  prefix="/api/gateway",   tags=["gateway"])
 
 
 _SOCIAL_MEDIA_DIR = os.path.join(user_data_dir(), "static", "social-media")
