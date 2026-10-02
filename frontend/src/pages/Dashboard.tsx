@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
+import { ArynwoodMark } from '../components/brand/ArynwoodMark'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Cpu, Server, Wrench, Palette, Brain, Music2, Share2, Clapperboard,
@@ -145,7 +146,7 @@ function ArynwoodChat() {
       {/* Header */}
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span aria-hidden="true" className="flex size-6.5 shrink-0 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-white">A</span>
+          <ArynwoodMark size={26} variant={wsReady ? 'orb' : 'eclipse'} breathe={streaming ? 'thinking' : undefined} />
           <div>
             <p className="m-0 text-[13px] font-bold text-text">Arynwood</p>
             <p className="m-0 flex items-center gap-1">
@@ -191,7 +192,8 @@ function ArynwoodChat() {
       {/* Messages */}
       <div ref={scrollRef} className="flex min-h-0 flex-1 flex-col gap-[7px] overflow-auto pr-0.5">
         {msgs.length === 0 && !streaming && (
-          <EmptyState className="py-6" title="Ask Arynwood anything — video editing, sound, design, generation…" />
+          <EmptyState className="py-6" icon={<ArynwoodMark size={56} breathe="calm" />} iconClassName="mb-3 opacity-100"
+            title="Ask Arynwood anything — video editing, sound, design, generation…" />
         )}
         {msgs.map(m => {
           if (m.role === 'error') return (

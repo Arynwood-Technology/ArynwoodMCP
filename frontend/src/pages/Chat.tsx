@@ -3,6 +3,7 @@ import { Send, Square, Plus, Trash2, Settings2, Check, ChevronDown, ChevronRight
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Button, IconButton, EmptyState, PageShell } from '../components/ui'
+import { ArynwoodMark } from '../components/brand/ArynwoodMark'
 import { cn } from '../lib/cn'
 import { useAppStore } from '../store/useAppStore'
 import { usePageTitle } from '../components/layout/usePageTitle'
@@ -429,6 +430,8 @@ export function Chat() {
 
   const activePersona = personas.find(p => p.id === activePersonaId)
   const assistantName = activePersona?.name ?? ARYNWOOD.name
+  // Arynwood (the central persona) wears the tree mark; the other personas keep their initial.
+  const isArynwood = activePersonaId === 'central'
 
   // Chat's title tracks the selected persona, so it overrides AppShell's
   // static route title rather than living in ROUTE_TITLES.
@@ -795,6 +798,8 @@ export function Chat() {
           {messages.length === 0 && !streaming && (
             <EmptyState
               className="flex-1"
+              icon={isArynwood ? <ArynwoodMark size={72} breathe="calm" /> : undefined}
+              iconClassName={isArynwood ? 'mb-4 opacity-100' : undefined}
               title={`Start a conversation with ${assistantName}`}
               action={
                 DEMO && (PERSONA_SCENARIOS[activePersonaId]?.length ?? 0) > 0 ? (
@@ -820,12 +825,13 @@ export function Chat() {
             return (
               <div key={m.id} className={cn('flex flex-col', mine ? 'items-end' : 'items-start')}>
                 <div className={cn('flex w-full', mine ? 'justify-end' : 'justify-start')}>
-                  {!mine && (
-                    <span aria-hidden="true"
-                      className="mt-0.5 mr-2.5 flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
-                      style={{ background: ARYNWOOD.color }}>
-                      {assistantName[0]}
-                    </span>
+                  {!mine && (isArynwood
+                    ? <ArynwoodMark size={28} className="mt-0.5 mr-2.5" />
+                    : <span aria-hidden="true"
+                        className="mt-0.5 mr-2.5 flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+                        style={{ background: ARYNWOOD.color }}>
+                        {assistantName[0]}
+                      </span>
                   )}
                   <div className={cn(
                     'max-w-[72%] break-words rounded-xl px-3.5 py-2.5 text-[13px] leading-relaxed text-text',
@@ -849,11 +855,13 @@ export function Chat() {
           {/* Streaming token */}
           {streaming && streamBuffer && (
             <div className="flex justify-start">
-              <span aria-hidden="true"
-                className="mt-0.5 mr-2.5 flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
-                style={{ background: ARYNWOOD.color }}>
-                {assistantName[0]}
-              </span>
+              {isArynwood
+                ? <ArynwoodMark size={28} className="mt-0.5 mr-2.5" />
+                : <span aria-hidden="true"
+                    className="mt-0.5 mr-2.5 flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+                    style={{ background: ARYNWOOD.color }}>
+                    {assistantName[0]}
+                  </span>}
               <div className="max-w-[72%] break-words rounded-xl rounded-bl-[4px] bg-surface2 px-3.5 py-2.5 text-[13px] leading-relaxed text-text">
                 <MarkdownMessage content={stripInternalBlocks(streamBuffer)} />
                 <span aria-hidden="true" className="ml-0.5 opacity-50">▋</span>
@@ -862,7 +870,9 @@ export function Chat() {
           )}
           {streaming && !streamBuffer && (
             <p role="status" className="m-0 flex items-center gap-2 text-xs text-muted">
-              <span aria-hidden="true" className="size-7 shrink-0 rounded-full" style={{ background: ARYNWOOD.color }} />
+              {isArynwood
+                ? <ArynwoodMark size={28} variant="eclipse" breathe="thinking" />
+                : <span aria-hidden="true" className="size-7 shrink-0 rounded-full" style={{ background: ARYNWOOD.color }} />}
               <span>{activityStatus || 'Thinking...'}</span>
             </p>
           )}

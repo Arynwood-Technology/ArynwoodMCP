@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ArynwoodMark } from '../brand/ArynwoodMark'
 import { NavLink, useLocation } from 'react-router-dom'
 import { ChevronDown, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react'
 import { cn } from '../../lib/cn'
@@ -85,12 +86,8 @@ export function Sidebar() {
     >
       {/* Brand + collapse control */}
       <div className={cn('mb-4 flex items-center', expanded ? 'gap-2 px-0.5' : 'flex-col gap-1')}>
-        <span
-          aria-hidden="true"
-          className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-accent text-base font-bold text-white"
-        >
-          A
-        </span>
+        {/* Lit while the model server answers; an eclipse when it doesn't. */}
+        <ArynwoodMark size={40} variant={online ? 'orb' : 'eclipse'} />
         {expanded && <span className="flex-1 truncate text-sm font-semibold text-text">Arynwood</span>}
         {!narrow && (
           <button

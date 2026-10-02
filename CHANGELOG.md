@@ -34,6 +34,11 @@ them as a summary, not a precise record.
 
 ### Changed
 
+- The hand-drawn Arynwood tree replaces the earlier stained-glass logo: the sidebar,
+  Arynwood's chat avatar and thinking indicator, and the browser-tab icon. In the app the
+  drawing is used unchanged with its glowing core and halo drawn in code, and the mark dims
+  to an eclipse while Arynwood can't reach its model. The desktop app icons are a render of
+  that glowing mark, so the black ring stays visible on dark taskbars.
 - Codebase tools are served in-process by whichever backend runs the turn, instead of
   over HTTP to port 8010, so the gateway daemon has them without the desktop running.
 - The tool agent's instructions say that calling a destructive tool is how it asks for
