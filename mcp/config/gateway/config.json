@@ -42,6 +42,7 @@
     "answer_strangers": false,
     "persona": "central",
     "max_reply_lines": 8,
+    "coalesce_seconds": 1.5,
     "flood_burst": 4,
     "flood_interval_seconds": 1.0,
     "ping_interval_seconds": 120,

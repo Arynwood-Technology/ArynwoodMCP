@@ -233,6 +233,8 @@ connection under `adapters.irc`. Other keys are in `mcp/config/gateway/config.js
 - `channel_mode` (`mention` by default: in channels it answers only when addressed as
   `aryn-bot: …`);
 - `answer_strangers` (off);
+- `coalesce_seconds` (1.5): lines from the same person within this window become one
+  message, since phone clients often send a long message as several lines;
 - `max_reply_lines`, plus the flood and reconnect timings.
 
 **Identity: accounts, not nicks.** On IRC anyone can take any nick, so the adapter trusts
@@ -260,7 +262,8 @@ nobody. It fails closed.
 posts `Approval needed: <tool> <arguments> … "approve 1a2b3c" or "deny 1a2b3c"`. An answer
 counts only if the sender is identified as an owner account at that moment. Anyone else's
 is refused, logged, and leaves the request pending. Unanswered requests are denied after
-`approval_timeout_seconds`.
+`approval_timeout_seconds`, and the reply says the request timed out rather than that you
+declined it.
 
 ## Approvals
 

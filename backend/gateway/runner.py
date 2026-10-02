@@ -30,6 +30,7 @@ from backend.gateway.config import load_config, trust_policy
 from backend.gateway.file_memory import FileMemory
 from backend.gateway.sessions import InvalidSession
 from backend.routers import chat
+from backend.services.mcp_tool_agent import APPROVAL_TIMED_OUT, APPROVAL_UNAVAILABLE
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +102,7 @@ class PendingApproval:
     tier: str
     held_for_http: bool
     created_at: float = field(default_factory=time.time)
+    settled_by: str | None = None
     future: asyncio.Future = field(default_factory=lambda: asyncio.get_running_loop().create_future())
 
     def public(self) -> dict:
@@ -163,7 +165,7 @@ class Gateway:
         # An approval nobody is left to answer is a no, now — not after the timeout.
         for pending in list(self._approvals.values()):
             if sub.matches(pending.session) and not pending.held_for_http and not self.has_approver(pending.session):
-                self._settle(pending, False, by="no approver attached")
+                self._settle(pending, False, by=APPROVAL_UNAVAILABLE)
 
     def publish(self, key: str, event: dict) -> None:
         tagged = {**event, "session": key}
@@ -182,11 +184,16 @@ class Gateway:
     def _approver(self, key: str, hold_for_http: bool):
         """The approve callback for one owner turn: publish the request, wait for an owner's
         answer (or the timeout), and fail closed on anything else."""
-        async def approve(tool: str, arguments: dict, tier: str) -> bool:
+        async def approve(tool: str, arguments: dict, tier: str) -> tuple[bool, str]:
             event = {"type": "approval_request", "request_id": str(uuid.uuid4()),
                      "tool": tool, "arguments": arguments, "tier": tier}
             self.publish(key, event)
-            return await self._await_approval(self._open_approval(key, event, hold_for_http))
+            pending = self._open_approval(key, event, hold_for_http)
+            approved = await self._await_approval(pending)
+            # The tool loop words its denial by this: a timeout or an absent approver isn't a "no".
+            if not approved and pending.settled_by in (APPROVAL_TIMED_OUT, APPROVAL_UNAVAILABLE):
+                return False, pending.settled_by
+            return approved, "approved" if approved else "declined"
         return approve
 
     def _open_approval(self, key: str, event: dict, hold_for_http: bool) -> PendingApproval:
@@ -196,14 +203,14 @@ class Gateway:
         )
         self._approvals[pending.request_id] = pending
         if not hold_for_http and not self.has_approver(key):
-            self._settle(pending, False, by="no approver attached")
+            self._settle(pending, False, by=APPROVAL_UNAVAILABLE)
         return pending
 
     async def _await_approval(self, pending: PendingApproval) -> bool:
         try:
             return await asyncio.wait_for(asyncio.shield(pending.future), self.config["approval_timeout_seconds"])
         except asyncio.TimeoutError:
-            self._settle(pending, False, by="timed out")
+            self._settle(pending, False, by=APPROVAL_TIMED_OUT)
             return False
         except asyncio.CancelledError:
             self._settle(pending, False, by="turn stopped")
@@ -214,6 +221,7 @@ class Gateway:
     def _settle(self, pending: PendingApproval, approved: bool, by: str) -> bool:
         if pending.future.done():
             return False
+        pending.settled_by = by
         pending.future.set_result(approved)
         logger.info("gateway approval %s for %s (%s) in %s: %s by %s", pending.request_id, pending.tool,
                     pending.tier, pending.session, "approved" if approved else "denied", by)

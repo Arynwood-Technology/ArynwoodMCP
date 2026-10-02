@@ -110,6 +110,7 @@ def irc_config(port, **overrides):
         "tls": False, "nick": "aryn-bot", "channels": ["#lobby", {"name": "#home", "trust": "owner"}],
         "owner_accounts": ["owner-acct"], "known_accounts": ["pal"], "flood_burst": 50,
         "flood_interval_seconds": 0.01, "reconnect_min_seconds": 0.05, "reconnect_max_seconds": 0.1,
+        "coalesce_seconds": 0.05,
     }
     config.update(overrides)
     return config
@@ -381,3 +382,24 @@ async def test_stranger_channel_never_asks_for_approval(gateway, ircd, kdenlive,
     ircd.send(tagged("owner-acct", "Ownr", "#lobby", "aryn-bot: delete clip 2"))
     assert await reply_to(ircd, "#lobby") == "PRIVMSG #lobby :Ownr: I can't do that here."
     assert script.requests[-1]["tools"] is None and kdenlive == []
+
+
+async def test_a_message_split_across_lines_is_one_turn(gateway, ircd, monkeypatch):
+    """Seen live: a phone client sent one question as two lines, and the bot answered the
+    first half on its own ("I need more context")."""
+    script = Script(monkeypatch, ["One answer."])
+    await connected(gateway, ircd, coalesce_seconds=0.3)
+    ircd.send(tagged("owner-acct", "Ownr", "aryn-bot", "Which file in this app's codebase defines"))
+    ircd.send(tagged("owner-acct", "Ownr", "aryn-bot", "SESSION_KEY_RE?"))
+    assert await reply_to(ircd, "Ownr") == "PRIVMSG Ownr :One answer."
+    assert len(script.requests) == 1
+    assert script.requests[0]["messages"][-1]["content"].startswith(
+        "Which file in this app's codebase defines\nSESSION_KEY_RE?")
+    assert await silence(ircd, "PRIVMSG Ownr")
+
+
+async def test_approval_request_shows_arguments_as_json(gateway, ircd, kdenlive, monkeypatch):
+    Script(monkeypatch, [call("delete_clip", clip_id=2), "Not deleted."])
+    await connected(gateway, ircd)
+    ircd.send(tagged("owner-acct", "Ownr", "aryn-bot", "delete clip 2"))
+    assert 'delete_clip {"clip_id": 2} (destructive)' in await reply_to(ircd, "Ownr")

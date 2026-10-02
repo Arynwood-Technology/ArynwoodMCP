@@ -639,3 +639,38 @@ def test_http_reads_file_memory(client):
     body = client.get("/api/gateway/memory").json()
     assert "- The cover is teal." in body["memory"]
     assert any("api:me: cover" in text for text in body["daily"].values())
+
+
+
+def _denial(requests) -> str:
+    return [m for r in requests for m in r["messages"] if m["role"] == "tool"][0]["content"]
+
+
+async def test_timed_out_approval_is_not_reported_as_a_decline(make_gateway, kdenlive, monkeypatch):
+    """Seen live: nobody answered within the timeout, and the model told the owner they had declined."""
+    requests = _script(monkeypatch, [DELETE, "Not done."])
+    await make_gateway(approval_timeout_seconds=0.05).submit(
+        InboundMessage(session=await _owner_key(), text="delete clip 3", approvals="wait"))
+    denial = _denial(requests)
+    assert "timed out" in denial and "declined" not in denial and kdenlive == []
+
+
+async def test_no_approver_is_not_reported_as_a_decline(make_gateway, kdenlive, monkeypatch):
+    requests = _script(monkeypatch, [DELETE, "Not done."])
+    await make_gateway().submit(InboundMessage(session=await _owner_key(), text="delete clip 3"))
+    denial = _denial(requests)
+    assert "requires user approval" in denial and "declined" not in denial
+
+
+async def test_an_explicit_deny_is_reported_as_one(make_gateway, kdenlive, monkeypatch):
+    requests = _script(monkeypatch, [DELETE, "Not done."])
+    gateway = make_gateway()
+    turn = asyncio.create_task(gateway.submit(
+        InboundMessage(session=await _owner_key(), text="delete clip 3", approvals="wait")))
+    for _ in range(200):
+        if gateway.pending_approvals():
+            break
+        await asyncio.sleep(0.01)
+    gateway.resolve_approval(gateway.pending_approvals()[0]["request_id"], False)
+    await turn
+    assert "declined" in _denial(requests) and kdenlive == []

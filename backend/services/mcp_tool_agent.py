@@ -51,8 +51,12 @@ from backend.services import ollama_client, telemetry
 from backend.services.context_budget import fit_request
 from backend.services.gpu_jobs import gpu_queue
 
-# (tool_name, arguments, tier) -> True to allow a destructive/external-publish call.
-ApprovalCallback = Callable[[str, dict, str], Awaitable[bool]]
+# (tool_name, arguments, tier) -> True to allow a destructive/external-publish call. It may
+# instead return (approved, reason) so a "no" can say why: APPROVAL_TIMED_OUT or
+# APPROVAL_UNAVAILABLE get their own wording; any other reason reads as a decline.
+ApprovalCallback = Callable[[str, dict, str], Awaitable["bool | tuple[bool, str]"]]
+APPROVAL_TIMED_OUT = "timed out"
+APPROVAL_UNAVAILABLE = "no approver attached"
 
 # Config + per-server instructions live in mcp/config/local_agent/ as plain
 # JSON/Markdown, not Python constants — see that directory's README for why.
@@ -547,12 +551,21 @@ class _CallRunner:
             self._note(name, tier, "invalid")
             return f"INVALID CALL to {name}: {'; '.join(schema_problems)}. Fix the arguments and call it again.", False
 
-        if tier in (TIER_DESTRUCTIVE, TIER_EXTERNAL_PUBLISH) and not (
-            self.approve and await self.approve(name, arguments, tier)
-        ):
+        decision = (await self.approve(name, arguments, tier) if self.approve else False) \
+            if tier in (TIER_DESTRUCTIVE, TIER_EXTERNAL_PUBLISH) else True
+        approved, reason = decision if isinstance(decision, tuple) else (bool(decision), None)
+        if not approved:
             self.seen_calls.add(key)
             tier_label = tier.replace("_", " ")
-            if self.approve:
+            if self.approve and reason == APPROVAL_TIMED_OUT:
+                # Nobody answered. "The user declined" would be untrue, and the user may still want it.
+                text = (
+                    f"DENIED: {name} (a {tier_label} action) needed the user's approval, and the request "
+                    f"timed out without an answer. {name} was NOT run and nothing was changed. Do not "
+                    "retry it now. In your reply, say plainly that you didn't do it because the approval "
+                    "request wasn't answered in time, and that they can ask again."
+                )
+            elif self.approve and reason != APPROVAL_UNAVAILABLE:
                 # A person was shown this call and said no. Saying "needs approval" here made
                 # the model answer "please confirm — shall I proceed?" right after an explicit
                 # Deny (seen in a live run).

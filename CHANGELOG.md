@@ -27,8 +27,9 @@ them as a summary, not a precise record.
   edit them in any text editor.
 - IRC adapter: the gateway can join your own IRC server. It trusts services accounts
   (IRCv3 `account-tag` or WHOIS), never nicks; destructive actions are approved with
-  `approve <code>`, only from your identified account. Server details live in your
-  personal overlay file, never in the repository.
+  `approve <code>`, only from your identified account. A message that arrives as several
+  lines is answered once. Server details live in your personal overlay file, never in the
+  repository.
 - Comparison with OpenClaw in the README, checked against OpenClaw's docs and source.
 
 ### Changed

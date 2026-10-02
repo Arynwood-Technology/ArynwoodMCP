@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import json
 import logging
 import random
 import re
@@ -154,6 +155,9 @@ class IrcAdapter:
         self._whois_pending: dict[str, asyncio.Future] = {}
         self._whois_account: dict[str, str] = {}
         self._targets: dict[str, str] = {}             # session key -> where its replies go
+        self._lines: dict[tuple, list[str]] = {}       # (session key, nick) -> lines waiting to be joined
+        self._line_context: dict[tuple, dict] = {}
+        self._line_timers: dict[tuple, asyncio.Task] = {}
         self._approvals: dict[str, tuple[str, str]] = {}  # short code -> (request_id, session key)
         self._send_tokens = float(config.get("flood_burst", 4))
         self._send_refill = time.monotonic()
@@ -172,7 +176,7 @@ class IrcAdapter:
                 await self._send_now(f"QUIT :{self.config.get('quit_message', 'Arynwood MCP gateway stopping')}")
             except Exception:
                 pass
-        tasks = [t for t in (self._task, self._events_task, *self._handlers) if t]
+        tasks = [t for t in (self._task, self._events_task, *self._handlers, *self._line_timers.values()) if t]
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
@@ -386,14 +390,14 @@ class IrcAdapter:
                 return
             key = f"irc:{self.network}:{irc_lower(target)}"
             reply_to, label = target, f"IRC {target}"
-            session_trust, prompt_text = channel["trust"], f"{msg.nick}: {body}"
+            session_trust = channel["trust"]
         else:
             body = text.strip()
             if account:
                 key, session_trust = f"irc:{self.network}:~{irc_lower(account)}", trust
             else:
                 key, session_trust = f"irc:{self.network}:{irc_lower(msg.nick)}", "stranger"
-            reply_to, label, prompt_text = msg.nick, f"IRC {msg.nick} (direct)", body
+            reply_to, label = msg.nick, f"IRC {msg.nick} (direct)"
 
         if await self._maybe_approval(body, msg.nick, account, trust, reply_to):
             return
@@ -406,14 +410,41 @@ class IrcAdapter:
             logger.warning("irc %s: can't make a session key from %r", self.network, key)
             return
 
+        # A long message often arrives as several lines (the client wrapped it, or it was pasted
+        # with line breaks). Seen live: answering each line on its own made the bot reply "I need
+        # more context" to the first half of a question. Lines from the same person to the same
+        # place are joined until they stop for coalesce_seconds.
+        slot = (key, irc_lower(msg.nick))
+        self._lines.setdefault(slot, []).append(body)
+        self._line_context[slot] = {"key": key, "session_trust": session_trust, "reply_to": reply_to,
+                                    "label": label, "trust": trust, "nick": msg.nick, "in_channel": in_channel}
+        timer = self._line_timers.pop(slot, None)
+        if timer:
+            timer.cancel()
+        self._line_timers[slot] = asyncio.create_task(self._flush_lines(slot))
+
+    async def _flush_lines(self, slot: tuple) -> None:
+        await asyncio.sleep(float(self.config.get("coalesce_seconds", 1.5)))
+        # Past the wait: hand off, so a later line can't cancel a turn already under way.
+        self._line_timers.pop(slot, None)
+        lines, context = self._lines.pop(slot, []), self._line_context.pop(slot, None)
+        if lines and context:
+            task = asyncio.create_task(self._answer(context, "\n".join(lines)))
+            self._handlers.add(task)
+            task.add_done_callback(self._handlers.discard)
+
+    async def _answer(self, context: dict, body: str) -> None:
+        key, reply_to, label, nick = context["key"], context["reply_to"], context["label"], context["nick"]
+        prompt_text = f"{nick}: {body}" if context["in_channel"] else body
         await self.gateway.ensure_session(key, persona=self.config.get("persona", "central"),
-                                          label=label, trust_level=session_trust, source="irc")
+                                          label=label, trust_level=context["session_trust"], source="irc")
         self._targets[key] = reply_to
         self._sub.keys.add(key)  # hear this session's approval requests
-        prefix = f"{msg.nick}: " if in_channel else ""
+        prefix = f"{nick}: " if context["in_channel"] else ""
         try:
             result = await self.gateway.submit(InboundMessage(
-                session=key, text=prompt_text, source="irc", sender=msg.nick, label=label, trust_level=trust))
+                session=key, text=prompt_text, source="irc", sender=nick, label=label,
+                trust_level=context["trust"]))
         except GatewayBusy:
             await self.say(reply_to, f"{prefix}I'm still working through earlier messages; try again in a moment.")
             return
@@ -437,7 +468,7 @@ class IrcAdapter:
             if event["type"] == "approval_request":
                 code = event["request_id"].replace("-", "")[:6]
                 self._approvals[code] = (event["request_id"], key)
-                args = str(event.get("arguments"))
+                args = json.dumps(event.get("arguments"), ensure_ascii=False)
                 args = args if len(args) <= 200 else args[:199] + "…"
                 tier = event.get("tier", "").replace("_", " ")
                 await self.say(target, f"Approval needed: {event.get('tool')} {args} ({tier}). Only the owner, "
