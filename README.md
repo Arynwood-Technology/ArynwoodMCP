@@ -1,5 +1,9 @@
 # Arynwood MCP
 
+**The personal AI agent where nothing leaves your machine.** Models, memory, tools and
+conversations stay on your own hardware. Data goes out only through features that reach out
+by design: web search queries (sent to DuckDuckGo) and anything you publish or deploy yourself.
+
 Local-first AI workspace for Linux and Windows desktops: multi-persona chat with local Ollama models, knowledge search
 and memory over your own documents, a design canvas, and Model Context Protocol (MCP) tool integrations,
 including Kdenlive editing through Cutroom's MCP server. A source checkout adds the GPU generation, audio
@@ -19,25 +23,60 @@ instead of faking it.
 
 **Website:** [arynwood.com/mcp](https://arynwood.com/mcp/) (requirements, setup steps and FAQ) · **Help getting it running:** [Arynwood setup services](https://arynwood.com/#services)
 
+## Status
+
+| Work | Status |
+|---|---|
+| Desktop alpha v0.4.5: Windows x64 installer, Linux AppImage and `.deb` | Shipped |
+| Headless gateway, conversational tool loop, file memory, IRC adapter | In development (0.4.6) |
+| Arynwood Community and Groves | Long-term vision |
+
+## In development (0.4.6)
+
+These are built and tested but not released yet. They run from a source checkout today;
+[docs/gateway.md](docs/gateway.md) covers setup and every option.
+
+- **Run Arynwood without the desktop window.** An always-on background service keeps a
+  separate, ongoing conversation for each person or channel that talks to it, and picks up
+  where it left off after a restart.
+- **Let it work through multi-step tasks.** Arynwood can use a tool, read the result and
+  decide on the next step until the job is done. Anything that deletes or publishes waits
+  for your approval, and is refused when nobody is there to approve it.
+- **Keep a memory you can read and edit.** Facts you tell it go into a plain `MEMORY.md`
+  file and dated notes, and it remembers them after a restart. People you haven't trusted
+  never see your memories, notes or tools.
+- **Message your home AI over IRC.** Talk to your agent from any IRC client on your own
+  server. It recognises you by your services account, not your nickname, so someone using
+  your nick can't act as you.
+
+## What's next
+
+**Long-term vision: Arynwood Community.** Invite-only private spaces called Groves, for
+families, friends, teams and small communities, with no ads and no sales. It would come as a
+standalone community app with no AI features, and as an optional part of Arynwood MCP, with
+private messages that travel peer-to-peer with end-to-end encryption. Arynwood MCP is how you
+talk to your own AI; Community would be how people talk to each other. This is a long-term
+vision, not a release plan, and none of it is available yet.
+
 ---
 
 ## Arynwood MCP vs OpenClaw
 
 Arynwood MCP is a personal AI agent that keeps everything on your own machine: the models,
 memory, tools and conversations stay on your hardware, and the only things that go out are
-web search queries and what you publish or deploy yourself. You can still reach it from
-anywhere over your own IRC server ([headless gateway](docs/gateway.md)).
+web search queries and what you publish or deploy yourself. The IRC adapter, in development
+for 0.4.6, lets you reach it from anywhere over your own IRC server ([headless gateway](docs/gateway.md)).
 [OpenClaw](https://github.com/openclaw/openclaw) is a widely used self-hosted assistant
 with far more chat channels; the difference is in what leaves your machine by default.
 
 | | Arynwood MCP | OpenClaw |
 |---|---|---|
 | Where the model runs | Your own GPU through Ollama. Only a local Ollama server is configured out of the box; other Ollama or OpenAI-compatible servers are used only if you add them. | "Hosted and local model providers" as swappable plugins (Claude, Codex, local models). Prompts go to the provider you configure. |
-| Memory | Plain Markdown (`MEMORY.md` + daily notes) plus a SQLite memory, all on your disk. | Plain Markdown (`MEMORY.md` + `memory/YYYY-MM-DD.md`) in the agent workspace on your disk. |
+| Memory | A SQLite memory on your disk. *In development (0.4.6):* plain Markdown `MEMORY.md` and daily notes. | Plain Markdown (`MEMORY.md` + `memory/YYYY-MM-DD.md`) in the agent workspace on your disk. |
 | Memory search embeddings | Local: `nomic-embed-text` through your own Ollama, stored in a local Qdrant. | OpenAI by default (`DEFAULT_MEMORY_EMBEDDING_PROVIDER = "openai"`); can be set to local GGUF, Ollama, LM Studio and others. |
 | What the software sends out on its own | Nothing: no update check, no telemetry (Prometheus metrics are served locally only). Data leaves only through features you use: web search (DuckDuckGo), social publishing, SFTP deploy, or a remote model server you add. | A daily version check by default; anonymous feature statistics are opt-in; `update.checkOnStart: false` disables both. |
-| Chat channels | The desktop app, an HTTP/WebSocket API, and IRC. | 30+ channels, including Discord, iMessage, IRC, Signal, Slack, Telegram and WhatsApp; most are plugins. |
-| Who counts as you on IRC | Your services account (IRCv3 `account-tag`, or WHOIS). Someone using your nick gets neither your trust nor your conversation. | Allowlisted `nick!user@host` identities (bare nicks only if you opt in); unknown direct-message senders get a pairing code to approve. |
+| Chat channels | The desktop app and its local API. *In development (0.4.6):* an always-on gateway API and IRC. | 30+ channels, including Discord, iMessage, IRC, Signal, Slack, Telegram and WhatsApp; most are plugins. |
+| Who counts as you on IRC | *In development (0.4.6):* your services account (IRCv3 `account-tag`, or WHOIS). Someone using your nick gets neither your trust nor your conversation. | Allowlisted `nick!user@host` identities (bare nicks only if you opt in); unknown direct-message senders get a pairing code to approve. |
 | Install | Linux AppImage or `.deb`, Windows installer (alpha), or a source checkout (Python 3.10+, Node.js). | An install script, or `npm install -g openclaw` on Node 24.16+ or 26.1+. |
 | License and cost | Source-available: free for personal or internal use; no redistribution or hosted service without permission. Local models mean no per-use model cost. | MIT, with no paid tier, hosted service or token. Model costs depend on the providers you configure. |
 
@@ -52,6 +91,9 @@ quickly; corrections are welcome.
 
 ## Table of Contents
 
+- [Status](#status)
+- [In development (0.4.6)](#in-development-046)
+- [What's next](#whats-next)
 - [Arynwood MCP vs OpenClaw](#arynwood-mcp-vs-openclaw)
 - [What's Inside](#whats-inside)
 - [Quick Start](#quick-start)
@@ -82,10 +124,12 @@ Version **0.4.5** adds a Windows x64 desktop alpha (an unsigned per-user install
 alongside the Linux AppImage and `.deb`, which keep the Ubuntu 22.04 / glibc 2.35
 baseline. Models and supporting services are installed separately on both. Download published packages from [GitHub Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases).
 
-Desktop alpha packages — see:
+Desktop alpha packages and docs:
 
-- [`docs/releases/0.4.5.md`](docs/releases/0.4.5.md) — packages, checksums and what still needs testing
-- [`docs/releases/0.4.4.md`](docs/releases/0.4.4.md) — the maintainer upload checklist
+- [`docs/releases/0.4.5.md`](docs/releases/0.4.5.md) - packages, checksums and what still needs testing
+- [`docs/releases/0.4.4.md`](docs/releases/0.4.4.md) - the maintainer upload checklist
+- [`docs/releases/0.4.6.md`](docs/releases/0.4.6.md) - draft notes for 0.4.6 (in development)
+- [`docs/gateway.md`](docs/gateway.md) - the headless gateway, tool loop, file memory and IRC adapter (in development, 0.4.6)
 - [`docs/supported-platforms.md`](docs/supported-platforms.md) - OS/hardware requirements
 - [`docs/installation.md`](docs/installation.md) - install, first run, uninstall
 - [`docs/windows.md`](docs/windows.md) - Windows 0.4.5 alpha install, build and limitations
@@ -111,7 +155,7 @@ Desktop alpha packages — see:
 | **Video Studio** | Kdenlive automation, video generation/edit/caption jobs |
 | **Social Media** | Publish generated content to Facebook, Instagram, YouTube, LinkedIn |
 | **Publish** | SSH/SFTP file manager, upload to remote web servers |
-| **Gateway** | Headless, always-on agent: persistent sessions over HTTP, WebSocket and your own IRC server, trust levels, file memory. See [docs/gateway.md](docs/gateway.md) |
+| **Gateway** (in development, 0.4.6) | Headless, always-on agent: persistent sessions over HTTP, WebSocket and your own IRC server, trust levels, file memory. See [docs/gateway.md](docs/gateway.md) |
 
 Every screen shares the same chrome: a collapsible sidebar, a **⌘K / Ctrl+K command
 palette**, and a **system status drawer**. See [Getting Around](#getting-around).
