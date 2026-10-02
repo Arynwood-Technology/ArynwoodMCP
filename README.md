@@ -21,8 +21,38 @@ instead of faking it.
 
 ---
 
+## Arynwood MCP vs OpenClaw
+
+Arynwood MCP is a personal AI agent that keeps everything on your own machine: the models,
+memory, tools and conversations stay on your hardware, and the only things that go out are
+web search queries and what you publish or deploy yourself. You can still reach it from
+anywhere over your own IRC server ([headless gateway](docs/gateway.md)).
+[OpenClaw](https://github.com/openclaw/openclaw) is a widely used self-hosted assistant
+with far more chat channels; the difference is in what leaves your machine by default.
+
+| | Arynwood MCP | OpenClaw |
+|---|---|---|
+| Where the model runs | Your own GPU through Ollama. Only a local Ollama server is configured out of the box; other Ollama or OpenAI-compatible servers are used only if you add them. | "Hosted and local model providers" as swappable plugins (Claude, Codex, local models). Prompts go to the provider you configure. |
+| Memory | Plain Markdown (`MEMORY.md` + daily notes) plus a SQLite memory, all on your disk. | Plain Markdown (`MEMORY.md` + `memory/YYYY-MM-DD.md`) in the agent workspace on your disk. |
+| Memory search embeddings | Local: `nomic-embed-text` through your own Ollama, stored in a local Qdrant. | OpenAI by default (`DEFAULT_MEMORY_EMBEDDING_PROVIDER = "openai"`); can be set to local GGUF, Ollama, LM Studio and others. |
+| What the software sends out on its own | Nothing: no update check, no telemetry (Prometheus metrics are served locally only). Data leaves only through features you use: web search (DuckDuckGo), social publishing, SFTP deploy, or a remote model server you add. | A daily version check by default; anonymous feature statistics are opt-in; `update.checkOnStart: false` disables both. |
+| Chat channels | The desktop app, an HTTP/WebSocket API, and IRC. | 30+ channels, including Discord, iMessage, IRC, Signal, Slack, Telegram and WhatsApp; most are plugins. |
+| Who counts as you on IRC | Your services account (IRCv3 `account-tag`, or WHOIS). Someone using your nick gets neither your trust nor your conversation. | Allowlisted `nick!user@host` identities (bare nicks only if you opt in); unknown direct-message senders get a pairing code to approve. |
+| Install | Linux AppImage or `.deb`, Windows installer (alpha), or a source checkout (Python 3.10+, Node.js). | An install script, or `npm install -g openclaw` on Node 24.16+ or 26.1+. |
+| License and cost | Source-available: free for personal or internal use; no redistribution or hosted service without permission. Local models mean no per-use model cost. | MIT, with no paid tier, hosted service or token. Model costs depend on the providers you configure. |
+
+OpenClaw details were checked on 2026-10-02 against its
+[README](https://github.com/openclaw/openclaw/blob/1f14ba2cbe2f6ceef89797534a8a07d50fecfbe8/README.md),
+[memory docs](https://github.com/openclaw/openclaw/blob/1f14ba2cbe2f6ceef89797534a8a07d50fecfbe8/docs/concepts/memory.md),
+[channel docs](https://docs.openclaw.ai/channels),
+[IRC docs](https://docs.openclaw.ai/channels/irc) and source at commit
+[`1f14ba2`](https://github.com/openclaw/openclaw/tree/1f14ba2cbe2f6ceef89797534a8a07d50fecfbe8)
+(`src/agents/memory-search.ts`, `extensions/irc/src/ingress-identity.ts`). OpenClaw changes
+quickly; corrections are welcome.
+
 ## Table of Contents
 
+- [Arynwood MCP vs OpenClaw](#arynwood-mcp-vs-openclaw)
 - [What's Inside](#whats-inside)
 - [Quick Start](#quick-start)
 - [Environment Variables](#environment-variables)
@@ -81,6 +111,7 @@ Desktop alpha packages — see:
 | **Video Studio** | Kdenlive automation, video generation/edit/caption jobs |
 | **Social Media** | Publish generated content to Facebook, Instagram, YouTube, LinkedIn |
 | **Publish** | SSH/SFTP file manager, upload to remote web servers |
+| **Gateway** | Headless, always-on agent: persistent sessions over HTTP, WebSocket and your own IRC server, trust levels, file memory. See [docs/gateway.md](docs/gateway.md) |
 
 Every screen shares the same chrome: a collapsible sidebar, a **⌘K / Ctrl+K command
 palette**, and a **system status drawer**. See [Getting Around](#getting-around).

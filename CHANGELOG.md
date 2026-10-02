@@ -9,6 +9,35 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Added
+
+- Headless gateway: `python -m backend.gateway` runs Arynwood MCP as an always-on agent
+  with no desktop window, on `127.0.0.1:8020` by default. Each outside conversation (an
+  API client, an IRC user or channel) gets a persistent session that survives restarts,
+  reachable over HTTP and a WebSocket at `/api/gateway`.
+- Trust levels for gateway sessions: `owner`, `known` and `stranger`, with new sessions
+  starting as strangers. Only owner turns see your memories, notes, documents, other
+  conversations, machine paths and tools, or can search the web. Strangers also get a
+  note telling the model it isn't talking to its owner.
+- Conversational tool loop for gateway turns: the model calls tools mid-reply, reads each
+  result and decides the next step until it is done, with the same approval, validation
+  and repeat-detection rules as the desktop's tool loop.
+- File memory: `MEMORY.md` and dated daily notes in `~/.local/share/arynwood-mcp/memory/`,
+  read at the start of your turns and updated after them with facts you stated. You can
+  edit them in any text editor.
+- IRC adapter: the gateway can join your own IRC server. It trusts services accounts
+  (IRCv3 `account-tag` or WHOIS), never nicks; destructive actions are approved with
+  `approve <code>`, only from your identified account. Server details live in your
+  personal overlay file, never in the repository.
+- Comparison with OpenClaw in the README, checked against OpenClaw's docs and source.
+
+### Changed
+
+- Codebase tools are served in-process by whichever backend runs the turn, instead of
+  over HTTP to port 8010, so the gateway daemon has them without the desktop running.
+- The tool agent's instructions say that calling a destructive tool is how it asks for
+  approval, instead of asking for confirmation in prose.
+
 ### Fixed
 
 - Optional per-persona `llm.num_predict` overrides short model output caps while
@@ -21,6 +50,10 @@ them as a summary, not a precise record.
   pace/format; empty memory results no longer imply the current chat is forgotten.
 - Native tool round-limit replies preserve the real user request and requested
   format, and fit the final request to the context budget before generation.
+- A tool call placed in a later code block of a reply (after a quoted file, say) is now
+  run instead of being shown to the user as raw JSON.
+- `find_symbol` finds module-level constants and assignments, and an empty result
+  points the model to `search_code`.
 
 ## [0.4.5] — 2026-09-29
 
