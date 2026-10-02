@@ -1,5 +1,7 @@
 # Arynwood MCP
 
+<p align="center"><img src="frontend/src-tauri/icons/128x128@2x.png" width="128" height="128" alt="The Arynwood mark: a hand-drawn tree inside a black circle, lit from within by a teal glow" /></p>
+
 **The personal AI agent where nothing leaves your machine.** Models, memory, tools and
 conversations stay on your own hardware. Data goes out only through features that reach out
 by design: web search queries (sent to DuckDuckGo) and anything you publish or deploy yourself.
