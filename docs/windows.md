@@ -1,19 +1,19 @@
-# Windows desktop (0.4.5 alpha)
+# Windows desktop (alpha)
 
-Version 0.4.5 is the first release with a Windows x64 build: a per-user installer
+Version 0.4.5 was the first release with a Windows x64 build, and 0.4.6 is the current one: a per-user installer
 for a Tauri/WebView2 app with a bundled Python backend. It is an alpha. Read the
 [limitations](#windows-alpha-limitations) before relying on it.
 
 ## Install the published release
 
-1. From the [v0.4.5 release](https://github.com/Arynwood-Technology/ArynwoodMCP/releases/tag/v0.4.5),
-   download `arynwood-mcp_0.4.5_x64-setup.exe` and `SHA256SUMS-windows.txt` into the
+1. From the [v0.4.6 release](https://github.com/Arynwood-Technology/ArynwoodMCP/releases/tag/v0.4.6),
+   download `arynwood-mcp_0.4.6_x64-setup.exe` and `SHA256SUMS-windows.txt` into the
    same folder.
 2. Check the installer in PowerShell, from that folder:
 
    ```powershell
    $expected = (Select-String -Path .\SHA256SUMS-windows.txt -Pattern 'x64-setup.exe').Line.Split(' ')[0]
-   $actual = (Get-FileHash .\arynwood-mcp_0.4.5_x64-setup.exe -Algorithm SHA256).Hash
+   $actual = (Get-FileHash .\arynwood-mcp_0.4.6_x64-setup.exe -Algorithm SHA256).Hash
    if ($actual -eq $expected) { 'OK: checksum matches' } else { 'MISMATCH: do not run this file' }
    ```
 
@@ -54,7 +54,7 @@ Ollama separately. Knowledge retrieval also requires Qdrant and embeddings.
   set `ARYNWOOD_COMMUNITY_URL` to connect to it.
 - GPU generation/training scripts, Kdenlive automation and MusicStudio providers
   need their own Windows-compatible dependencies and separate validation.
-- The 0.4.5 CI build passed the platform tests, frontend tests and the
+- The 0.4.5 and 0.4.6 CI builds passed the platform tests, frontend tests and the
   packaged-backend smoke test. A clean-machine install, microphone/camera capture,
   downloads and the optional external integrations have not been manually
   validated yet. Please report what you find on

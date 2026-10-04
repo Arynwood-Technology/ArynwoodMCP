@@ -615,7 +615,7 @@ venv/bin/python scripts/smoke_packaged_backend.py dist/arynwood-backend   # GATE
 cp dist/arynwood-backend frontend/src-tauri/binaries/arynwood-backend-x86_64-unknown-linux-gnu
 eval "$(scripts/stage_gstreamer_plugins.sh "$TMPDIR/gst-plugins")"   # curated GStreamer set — see the gotcha below
 cd frontend && APPIMAGE_EXTRACT_AND_RUN=1 npx tauri build --bundles appimage \
-  --config '{"version":"0.4.5-dev.'$(git rev-parse --short HEAD)'"}'   # label it: it is NOT the release 0.4.5
+  --config '{"version":"0.4.7-dev.'$(git rev-parse --short HEAD)'"}'   # label it: it is NOT a release
 ```
 Run `python3 scripts/finalize_appimage.py frontend/src-tauri/target/release/bundle/appimage/*.AppImage`
 from the repository root after direct Tauri builds, before checksums or signing.

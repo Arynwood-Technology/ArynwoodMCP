@@ -7,13 +7,13 @@ Use version 0.4.4 or later. Earlier images could contain a launcher with mode
 the outer AppImage cannot fix files inside it. Since 0.4.4, both launchers are set
 to `755` and the repacked archive is checked before upload.
 
-If the outer file itself is not executable, run `chmod +x arynwood-mcp_0.4.5_amd64.AppImage`.
+If the outer file itself is not executable, run `chmod +x arynwood-mcp_*.AppImage`.
 For a `GLIBC_* not found` error, check `ldd --version`: the release baseline is
 glibc 2.35. A local build made on a newer distribution may need a newer version.
 
 ## Windows says "Windows protected your PC" when you run the installer
 
-The 0.4.5 Windows installer is unsigned, so Microsoft Defender SmartScreen warns
+The Windows installer is unsigned, so Microsoft Defender SmartScreen warns
 before it runs. Check the file's hash first (see [Windows setup](windows.md#install-the-published-release)),
 then choose **More info** → **Run anyway**. If the hash doesn't match, delete the file
 and download it again from the release page.

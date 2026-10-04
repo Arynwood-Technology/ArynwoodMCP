@@ -48,7 +48,7 @@ proposes. The owner decides anything that can't be taken back.
 
 ## Plan for 0.4.6
 
-1. **Freeze.** No new features, channels or integrations until 0.4.6 ships. *(in effect)*
+1. **Freeze.** No new features, channels or integrations until 0.4.6 ships. *(done: 0.4.6 published 2026-10-04)*
 2. **Park the gateway.** It's off by default and owner-only on IRC; README and docs mark it
    experimental. *(done)*
 3. **Two documents:** this page, and [SECURITY.md](../SECURITY.md). The hardening review's
@@ -56,7 +56,7 @@ proposes. The owner decides anything that can't be taken back.
    detail. *(done)*
 4. **Commit in themed commits:** the earlier creative and tool fixes, the security hardening,
    and the gateway parking. `docs/writer-tuning-status.md` stays uncommitted (private
-   personas). *(done, not pushed)*
+   personas). *(done, pushed)*
 5. **Release checks,** all on a clean committed tree:
    - full backend and frontend test suites, plus the frontend build;
    - the frozen backend smoke test (`scripts/smoke_packaged_backend.py`);
@@ -64,8 +64,10 @@ proposes. The owner decides anything that can't be taken back.
    - the Windows CI build;
    - `python -m backend.security` showing no new warnings;
    - one real approve and one real deny click in a packaged build against a live Kdenlive.
+
+   *(done; still open: an install on a clean Windows machine)*
 6. **Release:** version bump, notes (`docs/releases/0.4.6.md`) telling 0.4.5 users to update,
-   tag and push. *(owner's explicit yes for each)* The README and the website's MCP page no longer
+   tag and push. *(done: published 2026-10-04)* The README and the website's MCP page no longer
    compare Arynwood MCP with other products, and mark the gateway experimental. *(done 2026-10-03)*
 7. **Then back to the core:** dependable creative workflows. Documents to a sourced outline,
    video to captions and a reviewed export, a creative brief to a media draft.

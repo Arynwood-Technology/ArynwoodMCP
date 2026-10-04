@@ -1,13 +1,13 @@
 # Installation
 
-See [`docs/supported-platforms.md`](supported-platforms.md) first. Version 0.4.5
+See [`docs/supported-platforms.md`](supported-platforms.md) first. Version 0.4.6
 publishes Linux x86_64 packages (below) and a Windows x64 alpha installer, which has
 its own guide: [Windows setup](windows.md). GPU features need their separate dependencies.
 
 ## Packaged build (AppImage / .deb)
 
 > Download published builds from [GitHub Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases).
-> These instructions use version 0.4.5.
+> These instructions use version 0.4.6.
 
 ```bash
 # AppImage — download the .AppImage asset from the release, then:
@@ -18,8 +18,8 @@ chmod +x arynwood-mcp_*.AppImage
 sudo apt install ./arynwood-mcp_*.deb
 ```
 
-(Version 0.4.5 filenames: `arynwood-mcp_0.4.5_amd64.AppImage` and
-`arynwood-mcp_0.4.5_amd64.deb` — no spaces. The globs above tolerate version changes;
+(Version 0.4.6 filenames: `arynwood-mcp_0.4.6_amd64.AppImage` and
+`arynwood-mcp_0.4.6_amd64.deb` — no spaces. The globs above tolerate version changes;
 keep only the package you intend to run in the current directory.)
 
 Both bundle the frontend and a packaged backend — no separate `venv`/`npm install`

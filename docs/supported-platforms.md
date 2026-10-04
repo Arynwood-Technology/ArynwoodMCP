@@ -2,7 +2,7 @@
 
 ## Officially supported
 
-**Linux x86_64**, packaged as an AppImage and a `.deb` (current release: 0.4.5).
+**Linux x86_64**, packaged as an AppImage and a `.deb` (current release: 0.4.6).
 
 **Windows x64** alpha, first published in 0.4.5 as an unsigned per-user NSIS
 installer; see [Windows setup and limitations](windows.md). This does not imply

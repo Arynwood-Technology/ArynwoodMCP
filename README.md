@@ -13,7 +13,7 @@ and memory over your own documents, a design canvas, and Model Context Protocol 
 including Kdenlive editing through Cutroom's MCP server. A source checkout adds the GPU generation, audio
 production and publishing tools listed under [What's Inside](#whats-inside).
 
-**The packaged alpha** (v0.4.5: AppImage and `.deb` for Linux x86_64, and a new Windows x64 installer) covers the core workspace. LoRA training, script-based
+**The packaged alpha** (v0.4.6: AppImage and `.deb` for Linux x86_64, and a Windows x64 installer) covers the core workspace. LoRA training, script-based
 GPU tools and the project file browser need a source checkout. Models and supporting services are installed
 separately. Requirements and limits: [arynwood.com/mcp](https://arynwood.com/mcp/).
 
@@ -31,15 +31,16 @@ instead of faking it.
 
 | Work | Status |
 |---|---|
-| Desktop alpha v0.4.5: Windows x64 installer, Linux AppImage and `.deb` | Shipped |
-| Security and reliability fixes since 0.4.5 | In development (0.4.6) |
+| Desktop alpha v0.4.6: security fixes and Hermes 3; Windows x64 installer, Linux AppImage and `.deb` | Shipped |
 | Headless gateway: owner-only remote control over loopback or your own IRC server | Experimental, off by default |
 | Arynwood Community and Groves | Long-term vision |
 
-## In development (0.4.6)
+## Latest release (0.4.6)
 
-0.4.6 is a small release: the security and reliability fixes made since 0.4.5 (see
-`CHANGELOG.md`). Update when it ships.
+0.4.6 closes two security holes in 0.4.5: a web page could read the local API while the app
+was running, and a link could start a tool install. It also makes Hermes 3 8B the default
+model. If you run 0.4.5, update, then run `ollama pull hermes3:8b`. Details:
+[docs/releases/0.4.6.md](docs/releases/0.4.6.md).
 
 **Experimental: headless gateway.** A remote control for your own workspace: reach Arynwood
 from your phone over your own IRC server, or over a local API. It answers only your services
@@ -61,7 +62,7 @@ vision, not a release plan, and none of it is available yet.
 ## Table of Contents
 
 - [Status](#status)
-- [In development (0.4.6)](#in-development-046)
+- [Latest release (0.4.6)](#latest-release-046)
 - [What's next](#whats-next)
 - [What's Inside](#whats-inside)
 - [Quick Start](#quick-start)
@@ -88,19 +89,19 @@ vision, not a release plan, and none of it is available yet.
 
 ## Release & Packaging
 
-Version **0.4.5** adds a Windows x64 desktop alpha (an unsigned per-user installer)
-alongside the Linux AppImage and `.deb`, which keep the Ubuntu 22.04 / glibc 2.35
+Version **0.4.6** ships a Windows x64 desktop alpha (an unsigned per-user installer, first
+published in 0.4.5) alongside the Linux AppImage and `.deb`, which keep the Ubuntu 22.04 / glibc 2.35
 baseline. Models and supporting services are installed separately on both. Download published packages from [GitHub Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases).
 
 Desktop alpha packages and docs:
 
-- [`docs/releases/0.4.5.md`](docs/releases/0.4.5.md) - packages, checksums and what still needs testing
+- [`docs/releases/0.4.6.md`](docs/releases/0.4.6.md) - packages, checksums, release checks and known issues
+- [`docs/releases/0.4.5.md`](docs/releases/0.4.5.md) - the 0.4.5 notes
 - [`docs/releases/0.4.4.md`](docs/releases/0.4.4.md) - the maintainer upload checklist
-- [`docs/releases/0.4.6.md`](docs/releases/0.4.6.md) - draft notes for 0.4.6 (in development)
 - [`docs/gateway.md`](docs/gateway.md) - the experimental headless gateway: owner-only remote control, tool loop, file memory, IRC
 - [`docs/supported-platforms.md`](docs/supported-platforms.md) - OS/hardware requirements
 - [`docs/installation.md`](docs/installation.md) - install, first run, uninstall
-- [`docs/windows.md`](docs/windows.md) - Windows 0.4.5 alpha install, build and limitations
+- [`docs/windows.md`](docs/windows.md) - Windows alpha install, build and limitations
 - [`docs/troubleshooting.md`](docs/troubleshooting.md) - common problems
 - [`docs/release-readiness-audit.md`](docs/release-readiness-audit.md) - current gaps/status
 - [`docs/third-party-notices.md`](docs/third-party-notices.md) - dependency license inventory
