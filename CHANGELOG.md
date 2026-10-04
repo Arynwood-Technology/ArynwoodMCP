@@ -30,7 +30,6 @@ them as a summary, not a precise record.
   `approve <code>`, only from your identified account. A message that arrives as several
   lines is answered once. Server details live in your personal overlay file, never in the
   repository.
-- Comparison with OpenClaw in the README, checked against OpenClaw's docs and source.
 
 ### Changed
 
