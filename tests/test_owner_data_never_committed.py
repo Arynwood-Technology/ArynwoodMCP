@@ -45,9 +45,7 @@ def test_owner_data_is_refused_by_the_push_guard(path):
 def test_no_owner_data_is_tracked():
     tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True).stdout.splitlines()
     patterns = [p for p in _guard().FORBIDDEN_PATHS]
-    # Bundled Chatterbox preset voices predate the rule; only new files there count.
-    offenders = [f for f in tracked if any(p.search(f) for p in patterns)
-                 and not f.startswith("triggers/gpu_watch/chatterbox_voices/")]
+    offenders = [f for f in tracked if any(p.search(f) for p in patterns)]
     assert offenders == []
 
 

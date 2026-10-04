@@ -17,6 +17,13 @@ them as a summary, not a precise record.
 - A LoRA whose project record doesn't say which checkpoint it was trained on is generated on
   the checkpoint its own file names (kohya's `ss_sd_model_name`), not on a guess.
 
+### Removed
+
+- The Chatterbox voice library no longer comes with preset voices. They were Tortoise TTS's
+  sample voices, many cloned from real people, so the library now starts empty: you add
+  your own voice, or one you have permission to use. Voices you've already saved stay on
+  your machine.
+
 ## [0.4.6] — 2026-10-04
 
 ### Security

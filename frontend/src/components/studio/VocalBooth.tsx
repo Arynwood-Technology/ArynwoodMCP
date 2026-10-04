@@ -147,6 +147,7 @@ function ScriptToVoice({ onSendToEffects }: { onSendToEffects: (blob: Blob) => v
           {voices.map(name => <option key={name} value={name}>{name}</option>)}
         </select>
         {voicesLoading && <p style={{ margin: '6px 0 0', fontSize: 11, color: 'var(--text-muted)' }}>Loading saved voices…</p>}
+        {!voicesLoading && voices.length === 0 && <p style={{ margin: '6px 0 0', fontSize: 11, color: 'var(--text-muted)' }}>No saved voices yet. Upload a clip of your own voice, or one you have permission to use, and save it to the library.</p>}
         {usingSaved && (
           <div style={{ marginTop: 6 }}>
             <button type="button" onClick={() => void deleteVoice(selectedVoice)} style={{ ...stepButton, fontSize: 11, padding: '4px 9px', color: 'var(--danger)' }}>Remove "{selectedVoice}" from library</button>
