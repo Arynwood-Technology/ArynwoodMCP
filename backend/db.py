@@ -1,8 +1,11 @@
 import aiosqlite
+import logging
 import os
 import sys
 
 from backend._frozen import user_data_dir
+
+logger = logging.getLogger(__name__)
 
 
 def _default_db_path() -> str:
@@ -324,8 +327,37 @@ _MIGRATIONS = [
     # (backend/gateway/sessions.py). Decides what private context and which tools a turn
     # gets. Defaults to the least trusted level; only the owner raises it.
     "ALTER TABLE gateway_sessions ADD COLUMN trust_level TEXT NOT NULL DEFAULT 'stranger'",
+    # The trust a gateway turn ran at, on the user message it saved, when that wasn't the
+    # owner (NULL = the owner's own words: every desktop message, owner gateway turns).
+    # chat.py keeps these out of other conversations' prompts and wraps them as untrusted
+    # data in the owner's own turns: a stranger on IRC must never be quoted to the model as
+    # if the owner had said it. See _backfill_message_trust for rows older than the column.
+    "ALTER TABLE messages ADD COLUMN trust TEXT",
+    "CREATE INDEX IF NOT EXISTS messages_from_others ON messages(conversation_id) WHERE trust IS NOT NULL",
 
 ]
+
+
+async def _backfill_message_trust(db) -> None:
+    """Once, when messages.trust is first added: tag the user messages of conversations a
+    non-owner gateway turn already wrote in. Which message came from whom wasn't recorded,
+    so every user message there is tagged; over-tagging only withholds context."""
+    sources = (
+        "SELECT conversation_id FROM gateway_sessions WHERE trust_level != 'owner' AND conversation_id IS NOT NULL",
+        # Pre-column turns left their trust in the run evidence; this also finds conversations
+        # a session has since been reset away from or deleted.
+        "SELECT r.conversation_id FROM chat_runs r, "
+        "json_each(CASE WHEN json_valid(r.evidence) THEN r.evidence ELSE '[]' END) e "
+        "WHERE r.conversation_id IS NOT NULL AND json_extract(e.value, '$.kind') = 'trust' "
+        "AND json_extract(e.value, '$.level') != 'owner'",
+    )
+    for source in sources:
+        try:
+            await db.execute(
+                f"UPDATE messages SET trust='stranger' WHERE role='user' AND trust IS NULL "
+                f"AND conversation_id IN ({source})")
+        except Exception:
+            logger.warning("messages.trust backfill skipped a source", exc_info=True)
 
 async def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
@@ -341,11 +373,15 @@ async def init_db():
             await db.commit()
         await db.executescript(SCHEMA)
         await db.executescript(SEED)
+        cur = await db.execute("PRAGMA table_info(messages)")
+        had_message_trust = any(row[1] == "trust" for row in await cur.fetchall())
         for migration in _MIGRATIONS:
             try:
                 await db.execute(migration)
             except Exception:
                 pass  # column already exists
+        if not had_message_trust:
+            await _backfill_message_trust(db)
         await db.commit()
 
 

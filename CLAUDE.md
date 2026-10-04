@@ -279,14 +279,19 @@ All mounted under `/api/<domain>` by `backend/api.py`.
 | **Social** | `social.py` | `/api/social` | OAuth flow + posting for Facebook, Instagram, YouTube, LinkedIn |
 | **Creative** | `studio.py` | `/api/studio` | Music sidecar management: stem separation (Demucs), voice conversion (RVC), effects chain, reference mastering — stateless HTTP proxy to `~/GitHub/MusicStudio/sidecars/*` |
 | | `music.py` | `/api/music` | Music Lab: Instrument Generator + Jam with AI, backed by the song-gen sidecar (ACE-Step/MusicGen). DB-backed (`music_assets`, `music_generation_jobs`) and `gpu_queue`-coordinated, unlike `studio.py`'s stateless proxy — see `MusicStudio/CLAUDE.md`'s song-gen section for the two-venv ACE-Step/MusicGen split |
-| | `tools.py` | `/api/tools` | GPU tool registry + generation: SD (A1111 proxy), TortoiseTTS, AllTalk, Kokoro, Chatterbox, SadTalker, rembg, Real-ESRGAN, Florence-2 caption, SearXNG, Qdrant |
+| | `tools.py` | `/api/tools` | GPU tool registry + generation: SD (A1111 proxy), TortoiseTTS, AllTalk, Kokoro, Chatterbox, SadTalker, rembg, Florence-2 caption, SearXNG, Qdrant |
 | | `lora.py` | `/api/lora` | LoRA dataset prep + training job management |
 | | `video.py` | `/api/video` | Video generation/edit/caption jobs, video library |
 | | `dj.py` | `/api/dj` | DJ Toolkit — launcher + built-in manual for Mixxx/Ardour/Hydrogen/Surge XT/Vital/Flatseal/Calf/LSP/Dragonfly/Geonkick. Desktop GUI apps with no HTTP surface (unlike every other router here) — status comes from `flatpak ps` / `pgrep` on the backend host; launch just spawns and forgets (`start_new_session=True` so a `--reload` restart doesn't kill a running app). "Sessions" bundle multi-tool launches (e.g. Ardour+Hydrogen, which share transport over PipeWire/JACK). Deliberately not a sidebar destination: the Music page has a small "DJ Toolkit" button that opens `/dj` (see `nav.ts`'s `also`, which keeps Music highlighted there). Keep its content generic — no personal paths, no installed-version numbers; `tests/test_dj_router.py` fails if they come back |
-| **Gateway** | `gateway.py` | `/api/gateway` | Headless gateway (`backend/gateway/`) — persistent sessions (key → conversation + `trust_level`, `gateway_sessions` table, survives restarts) running agent turns with no UI: `POST /inbound`, session CRUD/reset/cancel, approvals, and a `/ws` event stream. Turns use the conversational tool loop and are trust-gated. `python -m backend.gateway` runs the whole backend headless as the always-on daemon (`:8020` by default; `is_daemon()` gates daemon-only work). Config `mcp/config/gateway/` + overlay `~/.local/share/arynwood-mcp/gateway.json`. See `docs/gateway.md` |
+| **Gateway** | `gateway.py` | `/api/gateway` | **Experimental, parked — mounted only in the daemon or with `ARYNWOOD_ENABLE_GATEWAY=1`.** Headless gateway (`backend/gateway/`) — persistent sessions (key → conversation + `trust_level`, `gateway_sessions` table, survives restarts) running agent turns with no UI: `POST /inbound`, session CRUD/reset/cancel, approvals, and a `/ws` event stream. Turns use the conversational tool loop and are trust-gated. `python -m backend.gateway` runs the whole backend headless as the always-on daemon (`:8020` by default; `is_daemon()` gates daemon-only work). Config `mcp/config/gateway/` + overlay `~/.local/share/arynwood-mcp/gateway.json`. See `docs/gateway.md` |
 | | `community.py` | `/api/community` | **Arynwood Community** — optional sidecar for the separate Community app (private spaces: boards, chat, calendar, household, lists, notes). v1 is launcher + status only: `/status` (via Community's unauthenticated `/api/health`), `/start`, `/stop`, `/open?target=app|repo` (system browser via `xdg-open` — Community sends `X-Frame-Options: DENY`, so it can't be embedded, and its API is per-member cookie auth, so Arynwood doesn't read its data). **Unlike the MusicStudio sidecars it outlives Arynwood** (`start_new_session`, no `die_with_parent`) because members stay connected; a pidfile (`~/.local/share/arynwood-mcp/community.pid`, only honoured if that pid is Community's server in Community's folder) lets Stop work after a restart. `ARYNWOOD_COMMUNITY_DIR` (default `$PROJECTS/arynwood-community`) / `ARYNWOOD_COMMUNITY_URL` (a non-local URL = hosted instance, status + Open only). Paths reach the UI home-relative (`display_path`), never absolute. **TODO(community-repo):** `external_paths.COMMUNITY_REPO_URL` is a placeholder until the official repo exists under Arynwood-Technology on GitHub — update it and every `TODO(community-repo)` marker then |
 
 ## Headless gateway (always-on agent)
+
+**Experimental and parked (2026-10-03, see `docs/scope.md`).** The gateway is the owner's remote control and nothing
+more: no new channels, no talking with other people, no competitor-driven expansion. `/api/gateway` is mounted only in
+the daemon or with `ARYNWOOD_ENABLE_GATEWAY=1` (`backend.gateway.is_enabled()`; `tests/test_gateway_parked.py`), and
+IRC answers only `owner_accounts`. Fix bugs here; don't grow it without the owner's explicit yes.
 
 `backend/gateway/` (`sessions.py`, `runner.py`, `turn.py`, `file_memory.py`, `irc.py`, `config.py`, `__main__.py`) plus `backend/routers/gateway.py`.
 A **session key** (`api:<name>`, `irc:<net>:#chan`, `schedule:<job>`) maps to one conversation row, so history,
@@ -302,16 +307,23 @@ differs in two places — **trust** and the **conversational tool loop**. Keep i
   approver only on an owner turn, only an owner-trust approver may answer (`resolve_approval(..., trust=)`), and it's
   denied at once with nobody to answer, on timeout, or when the last approver leaves. A chat adapter must verify the
   person (NickServ) before answering as owner.
+- **A non-owner's words never speak as the owner's** (fixed 2026-10-03). Non-owner turns save their user
+  message with `messages.trust`. `chat._load_recent_conversation_context`, which is quoted to `central` as
+  "User:", skips any conversation with a tagged message or a non-owner session. `chat.load_history` wraps
+  tagged messages as `<untrusted-data>` for owner readers: desktop always, gateway when `trust == "owner"`.
+  Any new code that reads across conversations, or feeds messages into a prompt, must honour the tag.
+  Tests: `tests/test_gateway_trust_isolation.py`.
 - Turns are ordered per session and limited globally by `max_concurrent_turns` (default 1 — one 12GB GPU).
 - **File memory** (`file_memory.py`): `MEMORY.md` + `daily/YYYY-MM-DD.md` in `<data dir>/memory` (outside the repo).
   Read into owner turns (budgeted, relevance-picked); written back *after* the reply in a background task — explicit
   `<remember>` blocks, else one extraction call that may only record user-stated facts. Tests must never touch the real
   dir: `tests/conftest.py` points `ARYNWOOD_GATEWAY_CONFIG` at a temp overlay — keep it that way.
-- **IRC** (`irc.py`, daemon only, `irc` config section; server details only in the overlay): trust by services
-  *account* (IRCv3 `account-tag`, else WHOIS 330), never by nick; DM sessions keyed `~account`, unidentified nicks get a
-  separate stranger session; channel trust from config, each message at min(channel, sender). Approvals are relayed as
-  `approve <code>` / `deny <code>` and count only from an identified owner account. Tested against a fake ircd in
-  `tests/test_irc_adapter.py` (with and without CAP).
+- **IRC** (`irc.py`, daemon only, `irc` config section; server details only in the overlay): **owner only** — a message
+  is answered only if its sender is logged in as one of `owner_accounts` (IRCv3 `account-tag`, else WHOIS 330), never
+  by nick; everyone else is ignored and logged. DM sessions are keyed `~account`; an owner message in a channel runs at
+  that channel's configured trust. Approvals are relayed as `approve <code>` / `deny <code>`. A DM reply or approval
+  prompt is sent only after re-verifying the nick's account (`_deliverable`; WHOIS unless seen within
+  `VERIFY_FRESH_SECONDS`), else held. Tested against a fake ircd in `tests/test_irc_adapter.py` (with and without CAP).
 
 Full reference: `docs/gateway.md`.
 
@@ -497,11 +509,10 @@ one).
 `ipc://localhost/{cmd}` (confirmed in `tauri-2.10.3/src/ipc/protocol.rs`), which
 needs to be in `connect-src` in `frontend/src-tauri/tauri.conf.json`'s `app.security.csp`
 or internal plugin calls (e.g. the notification-permission check) get silently
-blocked. Separately, `style-src` needs its own explicit directive listing
-`https://fonts.googleapis.com` — CSP only falls back a specific directive (e.g.
-`style-src`) to `default-src` when that directive is *entirely absent*, so an
-unrelated `default-src` that doesn't list a host doesn't help once `style-src`
-exists at all elsewhere. A Tauri plugin's JS-side call can also be blocked by a
+blocked. Fonts are self-hosted (`frontend/public/fonts`, `static/html-tools/fonts`),
+so `font-src`/`style-src` list no external host. Adding one back means editing those
+directives: CSP only falls back to `default-src` when a directive is *entirely
+absent*. A Tauri plugin's JS-side call can also be blocked by a
 *third*, unrelated gate — its ACL/capabilities system
 (`frontend/src-tauri/capabilities/default.json`) — independent of CSP; the
 notification plugin needed `"notification:default"` added there too, on top of the
@@ -750,7 +761,17 @@ key, not a bare `{"kdenlive": {...}}` object:
 `backend/routers/music.py` (`/api/music`) talks to the `song-gen` sidecar (`~/GitHub/MusicStudio/sidecars/song-gen/`, port 8003) for AI instrument generation (ACE-Step) and melody-conditioned "Jam with AI" responses (MusicGen). ACE-Step and MusicGen cannot share one venv — MusicGen's own torch pin (2.1.x) breaks ACE-Step (needs torch 2.10.x; confirmed hands-on as `module 'torch' has no attribute 'xpu'`), so the sidecar's `venv-musicgen/` is separate from `venv/` and MusicGen runs as a subprocess, not an in-process import. If you're touching this sidecar, read `MusicStudio/CLAUDE.md`'s song-gen section first — it documents the exact torch/torchcodec/numpy/transformers pins that were needed, all confirmed by a real generation + `ffprobe`, not just an import check. Also worth knowing before "fixing" Jam mode's output quality: MusicGen's melody conditioning discards drums/bass internally before it extracts anything from the input audio (confirmed against the installed `audiocraft` source), so it never does literal audio-following — this is disclosed in `JamWithAI.tsx`'s UI, not a bug to chase.
 
 ### API auth is opt-in, off by default
-`backend/services/auth.py`'s `ApiKeyMiddleware` gates the whole `/api/*` surface (HTTP and the chat WebSocket) behind `Authorization: Bearer <token>` — but only if `ARYNWOOD_API_KEY` is set in the environment; with it unset (the default on a fresh checkout), every request passes through exactly as before this existed. Setting it without also updating whatever's calling the API (frontend, curl, another tool) will lock that caller out — there's no frontend login flow built for this yet, it's infrastructure for a future remote/multi-tenant deployment, not something to casually enable on a local box already in use. The WebSocket can't send a custom header, so its token travels as a `?token=` query param instead.
+`backend/services/auth.py` validates exact Host and browser Origin values on HTTP
+and WebSocket requests. Without `ARYNWOOD_API_KEY`, only loopback clients are
+accepted. Non-loopback configured listeners require a key, as do actual remote
+clients even if a launcher bypasses the startup check. Configured keys protect
+APIs, metrics, social-media files, and all remote requests. Additional remote Host
+names/IPs require exact `ARYNWOOD_ALLOWED_HOSTS` entries. A full desktop token/media
+flow and short-lived WebSocket credentials remain pending; the current WebSocket
+uses a `?token=` query parameter. This is one owner boundary, not tenant isolation.
+Read `SECURITY.md` (what's protected, known gaps) and `docs/scope.md` (the "before
+Arynwood grows" checklist) before expanding exposure. `python -m backend.security --json` reports current configuration
+and known blockers without active probes or credential values.
 
 ### `requirements.txt` is now version-pinned
 Every entry uses `~=` (locks to the given minor/patch series). It used to have zero constraints, so a fresh `pip install -r requirements.txt` could silently pull a breaking release. Bump versions deliberately (edit the pin), not by leaving them unconstrained again.

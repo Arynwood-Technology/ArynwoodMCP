@@ -12,6 +12,13 @@ from backend.gateway.runner import (  # noqa: F401
 from backend.gateway.sessions import InvalidSession  # noqa: F401
 
 
+def is_enabled() -> bool:
+    """The gateway is experimental and parked: its API is served only by the daemon, or by a
+    desktop backend started with ARYNWOOD_ENABLE_GATEWAY=1. See docs/scope.md."""
+    import os
+    return is_daemon() or os.environ.get("ARYNWOOD_ENABLE_GATEWAY") == "1"
+
+
 def is_daemon() -> bool:
     """True when this process was started as the headless daemon (python -m backend.gateway),
     not as the desktop app's backend. Things that must run in exactly one process (a chat

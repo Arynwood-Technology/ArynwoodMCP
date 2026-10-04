@@ -482,13 +482,31 @@ async def _load_relevant_memories(db, message: str) -> list[dict]:
     return await memory_store.retrieve(db, message, limit=MAX_RELEVANT_MEMORIES)
 
 
+async def _shared_conversation_ids(db) -> set[int]:
+    """Conversations someone other than the owner has written in through the gateway (an IRC
+    stranger, a known account): their user messages are not the owner's words."""
+    ids: set[int] = set()
+    for query in ("SELECT DISTINCT conversation_id FROM messages WHERE trust IS NOT NULL AND trust != 'owner'",
+                  "SELECT conversation_id FROM gateway_sessions WHERE trust_level != 'owner' AND conversation_id IS NOT NULL"):
+        async with db.execute(query) as cur:
+            ids.update(row[0] for row in await cur.fetchall())
+    return ids
+
+
 async def _load_recent_conversation_context(db, exclude_id: int | None, limit: int = 3) -> str:
-    """Return a brief summary of the last few conversations (other than the current one)."""
+    """Return a brief summary of the last few conversations (other than the current one).
+
+    Only the owner's own conversations count. This block is labelled "User:" in an owner's
+    prompt, which has tools and private memory, so a gateway conversation with a stranger
+    in it would let anyone who can message the bot speak there as the owner."""
     try:
+        excluded = await _shared_conversation_ids(db)
+        if exclude_id is not None:
+            excluded.add(exclude_id)
         query = "SELECT id, title, persona, created_at FROM conversations WHERE project_id IS ? ORDER BY updated_at DESC LIMIT ?"
-        async with db.execute(query, (runtime_context.project_id.get(), limit + 1,)) as cur:
+        async with db.execute(query, (runtime_context.project_id.get(), limit + len(excluded),)) as cur:
             convs = [dict(r) for r in await cur.fetchall()]
-        convs = [c for c in convs if c["id"] != exclude_id][:limit]
+        convs = [c for c in convs if c["id"] not in excluded][:limit]
         if not convs:
             return ""
         parts = []
@@ -563,7 +581,7 @@ async def _summarize_aged_out_history(conversation_id: int, model: str, host: st
 
             max_hist = int(await _get_setting(db, "agent_max_history", str(MAX_HISTORY)))
             async with db.execute(
-                "SELECT id, role, content FROM messages WHERE conversation_id=? ORDER BY id",
+                "SELECT id, role, content, trust FROM messages WHERE conversation_id=? ORDER BY id",
                 (conversation_id,),
             ) as cur:
                 all_msgs = [dict(r) for r in await cur.fetchall()]
@@ -582,8 +600,11 @@ async def _summarize_aged_out_history(conversation_id: int, model: str, host: st
             # Advance coverage only after every slice succeeds.
             new_summary = prior_summary or ''
             slice_chars = max(512, (summary_ctx - 1800) * 2)
+            # Say who wrote what: the summary lands in the owner's system prompt, so a gateway
+            # stranger's request must not read back as the owner's goal (see messages.trust).
             excerpt = "\n\n".join(
-                f"Message #{m['id']} ({m['role']}):\n{m['content']}" for m in aged_out
+                f"Message #{m['id']} ({m['role'] if not m['trust'] else 'someone other than the owner, ' + m['trust'] + ' trust'}):\n{m['content']}"
+                for m in aged_out
             )
             for start in range(0, max(1, len(excerpt)), slice_chars):
                 part = excerpt[start:start + slice_chars]
@@ -1213,11 +1234,12 @@ async def delete_conversation(conv_id: int, db=Depends(get_db)):
 
 # ── DB helpers ──────────────────────────────────────────────────────────────────
 
-async def save_message(db, conversation_id: int, role: str, content: str):
-    """Persist a single chat message and bump the parent conversation's updated_at."""
+async def save_message(db, conversation_id: int, role: str, content: str, trust: str | None = None):
+    """Persist a single chat message and bump the parent conversation's updated_at.
+    trust: the gateway trust level of a turn that wasn't the owner's (see messages.trust)."""
     cursor = await db.execute(
-        "INSERT INTO messages (conversation_id, role, content) VALUES (?,?,?)",
-        (conversation_id, role, content)
+        "INSERT INTO messages (conversation_id, role, content, trust) VALUES (?,?,?,?)",
+        (conversation_id, role, content, trust if trust != "owner" else None)
     )
     await db.execute(
         "UPDATE conversations SET updated_at=datetime('now') WHERE id=?",
@@ -1239,14 +1261,26 @@ async def ensure_conversation(db, persona: str, model: str, project_id: int | No
     return row["id"]
 
 
-async def load_history(db, conversation_id: int, limit: int, include_ids: bool = False) -> list[dict]:
-    """Return the last `limit` messages as Ollama chat message dicts."""
+async def load_history(db, conversation_id: int, limit: int, include_ids: bool = False,
+                       wrap_others: bool = True) -> list[dict]:
+    """Return the last `limit` messages as Ollama chat message dicts.
+
+    wrap_others: for an owner's turn (every desktop turn), messages a non-owner gateway turn
+    saved (an IRC stranger in a shared channel, a session continued from the desktop) come
+    back as untrusted data, never as the owner's own instructions to a turn that has tools."""
     async with db.execute(
-        "SELECT id, role, content FROM messages WHERE conversation_id=? ORDER BY id DESC LIMIT ?",
+        "SELECT id, role, content, trust FROM messages WHERE conversation_id=? ORDER BY id DESC LIMIT ?",
         (conversation_id, limit)
     ) as cur:
         rows = await cur.fetchall()
-    return [{"role": r["role"], "content": r["content"], **({"_message_id": r["id"]} if include_ids else {})} for r in reversed(rows)]
+
+    def content(r) -> str:
+        if wrap_others and r["trust"] and r["role"] == "user":
+            return _untrusted_block(f"message from someone other than the owner ({r['trust']} trust)", r["content"])
+        return r["content"]
+
+    return [{"role": r["role"], "content": content(r), **({"_message_id": r["id"]} if include_ids else {})}
+            for r in reversed(rows)]
 
 
 # ── Non-streaming completion (used by workflows) ────────────────────────────────

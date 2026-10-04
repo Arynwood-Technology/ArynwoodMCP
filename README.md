@@ -2,9 +2,11 @@
 
 <p align="center"><img src="frontend/src-tauri/icons/128x128@2x.png" width="128" height="128" alt="The Arynwood mark: a hand-drawn tree inside a black circle, lit from within by a teal glow" /></p>
 
-**The personal AI agent where nothing leaves your machine.** Models, memory, tools and
-conversations stay on your own hardware. Data goes out only through features that reach out
-by design: web search queries (sent to DuckDuckGo) and anything you publish or deploy yourself.
+**A local-first personal AI and creative workspace.** Default model inference, memory,
+and conversations stay on your hardware. Network features contact outside services:
+web search, URL learning, model/tool downloads, social integrations, publishing, deployment,
+IRC, and any remote model or MCP server you configure. This is a local-first default,
+not an enforced offline mode. See [SECURITY.md](SECURITY.md) for what is protected and what isn't yet.
 
 Local-first AI workspace for Linux and Windows desktops: multi-persona chat with local Ollama models, knowledge search
 and memory over your own documents, a design canvas, and Model Context Protocol (MCP) tool integrations,
@@ -30,26 +32,20 @@ instead of faking it.
 | Work | Status |
 |---|---|
 | Desktop alpha v0.4.5: Windows x64 installer, Linux AppImage and `.deb` | Shipped |
-| Headless gateway, conversational tool loop, file memory, IRC adapter | In development (0.4.6) |
+| Security and reliability fixes since 0.4.5 | In development (0.4.6) |
+| Headless gateway: owner-only remote control over loopback or your own IRC server | Experimental, off by default |
 | Arynwood Community and Groves | Long-term vision |
 
 ## In development (0.4.6)
 
-These are built and tested but not released yet. They run from a source checkout today;
-[docs/gateway.md](docs/gateway.md) covers setup and every option.
+0.4.6 is a small release: the security and reliability fixes made since 0.4.5 (see
+`CHANGELOG.md`). Update when it ships.
 
-- **Run Arynwood without the desktop window.** An always-on background service keeps a
-  separate, ongoing conversation for each person or channel that talks to it, and picks up
-  where it left off after a restart.
-- **Let it work through multi-step tasks.** Arynwood can use a tool, read the result and
-  decide on the next step until the job is done. Anything that deletes or publishes waits
-  for your approval, and is refused when nobody is there to approve it.
-- **Keep a memory you can read and edit.** Facts you tell it go into a plain `MEMORY.md`
-  file and dated notes, and it remembers them after a restart. People you haven't trusted
-  never see your memories, notes or tools.
-- **Message your home AI over IRC.** Talk to your agent from any IRC client on your own
-  server. It recognises you by your services account, not your nickname, so someone using
-  your nick can't act as you.
+**Experimental: headless gateway.** A remote control for your own workspace: reach Arynwood
+from your phone over your own IRC server, or over a local API. It answers only your services
+account, asks before anything destructive, and keeps a plain-text memory you can edit. It is
+off unless you start it, runs from a source checkout, and isn't part of the desktop packages.
+See [docs/gateway.md](docs/gateway.md).
 
 ## What's next
 
@@ -101,7 +97,7 @@ Desktop alpha packages and docs:
 - [`docs/releases/0.4.5.md`](docs/releases/0.4.5.md) - packages, checksums and what still needs testing
 - [`docs/releases/0.4.4.md`](docs/releases/0.4.4.md) - the maintainer upload checklist
 - [`docs/releases/0.4.6.md`](docs/releases/0.4.6.md) - draft notes for 0.4.6 (in development)
-- [`docs/gateway.md`](docs/gateway.md) - the headless gateway, tool loop, file memory and IRC adapter (in development, 0.4.6)
+- [`docs/gateway.md`](docs/gateway.md) - the experimental headless gateway: owner-only remote control, tool loop, file memory, IRC
 - [`docs/supported-platforms.md`](docs/supported-platforms.md) - OS/hardware requirements
 - [`docs/installation.md`](docs/installation.md) - install, first run, uninstall
 - [`docs/windows.md`](docs/windows.md) - Windows 0.4.5 alpha install, build and limitations
@@ -127,7 +123,7 @@ Desktop alpha packages and docs:
 | **Video Studio** | Kdenlive automation, video generation/edit/caption jobs |
 | **Social Media** | Publish generated content to Facebook, Instagram, YouTube, LinkedIn |
 | **Publish** | SSH/SFTP file manager, upload to remote web servers |
-| **Gateway** (in development, 0.4.6) | Headless, always-on agent: persistent sessions over HTTP, WebSocket and your own IRC server, trust levels, file memory. See [docs/gateway.md](docs/gateway.md) |
+| **Gateway** (experimental, off by default) | Owner-only remote control: persistent sessions over a local API or your own IRC server, file memory. See [docs/gateway.md](docs/gateway.md) |
 
 Every screen shares the same chrome: a collapsible sidebar, a **⌘K / Ctrl+K command
 palette**, and a **system status drawer**. See [Getting Around](#getting-around).
@@ -207,7 +203,8 @@ Copy `.env.example` to `.env` and fill in values. The file is gitignored.
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | YouTube Data API v3 OAuth credentials |
 | `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET` | LinkedIn OAuth credentials |
 | `SOCIAL_REDIRECT_BASE` | Base URL for OAuth callbacks - change if running behind a reverse proxy |
-| `ARYNWOOD_API_KEY` | Optional. Unset by default - every request passes through unauthenticated, same as always. If set, every `/api/*` request (HTTP and the chat WebSocket) must present it as a Bearer token. There's no frontend login UI for this yet, so only set it if you've also updated whatever's calling the API; it's meant for a future remote/multi-tenant deployment, not a local box you're actively using |
+| `ARYNWOOD_API_KEY` | Optional for loopback use; required for remote clients/non-loopback binding. Configured keys protect APIs, metrics and social-media files. Clients must send the key; a full desktop login/media authentication flow remains pending. |
+| `ARYNWOOD_ALLOWED_HOSTS` | Exact additional Host names/IPs for authenticated remote clients. No wildcards or ports. Defaults allow localhost, 127.0.0.1 and ::1. |
 
 See `.env.example` for the full list and where to obtain each credential.
 
@@ -768,7 +765,8 @@ The Knowledge page requires two external services.
 ### 1. Start Qdrant
 
 ```bash
-docker run -d --name qdrant -p 6333:6333 qdrant/qdrant
+docker run -d --name qdrant -p 127.0.0.1:6333:6333 --restart unless-stopped \
+  -v qdrant_storage:/qdrant/storage qdrant/qdrant
 ```
 
 Qdrant is the vector database that stores and searches embedded knowledge chunks. The collection (`arynwood_knowledge`) is created automatically on first use.

@@ -1,13 +1,14 @@
 # Security Policy
 
-Arynwood MCP is alpha software, local-first by design, and not yet hardened for
-exposure beyond your own machine. Read this before you report something, and before
-you run it anywhere but `localhost`.
+Arynwood MCP is alpha software for one owner on one machine: local-first by design, and not
+hardened for exposure beyond that machine. This page is the single place for what is
+protected today and what isn't. What the project is and isn't meant to do is in
+[docs/scope.md](docs/scope.md).
 
 ## Supported versions
 
-Pre-1.0: only the latest commit on `main` receives fixes. There are no maintained
-release branches yet.
+Pre-1.0: only the latest release and the latest commit on `main` receive fixes. There are no
+maintained release branches.
 
 ## Reporting a vulnerability
 
@@ -20,41 +21,56 @@ We'll acknowledge within 5 business days and aim to have a fix or mitigation pla
 within 30 days for confirmed issues. Low-severity findings (e.g. a missing header
 with no practical exploit) can go in a regular GitHub issue.
 
-## Known posture, as of this alpha
+## What is protected
 
-These are current defaults, not bugs to report — they're documented here so a
-report about them can be triaged quickly:
+- **Local by default.** The backend and, when this app starts it, Ollama bind to `127.0.0.1`.
+  The backend refuses a non-loopback bind without `ARYNWOOD_API_KEY`, and remote clients
+  always need the key. The key also protects `/metrics` and social-media files.
+- **Web pages can't drive the local API.** HTTP and WebSocket requests under `/api` from a
+  foreign or opaque (`null`) browser origin are refused before they reach any route. An
+  exact Host check blocks DNS rebinding. State-changing actions such as tool installs need
+  POST.
+- **Approval before anything irreversible.** Agent tool calls are sorted into read-only,
+  reversible, destructive and external-publish. A destructive or publishing call runs only
+  after the owner's explicit yes, bound to that exact call, single-use and expiring. With
+  nobody to approve, it's denied. Unreviewed MCP servers need approval for every call, and
+  manifests can't grant themselves permission.
+- **Untrusted text is marked as untrusted.** Web results, knowledge excerpts, tool output, and
+  messages from anyone but the owner reach the model inside `<untrusted-data>`. They are
+  never quoted as the owner's own words.
+- **Bounded outbound fetches.** Learning from a URL reaches public addresses only, with each
+  redirect checked again, and is capped in size and time.
+- **Deploys** require a known SSH host key, and keep uploads inside the target folder.
+- **Files.** Project reads stay inside the project. Developer codebase tools (opt-in, source
+  checkout only) skip credential files and bound their subprocesses.
+- **Gateway** (experimental, off by default): over IRC it answers only the owner's services
+  account, re-checked before any private reply goes out.
+- **Check your setup:** `python -m backend.security` reports the security-relevant
+  configuration without printing secrets. `--strict` fails on open warnings.
 
-- The backend and, when this app starts it, Ollama both bind to `127.0.0.1`
-  (loopback) by default. LAN/remote exposure requires deliberately setting
-  `ARYNWOOD_BIND_HOST=0.0.0.0` / `OLLAMA_HOST=0.0.0.0` in `.env`.
-- API authentication (`ARYNWOOD_API_KEY`, see `.env.example`) is opt-in and off by
-  default. There is no login UI yet — if you set a key, every API client (including
-  the frontend) needs to be updated to send it, or requests will fail.
-- CORS (`backend/api.py`) allows only the app's own two real origins (the Vite dev
-  server and the packaged Tauri webview) — not a wildcard. This specifically closes
-  off the case where an arbitrary website's JavaScript, running in an ordinary
-  browser tab on the same machine, could otherwise read responses from this API
-  purely because your browser can reach `localhost` regardless of the backend's
-  bind address; loopback binding alone doesn't stop that class of access.
-- **The Linux desktop build auto-grants microphone/camera permission requests**
-  (`frontend/src-tauri/src/main.rs`'s `allow_media_permissions()`), needed for the
-  Studio audio recorder to work at all — WebKitGTK has no built-in
-  permission-prompt UI, so without this every `getUserMedia()` call fails silently
-  with no prompt ever shown. This is a deliberate trade for a single-user local app
-  that only ever loads its own bundled frontend (nothing untrusted runs in that
-  webview), not a general browser — but it does mean the app can access your
-  microphone/camera whenever a page inside it asks, with no per-request consent
-  step. If you need per-request consent, that's not implemented yet; know this
-  before you install, not after noticing your mic indicator light.
-- Kdenlive tool-calling classifies every tool call by risk tier
-  (read-only / reversible-write / destructive / external-publish) and requires
-  explicit approval for destructive or publishing actions — but this is prompt- and
-  code-level guidance to an LLM tool-calling loop, not a formal sandboxing
-  guarantee. Don't point it at a Kdenlive project or a filesystem you can't afford
-  to have modified unexpectedly.
-- Social media credentials (Facebook/Instagram/YouTube/LinkedIn OAuth secrets) live
-  in `.env`, which is gitignored — never commit a real `.env` file.
+## Known gaps
+
+These are current limits, not bugs to report. They're listed so a report about them can be
+triaged quickly.
+
+- **No OS sandbox.** Tools, sidecars and installers run with your user's file and network
+  access. The protections above are application rules, not isolation.
+- **Direct actions aren't under the approval policy.** Deploy, social publishing, studio and
+  install buttons in the UI are owner actions. The approval gate covers agent tool calls.
+- **No login.** With no API key, any local program has owner access. Setting a key needs every
+  client updated; there is no login screen yet, and the WebSocket sends the key as a
+  `?token=` query parameter.
+- **No enforced offline mode.** Web search, URL learning, downloads, social APIs, publishing,
+  deploys, IRC and configured remote model or MCP servers all send data out when used.
+- **The Linux desktop build grants microphone and camera requests automatically**
+  (`allow_media_permissions()` in `frontend/src-tauri/src/main.rs`). WebKitGTK has no
+  permission prompt, and the Studio recorder needs the mic. The app loads only its own
+  bundled frontend, but there is no per-request consent step.
+- **Kdenlive tool calls** follow the approval tiers, but that's guidance to an LLM tool loop
+  plus code checks, not a sandbox. Don't point it at a project you can't afford to have
+  changed.
+- **Secrets live in `.env`** (gitignored) and the local database. Never commit a real `.env`.
 
 If you're running this on a shared or internet-reachable machine, treat every item
-above as something to review before you do, not after.
+above as something to review before you do, not after. The checklist that must be complete
+before Arynwood grows beyond one owner's machine is in [docs/scope.md](docs/scope.md).

@@ -38,8 +38,6 @@
     "channels": [],
     "channel_mode": "mention",
     "owner_accounts": [],
-    "known_accounts": [],
-    "answer_strangers": false,
     "persona": "central",
     "max_reply_lines": 8,
     "coalesce_seconds": 1.5,

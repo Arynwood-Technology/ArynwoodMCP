@@ -20,7 +20,7 @@ outside conversation (an API client, later an IRC user or channel, a scheduled j
 | `approval_timeout_seconds` | How long a destructive or external-publish tool call waits for an approver before it is denied. |
 | `turn_timeout_seconds` | A turn still running after this is stopped. Text already produced is kept, ending in `*(stopped)*`. |
 | `trust_levels` | What a turn at each trust level may use (below). A missing level or key means no. |
-| `irc` | The IRC adapter (daemon only). Server, nick, channels, accounts and passwords go in the overlay, never here; see docs/gateway.md. `enabled`, `network` (label in session keys), `host`, `port`, `tls`, `nick`, `sasl` or `nickserv_password`, `channels` (names, or `{name, key, trust}`), `owner_accounts`, `known_accounts`, `channel_mode`, `answer_strangers`, `persona`, reply/flood/reconnect limits. |
+| `irc` | The IRC adapter (daemon only). Server, nick, channels, accounts and passwords go in the overlay, never here; see docs/gateway.md. `enabled`, `network` (label in session keys), `host`, `port`, `tls`, `nick`, `sasl` or `nickserv_password`, `channels` (names, or `{name, key, trust}`), `owner_accounts` (the only accounts it answers), `channel_mode`, `persona`, reply/flood/reconnect limits. |
 | `file_memory` | `dir` (`null` = `<data dir>/memory`), `personas` that use it (default `central`), `daily_days` of notes to read, `context_share` of the prompt it may take, `extract_facts` (the post-turn extraction call). See docs/gateway.md. |
 
 - `guest.md` is added to the system prompt of any turn that isn't the owner's. `{who}` and
@@ -36,7 +36,7 @@ Every session is `owner`, `known` or `stranger`. A new session starts as `strang
 |---|---|
 | `app_environment` | The prompt's Environment section: this machine's project path (your home directory), the project tree, local URLs and the app's capability list. Off = the persona's `app_aware: false` behavior. |
 | `memories` | Shared memories in the prompt, and the `search_memory` tool. |
-| `recent_conversations` | The last few user messages from *other* conversations. |
+| `recent_conversations` | The last few user messages from the owner's *other* conversations. A conversation a non-owner turn has written in is never included, at any level. |
 | `agent_notes` | The owner's Agent Config notes. |
 | `knowledge_base` | Knowledge-base excerpts, and `search_knowledge_base`. |
 | `web_search` | Web search: the `web_search` tool, or automatic search for personas without tools. The query goes to DuckDuckGo, the only thing a turn sends off this machine, so only `owner` has it by default. |

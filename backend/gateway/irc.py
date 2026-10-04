@@ -5,26 +5,35 @@ nick, channels and passwords belong in the overlay (<data dir>/gateway.json), ou
 nothing about any server is written in code. Runs only in the daemon (is_daemon()), since two
 processes holding one nick would fight over it.
 
-Identity. Anyone can take any nick, so trust follows services *accounts*, never nicks:
+Owner only. The gateway is parked as the owner's remote control (docs/scope.md): the bot
+answers messages from `owner_accounts` and nobody else. Everyone else, including someone
+using the owner's nick without being logged in to the account, is ignored and logged.
+
+Identity. Anyone can take any nick, so the owner is recognised by services *account*, never
+by nick:
 - with the IRCv3 `account-tag` capability, every message carries its sender's account;
 - without it, the adapter asks WHOIS (numeric 330, "is logged in as") and caches the answer
   briefly, dropping it when that nick changes or quits.
-`owner_accounts` and `known_accounts` map accounts to trust; anyone else is a stranger, and
-strangers get no answer unless `answer_strangers` is on.
 
 Sessions:
+- A direct message from an owner account is irc:<network>:~<account>, at owner trust.
 - A channel is one session, irc:<network>:<#channel>, at the trust its config entry gives it
-  (default stranger). Each message runs at the lower of the channel's trust and its sender's.
-- A direct message from an identified account is irc:<network>:~<account>, at that account's
-  trust. One from an unidentified nick is irc:<network>:<nick>, a stranger session, never the
-  account's, so taking someone's nick doesn't get you their conversation.
+  (default stranger). The owner addressing the bot there runs at that channel's trust, so in
+  an ordinary channel even the owner's message gets no private context or tools.
 The config file is the owner's word on IRC sessions' trust: it's applied when a session is
 created, and to configured channels on every connect.
 
 Approvals. A destructive/publish tool call (only ever asked on an owner turn) is relayed into
 the conversation with a short code and answered with "approve <code>" or "deny <code>". An
 answer counts only if its sender is identified, at that moment, as an owner account; anyone
-else's is refused and logged.
+else's is ignored with the rest of their messages.
+
+Delivery. A reply or approval request for an account's direct session goes to a nick, and a
+turn can take minutes: long enough for the owner to drop and someone else to take the nick,
+unseen if the bot shares no channel with them. So before sending, the adapter re-checks
+(WHOIS, unless the account was seen on that nick within VERIFY_FRESH_SECONDS) that the nick
+is still logged in as the session's account, and holds the reply otherwise. It stays in the
+conversation, where the desktop shows it.
 """
 
 from __future__ import annotations
@@ -48,6 +57,7 @@ logger = logging.getLogger(__name__)
 WANTED_CAPS = ("account-tag", "account-notify", "message-tags")
 WHOIS_TIMEOUT = 5.0
 WHOIS_CACHE_SECONDS = 60.0
+VERIFY_FRESH_SECONDS = 10.0  # an account seen on a nick this recently needs no WHOIS before a reply
 MAX_LINE_BYTES = 400  # payload per PRIVMSG; the server adds our prefix and the command to 512
 
 
@@ -140,7 +150,6 @@ class IrcAdapter:
             entry["trust"] = sessions.validate_trust(entry.get("trust", "stranger"))
             self.channels[irc_lower(entry["name"])] = entry
         self.owner_accounts = {irc_lower(a) for a in config.get("owner_accounts") or []}
-        self.known_accounts = {irc_lower(a) for a in config.get("known_accounts") or []}
         self.nick = config["nick"]
         self.caps: set[str] = set()
         self.connected = False
@@ -294,6 +303,10 @@ class IrcAdapter:
             self._forget(msg.nick)
             if irc_lower(msg.nick) == irc_lower(self.nick) and msg.params:
                 self.nick = msg.params[0]
+            elif msg.params:  # replies follow the person; delivery still re-checks their account
+                for key, target in list(self._targets.items()):
+                    if irc_lower(target) == irc_lower(msg.nick):
+                        self._targets[key] = msg.params[0]
         elif cmd in ("QUIT", "ACCOUNT") and msg.nick:
             self._forget(msg.nick)
         elif cmd == "330" and len(msg.params) >= 3:  # RPL_WHOISACCOUNT: me nick account :is logged in as
@@ -343,28 +356,48 @@ class IrcAdapter:
         """The services account behind a message, or None if its sender isn't logged in."""
         if "account-tag" in self.caps:
             account = msg.tags.get("account")
-            return account if account and account != "*" else None
-        nick = irc_lower(msg.nick or "")
-        cached = self._whois.get(nick)
-        if cached and time.monotonic() - cached[0] < WHOIS_CACHE_SECONDS:
+            account = account if account and account != "*" else None
+            self._whois[irc_lower(msg.nick or "")] = (time.monotonic(), account)
+            return account
+        return await self._account_of(msg.nick or "", WHOIS_CACHE_SECONDS)
+
+    async def _account_of(self, nick: str, max_age: float) -> str | None:
+        """The account nick is logged in as: from a sighting younger than max_age, else WHOIS."""
+        key = irc_lower(nick)
+        cached = self._whois.get(key)
+        if cached and time.monotonic() - cached[0] < max_age:
             return cached[1]
-        future = self._whois_pending.get(nick)
+        future = self._whois_pending.get(key)
         if future is None:
             future = asyncio.get_running_loop().create_future()
-            self._whois_pending[nick] = future
-            await self._send(f"WHOIS {msg.nick}")
+            self._whois_pending[key] = future
+            await self._send(f"WHOIS {nick}")
         try:
             return await asyncio.wait_for(asyncio.shield(future), WHOIS_TIMEOUT)
         except asyncio.TimeoutError:
-            self._whois_pending.pop(nick, None)
+            self._whois_pending.pop(key, None)
             return None  # can't verify: treat as not logged in
 
-    def trust_for(self, account: str | None) -> str:
-        if account and irc_lower(account) in self.owner_accounts:
-            return "owner"
-        if account and irc_lower(account) in self.known_accounts:
-            return "known"
-        return "stranger"
+    def _session_account(self, key: str) -> str | None:
+        """The account a direct session belongs to (irc:<network>:~<account>), else None."""
+        prefix = f"irc:{self.network}:~"
+        return key[len(prefix):] if key.startswith(prefix) else None
+
+    async def _deliverable(self, key: str, target: str) -> bool:
+        """Whether target may receive this session's private replies: an account's direct
+        session only goes to a nick logged in as that account right now."""
+        account = self._session_account(key)
+        if account is None:
+            return True  # a channel: everyone there saw the conversation
+        current = await self._account_of(target, VERIFY_FRESH_SECONDS)
+        if current is not None and irc_lower(current) == account:
+            return True
+        logger.warning("irc %s: held a reply for %s: %s isn't logged in as that account now",
+                       self.network, key, target)
+        return False
+
+    def is_owner(self, account: str | None) -> bool:
+        return bool(account) and irc_lower(account) in self.owner_accounts
 
     def _addressed(self, text: str) -> str | None:
         """The message body if it addresses the bot ("nick: ...", "nick, ...", "@nick ..."), else None."""
@@ -378,8 +411,14 @@ class IrcAdapter:
         if irc_lower(msg.nick) == irc_lower(self.nick) or text.startswith("\x01"):
             return  # our own echo, or CTCP
         in_channel = target[:1] in "#&!+"
+        if in_channel and (self.channels.get(irc_lower(target)) is None or (
+                self._addressed(text) is None and self.config.get("channel_mode", "mention") != "all")):
+            return  # not for the bot: don't WHOIS everyone who talks in a channel
         account = await self.identify(msg)
-        trust = self.trust_for(account)
+        if not self.is_owner(account):
+            logger.info("irc %s: ignored %s (not logged in as an owner account)", self.network, msg.nick)
+            return
+        trust = "owner"
 
         if in_channel:
             channel = self.channels.get(irc_lower(target))
@@ -393,16 +432,10 @@ class IrcAdapter:
             session_trust = channel["trust"]
         else:
             body = text.strip()
-            if account:
-                key, session_trust = f"irc:{self.network}:~{irc_lower(account)}", trust
-            else:
-                key, session_trust = f"irc:{self.network}:{irc_lower(msg.nick)}", "stranger"
+            key, session_trust = f"irc:{self.network}:~{irc_lower(account)}", trust
             reply_to, label = msg.nick, f"IRC {msg.nick} (direct)"
 
         if await self._maybe_approval(body, msg.nick, account, trust, reply_to):
-            return
-        if trust == "stranger" and not self.config.get("answer_strangers", False):
-            logger.info("irc %s: ignored %s (not identified as a known account)", self.network, msg.nick)
             return
         try:
             sessions.validate_key(key)
@@ -452,6 +485,9 @@ class IrcAdapter:
             logger.warning("irc %s: %s", self.network, exc)
             return
         reply = result.reply if result.reply.strip() else f"(I couldn't answer that: {result.error or result.status}.)"
+        reply_to = self._targets.get(key, reply_to)  # followed a nick change while the turn ran
+        if not await self._deliverable(key, reply_to):
+            return
         lines = wrap_reply(reply, int(self.config.get("max_reply_lines", 8)), MAX_LINE_BYTES - len(prefix.encode()))
         for i, line in enumerate(lines):
             await self.say(reply_to, (prefix if i == 0 else "") + line)
@@ -466,6 +502,8 @@ class IrcAdapter:
             if not target:
                 continue
             if event["type"] == "approval_request":
+                if not await self._deliverable(key, target):
+                    continue  # nobody verified to answer: it times out and is denied
                 code = event["request_id"].replace("-", "")[:6]
                 self._approvals[code] = (event["request_id"], key)
                 args = json.dumps(event.get("arguments"), ensure_ascii=False)
@@ -487,15 +525,15 @@ class IrcAdapter:
         approved = match.group(1).lower() == "approve"
         who = f"irc:{account}" if account else f"irc:{nick} (unidentified)"
         if not self.gateway.resolve_approval(request_id, approved, by=who, trust=trust):
-            if trust != "owner":
-                await self.say(reply_to, f"{nick}: only the owner, identified to services, can answer approval {code}.")
-            return True
+            return True  # already settled (timed out, or answered elsewhere)
         await self.say(reply_to, f"{'Approved' if approved else 'Denied'} {code}.")
         return True
 
     # ── outgoing ────────────────────────────────────────────────────────────────
 
     async def say(self, target: str, text: str) -> None:
+        # \x01 would turn model output into a CTCP request (DCC, ACTION, …) to whoever reads it.
+        text = text.replace("\x01", "").replace("\x00", "")
         await self._send(f"PRIVMSG {target} :{text}")
 
     async def _send(self, line: str) -> None:

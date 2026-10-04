@@ -26,7 +26,7 @@ from backend.db import init_db, DB_PATH
 from backend.services.auth import ApiKeyMiddleware, TRUSTED_BROWSER_ORIGINS
 from backend.services.exposure import validate_bind_host
 from backend.services import memory_index, index_jobs
-from backend.gateway import get_gateway, is_daemon, shutdown_gateway
+from backend.gateway import get_gateway, is_daemon, is_enabled as gateway_enabled, shutdown_gateway
 from backend.routers import chat, ollama, servers, tools, system, deploy, fs, memory, mcp_proxy, mcp_codebase, knowledge, studio, social, lora, video, models, music, dj, projects, community, gateway
 
 logger = logging.getLogger(__name__)
@@ -153,7 +153,10 @@ app.include_router(music.router,    prefix="/api/music",     tags=["music"])
 app.include_router(dj.router,       prefix="/api/dj",        tags=["dj"])
 app.include_router(projects.router, prefix="/api/projects",  tags=["projects"])
 app.include_router(community.router, prefix="/api/community", tags=["community"])
-app.include_router(gateway.router,  prefix="/api/gateway",   tags=["gateway"])
+# Experimental and parked (docs/scope.md): the daemon serves it; a desktop backend only with
+# ARYNWOOD_ENABLE_GATEWAY=1.
+if gateway_enabled():
+    app.include_router(gateway.router, prefix="/api/gateway", tags=["gateway"])
 
 
 _SOCIAL_MEDIA_DIR = os.path.join(user_data_dir(), "static", "social-media")

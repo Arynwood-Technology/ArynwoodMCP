@@ -9,42 +9,81 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
-### Added
+### Security
 
-- Headless gateway: `python -m backend.gateway` runs Arynwood MCP as an always-on agent
-  with no desktop window, on `127.0.0.1:8020` by default. Each outside conversation (an
-  API client, an IRC user or channel) gets a persistent session that survives restarts,
-  reachable over HTTP and a WebSocket at `/api/gateway`.
-- Trust levels for gateway sessions: `owner`, `known` and `stranger`, with new sessions
-  starting as strangers. Only owner turns see your memories, notes, documents, other
-  conversations, machine paths and tools, or can search the web. Strangers also get a
-  note telling the model it isn't talking to its owner.
-- Conversational tool loop for gateway turns: the model calls tools mid-reply, reads each
-  result and decides the next step until it is done, with the same approval, validation
-  and repeat-detection rules as the desktop's tool loop.
-- File memory: `MEMORY.md` and dated daily notes in `~/.local/share/arynwood-mcp/memory/`,
-  read at the start of your turns and updated after them with facts you stated. You can
-  edit them in any text editor.
-- IRC adapter: the gateway can join your own IRC server. It trusts services accounts
-  (IRCv3 `account-tag` or WHOIS), never nicks; destructive actions are approved with
-  `approve <code>`, only from your identified account. A message that arrives as several
-  lines is answered once. Server details live in your personal overlay file, never in the
-  repository.
+If you run 0.4.5, update: the first two items below close holes in that release.
+
+- Web pages can no longer read or call the local API. HTTP and WebSocket requests from a
+  foreign or opaque (`null`) browser origin are refused before they reach any route. 0.4.5
+  accepted `null`, which sandboxed iframes and local files send. An exact Host check
+  blocks DNS rebinding.
+- Tool installs need a POST. In 0.4.5 a plain link or image on any web page could start
+  one through `GET /api/tools/{id}/install/stream`.
+- The backend refuses to listen beyond loopback without `ARYNWOOD_API_KEY`. Remote clients
+  need the key, which also protects `/metrics` and social-media files.
+- Learning from a URL reaches public addresses only. Each redirect is checked again;
+  private and local addresses, proxies and HTTPS downgrades are refused; responses are
+  capped at 5 MiB and 30 seconds.
+- Deploys require a known SSH host key and keep uploads inside the target folder.
+- `start.sh` no longer starts unattended YouTube publishing unless
+  `ARYNWOOD_ENABLE_AUTO_PUBLISH=1`.
+- Tool calls share one policy (`backend/services/tool_policy.py`). Unreviewed MCP servers
+  need approval for every call. An approval is single-use, expires, and covers only the
+  exact call it was given for; direct API calls that would need one are refused, and only
+  a real yes counts.
+- Project file reads stay inside the project: sibling folders with a matching prefix, and
+  symlinks that lead out, are refused. Developer codebase tools skip credential files,
+  bound their subprocesses, need approval to run tests or lint, and aren't available in
+  packaged builds.
+- HTML tool files are resolved and confined to their folder.
+- `python -m backend.security` reports the security-relevant configuration, without
+  printing secrets.
+- Gateway: what someone else says never reaches your prompts as your own words. The
+  "recent conversations" block, quoted to `central` as "User:", used to read gateway
+  conversations with other people in them. Messages saved by non-owner turns are now
+  tagged, kept out of other conversations, and shown to your own turns only as untrusted
+  data. Existing conversations are tagged once, on the first start.
+- Gateway IRC: a private reply or approval request goes out only after re-checking that the
+  nick is still logged in as your account. Model output can't send CTCP requests.
 
 ### Changed
 
+- The headless gateway is experimental and parked, as an owner-only remote control. The
+  desktop backend serves `/api/gateway` only with `ARYNWOOD_ENABLE_GATEWAY=1`; the daemon
+  turns it on by itself. Over IRC it answers only `owner_accounts`. `answer_strangers` and
+  `known_accounts` are gone, and everyone else is ignored.
+- Fonts are served by the app itself, so opening it makes no requests to Google Fonts.
+- The Tool Library lists only tools Arynwood integrates; unreviewed entries were removed.
 - The hand-drawn Arynwood tree replaces the earlier stained-glass logo: the sidebar,
   Arynwood's chat avatar and thinking indicator, and the browser-tab icon. In the app the
   drawing is used unchanged with its glowing core and halo drawn in code, and the mark dims
   to an eclipse while Arynwood can't reach its model. The desktop app icons are a render of
   that glowing mark, so the black ring stays visible on dark taskbars.
 - Codebase tools are served in-process by whichever backend runs the turn, instead of
-  over HTTP to port 8010, so the gateway daemon has them without the desktop running.
+  over HTTP to port 8010.
 - The tool agent's instructions say that calling a destructive tool is how it asks for
   approval, instead of asking for confirmation in prose.
 
+### Added
+
+- Experimental headless gateway, off by default (`docs/gateway.md`), run from a source
+  checkout with `python -m backend.gateway`:
+  - persistent sessions over a loopback HTTP/WebSocket API, with `owner`, `known` and
+    `stranger` trust levels; only owner turns see your memories, notes, documents, tools
+    or web search;
+  - a conversational tool loop with the desktop's approval, validation and
+    repeat-detection rules;
+  - file memory: `MEMORY.md` and dated notes you can edit, written only from your own
+    turns;
+  - an IRC adapter for your own server. It recognises you by services account, never by
+    nick, and destructive actions are approved with `approve <code>`.
+
 ### Fixed
 
+- Stable Diffusion recovers when A1111 fails partway through unloading a model, instead of
+  failing every later generation with a tensor type mismatch.
+- A LoRA generates on the checkpoint it was trained on. An SDXL LoRA on the SD 1.5
+  checkpoint silently did nothing.
 - Optional per-persona `llm.num_predict` overrides short model output caps while
   reserving matching context space, allowing writing models to finish longer scenes.
 - Evidence-handling instructions distinguish supplied tags from original prose.

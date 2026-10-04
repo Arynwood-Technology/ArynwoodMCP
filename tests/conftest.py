@@ -21,6 +21,8 @@ _tmp_gateway_overlay = os.path.join(_tmp_gateway_dir, "gateway.json")
 with open(_tmp_gateway_overlay, "w") as _f:
     json.dump({"file_memory": {"dir": os.path.join(_tmp_gateway_dir, "memory")}}, _f)
 os.environ["ARYNWOOD_GATEWAY_CONFIG"] = _tmp_gateway_overlay
+# The gateway's API is parked behind an opt-in (backend.gateway.is_enabled); its tests need it.
+os.environ["ARYNWOOD_ENABLE_GATEWAY"] = "1"
 
 
 @pytest.fixture()

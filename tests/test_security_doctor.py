@@ -28,3 +28,13 @@ def test_doctor_flags_unattended_publishing(monkeypatch):
     monkeypatch.delenv('ARYNWOOD_ALLOWED_HOSTS', raising=False)
     checks = inspect_security('127.0.0.1')['checks']
     assert any(c['id'] == 'publishing.unattended_enabled' and c['severity'] == 'warning' for c in checks)
+
+
+def test_doctor_reports_whether_the_gateway_is_parked(monkeypatch):
+    monkeypatch.delenv('ARYNWOOD_ALLOWED_HOSTS', raising=False)
+    monkeypatch.delenv('ARYNWOOD_GATEWAY_DAEMON', raising=False)
+    monkeypatch.delenv('ARYNWOOD_ENABLE_GATEWAY', raising=False)
+    assert {'id': 'gateway.enabled', 'severity': 'pass'}.items() <= next(
+        c for c in inspect_security('127.0.0.1')['checks'] if c['id'] == 'gateway.enabled').items()
+    monkeypatch.setenv('ARYNWOOD_ENABLE_GATEWAY', '1')
+    assert next(c for c in inspect_security('127.0.0.1')['checks'] if c['id'] == 'gateway.enabled')['severity'] == 'info'

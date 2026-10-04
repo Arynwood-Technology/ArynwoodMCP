@@ -1,10 +1,15 @@
 # Headless gateway
 
-The gateway turns Arynwood MCP into an always-on personal AI agent that runs entirely on
-your own machine. The language model runs on your own GPU through Ollama, and
-conversations, memories and tools stay local. It runs with no desktop window attached,
-and you reach it over HTTP, a WebSocket, or (next) a chat network such as your own IRC
-server.
+> **Experimental, and parked.** The gateway is a remote control for the owner's own
+> workspace, nothing more ([scope](scope.md)). It is off unless you start the daemon
+> (`python -m backend.gateway`) or set `ARYNWOOD_ENABLE_GATEWAY=1` for the desktop backend.
+> Over IRC it answers only your own services account. It runs from a source checkout; the
+> desktop packages don't start it.
+
+The gateway lets you reach Arynwood MCP with no desktop window attached. The language model
+runs on your own GPU through Ollama, and conversations, memories and tools stay on your
+machine. You reach it over HTTP or a WebSocket on loopback, or from your phone over your own
+IRC server.
 
 It keeps one persistent **session** per outside conversation: an API client, an IRC
 user or channel, a scheduled job. Each session continues the same conversation across
@@ -28,10 +33,11 @@ python -m backend.gateway --port 8021     # flags override the config file
 ```
 
 This is the whole backend (`backend.api:app`, every `/api` route) started headless.
-`/api/gateway/status` reports `"daemon": true` when it runs this way. The desktop
-backend also serves `/api/gateway` but reports `false`. Work that must run in exactly
-one process, such as a chat-network connection or a scheduler, starts only in the daemon
-(`backend.gateway.is_daemon()`).
+`/api/gateway/status` reports `"daemon": true` when it runs this way. A desktop backend
+serves `/api/gateway` only with `ARYNWOOD_ENABLE_GATEWAY=1`, and then reports `false`.
+Work that must run in exactly one process, such as a chat-network connection or a
+scheduler, starts only in the daemon (`backend.gateway.is_daemon()`).
+`python -m backend.security` reports whether the gateway is served (`gateway.enabled`).
 
 ### As a systemd user service
 
@@ -70,7 +76,7 @@ session always run in order.
 A session starts as `stranger`. Only the owner raises it, through
 `PUT /api/gateway/sessions/{key}` with `{"trust_level": "owner" | "known" | "stranger"}`. An
 adapter can lower it for one message (`trust_level` on the inbound message), for example
-when an IRC nick isn't identified right now, but never raise it.
+when you address the bot in an ordinary IRC channel, but never raise it.
 
 The `trust_levels` table in the config decides what each level's turns get:
 
@@ -80,11 +86,26 @@ The `trust_levels` table in the config decides what each level's turns get:
 - local tools: MCP servers and file-creating tools;
 - whether `<remember>` blocks are saved.
 
-By default `owner` gets everything, `known` gets web search only, and `stranger` gets
-nothing but its own conversation. A turn that isn't the owner's also gets `guest.md` in
+By default `owner` gets everything, and `known` and `stranger` get nothing but their own
+conversation. A turn that isn't the owner's also gets `guest.md` in
 its system prompt, telling the model it isn't talking with its owner. The effective level
 and what it granted are recorded in the run evidence (`kind: "trust"`). Details are in
 `mcp/config/gateway/README.md`.
+
+**What someone else says stays in their conversation.** A turn that isn't the owner's
+saves its message with that trust level (`messages.trust`), and those words never reach
+the owner's other prompts:
+
+- A conversation a non-owner turn has written in is never part of "recent conversations",
+  the block of the owner's other recent messages, at any trust level. That block is quoted
+  to the model as the owner's own words, in turns that have tools and private memory.
+- Inside one conversation, an owner turn sees an earlier non-owner message only as
+  `<untrusted-data>`, for example when you continue a lower-trust gateway conversation
+  from the desktop.
+
+Conversations from before this existed are tagged once, when the column is added: every
+user message in a conversation that a non-owner turn wrote in, going by the sessions and
+the run evidence.
 
 ## Sessions
 
@@ -192,7 +213,8 @@ The agent keeps a plain-text memory you can open in any editor:
   written twice. The write-back runs after the reply, so it never delays an answer.
 - **Who it applies to.** Only owner turns read or write it (the `memories` and `memory_writes`
   grants), and only for the personas listed under `file_memory.personas` (default
-  `central`). Strangers' messages are never logged or learned from.
+  `central`). Strangers' messages never reach it. They stay in their own conversation's
+  history in the local database, like any conversation.
 - **It's yours to edit.** The agent only ever appends, and writes atomically.
   `GET /api/gateway/memory` shows the current files.
 
@@ -220,8 +242,7 @@ drops, rejoins its channels, and stays under flood limits when it replies.
     "nick": "aryn-bot",
     "nickserv_password": "…",
     "channels": [{"name": "#home", "trust": "owner"}, "#lobby"],
-    "owner_accounts": ["your-services-account"],
-    "known_accounts": []
+    "owner_accounts": ["your-services-account"]
   }
 }
 ```
@@ -232,36 +253,45 @@ connection under `adapters.irc`. Other keys are in `mcp/config/gateway/config.js
 - `sasl: {"account", "password"}` instead of `nickserv_password`;
 - `channel_mode` (`mention` by default: in channels it answers only when addressed as
   `aryn-bot: …`);
-- `answer_strangers` (off);
 - `coalesce_seconds` (1.5): lines from the same person within this window become one
   message, since phone clients often send a long message as several lines;
 - `max_reply_lines`, plus the flood and reconnect timings.
 
-**Identity: accounts, not nicks.** On IRC anyone can take any nick, so the adapter trusts
-services accounts:
+**Owner only.** The bot answers messages from `owner_accounts` and nobody else. Everyone else
+is ignored and logged: other logged-in accounts, unidentified nicks, and other people in its
+channels. Talking with other people isn't something the gateway does (see [scope](scope.md)).
+
+**Identity: accounts, not nicks.** On IRC anyone can take any nick, so the adapter recognises
+you by your services account:
 
 - **With the IRCv3 `account-tag` capability,** each message carries its sender's account.
 - **Without it,** the adapter asks `WHOIS` and reads the "is logged in as" reply (numeric
   330). It caches that briefly and forgets it when the nick changes or quits.
 
-`owner_accounts` are owners and `known_accounts` are known; everyone else is a stranger and
-gets no reply. If the network has no services, nobody can be identified, so the bot answers
-nobody. It fails closed.
+If the network has no services, nobody can be identified, so the bot answers nobody. It
+fails closed.
 
 **Sessions.**
 
+- **A direct message from your account** is your own session, keyed by the account
+  (`irc:<network>:~account`), at owner trust.
 - **A channel is one session,** at the trust its config entry gives it (default `stranger`).
-  Each message runs at the lower of the channel's trust and its sender's, so in an ordinary
-  channel even your own messages can't reach private context.
-- **A direct message from an identified account** gets its own session, keyed by the
-  account (`irc:<network>:~account`).
-- **A message from an unidentified nick** lands in a separate stranger session. Taking
-  someone's nick gets you neither their trust nor their conversation.
+  When you address the bot there, your message runs at the channel's trust, so in an
+  ordinary channel even your own messages can't reach private context or tools.
+
+**Delivery.** A direct reply goes to a nick, and a turn can take minutes. In that time you
+could drop off and someone else could take your nick, without the bot seeing it if you
+share no channel with it. So before it sends a reply or an approval request in an
+account's direct session, the bot re-checks that the nick is still logged in as that
+account. It uses `WHOIS`, unless it saw the account on that nick in the last 10 seconds.
+If the check fails, the reply is held: it is saved in the conversation, where the desktop
+shows it, but it isn't sent. A held approval request times out and is denied. If you
+change nick while a turn runs, the reply follows you and is checked the same way.
 
 **Approvals over IRC.** When an owner turn wants a destructive or publishing tool, the bot
 posts `Approval needed: <tool> <arguments> … "approve 1a2b3c" or "deny 1a2b3c"`. An answer
 counts only if the sender is identified as an owner account at that moment. Anyone else's
-is refused, logged, and leaves the request pending. Unanswered requests are denied after
+is ignored like the rest of their messages, and the request stays pending. Unanswered requests are denied after
 `approval_timeout_seconds`, and the reply says the request timed out rather than that you
 declined it.
 
@@ -327,17 +357,12 @@ The one thing that can leave the machine is a web search query, sent to DuckDuck
 the agent decides to search. By default only your own (owner) sessions can search; turn
 `web_search` off in the config to stop even that.
 
-### Can other people talk to my AI agent without seeing my private data?
+### Can other people talk to my AI agent?
 
-Yes. Every session has a trust level: `owner`, `known` or `stranger`, and new sessions
-start as strangers. A stranger's turns get none of the following:
-
-- your memories, notes, documents or other conversations;
-- your machine's paths or layout;
-- your tools, or the ability to save memories.
-
-The model is also told it isn't talking to its owner. Only you raise a session's trust,
-through the API.
+Not over IRC: the bot answers only your own services account and ignores everyone else.
+Sessions created through the local API start as `stranger`, and a stranger's turns get
+none of your memories, notes, documents, other conversations, machine paths or tools. Only
+you raise a session's trust, through the API.
 
 ### Can a local LLM use tools in several steps, like a cloud AI agent does?
 
@@ -388,8 +413,9 @@ so you can see where every fact came from. The agent picks up your edits on its 
 
 No. Only your own owner turns are read into memory or written to it, and the agent may only
 record facts you stated or confirmed, never its own guesses or the contents of a web page.
-Messages from strangers, such as other people on an IRC channel, are neither logged nor
-learned from.
+Over IRC nobody else gets through at all. A message saved by a turn that wasn't at owner
+trust never appears in your other conversations, and if you continue that conversation
+yourself, the agent sees it as an untrusted quote, not as your instruction.
 
 ### How do I talk to my home AI server from my phone?
 
@@ -400,14 +426,14 @@ to a server you run.
 
 ### Is it safe to put a personal AI agent on IRC, where anyone can take any nick?
 
-Arynwood MCP trusts services accounts, not nicks. It checks each sender's account through
-the IRCv3 `account-tag` capability, or by asking `WHOIS`. Someone using your nick without
-being logged in to your account gets no reply, and gets neither your trust nor your
-conversation history. If the network can't verify anyone, the bot answers nobody.
+Arynwood MCP recognises you by your services account, not your nick. It checks each sender's
+account through the IRCv3 `account-tag` capability, or by asking `WHOIS`, and answers only
+your account. Someone using your nick without being logged in to your account gets no reply.
+Before a private reply goes out, it checks again that the nick is still yours. If the
+network can't verify anyone, the bot answers nobody.
 
 ### Can someone in my IRC channel make the agent delete files or run tools?
 
-No. In a channel, each message runs at the lower of the channel's trust and the sender's, so
-strangers get no tools at all. A destructive call is only ever proposed on your own owner
-turn. Only your identified account can approve it, with `approve <code>`; an approval from
-anyone else, even someone using your nick, is refused and logged.
+No. The bot ignores everyone but your account. A destructive call is only ever proposed on
+your own owner turn, and only your identified account can approve it, with
+`approve <code>`.

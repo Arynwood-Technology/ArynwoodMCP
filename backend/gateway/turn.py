@@ -185,10 +185,13 @@ async def _execute(sink, db, session, msg, trust: str, policy: dict, approve,
                   if is_aryn and policy["recent_conversations"] else "")
     history_summary = conversation["history_summary"] or ""
 
-    user_message_id = await chat.save_message(db, conversation_id, "user", message)
+    # Tagged with the turn's trust unless it's the owner's: what a stranger says never reaches
+    # another conversation's prompt, nor the owner's own turns except as untrusted data.
+    user_message_id = await chat.save_message(db, conversation_id, "user", message, trust=trust)
     runtime_context.source_message_id.set(user_message_id)
     max_hist = int(await chat._get_setting(db, "agent_max_history", str(chat.MAX_HISTORY)))
-    history = await chat.load_history(db, conversation_id, max_hist, include_ids=True)
+    history = await chat.load_history(db, conversation_id, max_hist, include_ids=True,
+                                      wrap_others=trust == "owner")
     if history and history[-1]["role"] == "user":
         history = history[:-1]
 

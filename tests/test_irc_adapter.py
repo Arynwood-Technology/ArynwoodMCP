@@ -108,7 +108,7 @@ def irc_config(port, **overrides):
     config = {
         **load_config()["irc"], "enabled": True, "network": "testnet", "host": "127.0.0.1", "port": port,
         "tls": False, "nick": "aryn-bot", "channels": ["#lobby", {"name": "#home", "trust": "owner"}],
-        "owner_accounts": ["owner-acct"], "known_accounts": ["pal"], "flood_burst": 50,
+        "owner_accounts": ["owner-acct"], "flood_burst": 50,
         "flood_interval_seconds": 0.01, "reconnect_min_seconds": 0.05, "reconnect_max_seconds": 0.1,
         "coalesce_seconds": 0.05,
     }
@@ -280,13 +280,16 @@ async def test_a_borrowed_nick_gets_nothing(gateway, ircd, monkeypatch):
     assert script.requests == []
 
 
-async def test_known_account_gets_an_answer_without_private_context(gateway, ircd, monkeypatch):
-    script = Script(monkeypatch, ["Hi pal."])
-    await gateway.file_memory.record({"durable": ["The owner's secret is Lantern."], "today": []}, "api:me")
-    await connected(gateway, ircd)
+async def test_only_owner_accounts_are_answered(gateway, ircd, monkeypatch):
+    """Owner only (docs/scope.md): another logged-in account, or anyone in a channel, gets nothing,
+    even with the old answer_strangers/known_accounts settings still in someone's overlay."""
+    script = Script(monkeypatch, ["should not be sent"])
+    await connected(gateway, ircd, known_accounts=["pal"], answer_strangers=True)
     ircd.send(tagged("pal", "buddy", "aryn-bot", "what's the secret?"))
-    assert await reply_to(ircd, "buddy") == "PRIVMSG buddy :Hi pal."
-    assert "Lantern" not in script.requests[-1]["messages"][0]["content"]
+    ircd.send(tagged(None, "anon", "aryn-bot", "hello?"))
+    ircd.send(tagged("pal", "buddy", "#home", "aryn-bot: hello?"))
+    assert await silence(ircd, "PRIVMSG ")
+    assert script.requests == []
 
 
 async def test_channels_answer_only_when_addressed(gateway, ircd, monkeypatch):
@@ -360,12 +363,11 @@ async def test_only_the_identified_owner_can_approve(gateway, ircd, kdenlive, mo
     assert request.startswith("PRIVMSG Ownr :Approval needed: delete_clip")
     code = request.split('"approve ')[1][:6]
 
-    # Same nick, but not identified: refused, and the call stays pending.
+    # Same nick, but not identified: ignored, and the call stays pending.
     ircd.send(tagged(None, "Ownr", "aryn-bot", f"approve {code}"))
-    assert "only the owner" in await reply_to(ircd, "Ownr")
-    # A known account isn't enough either.
+    # Another logged-in account isn't enough either.
     ircd.send(tagged("pal", "buddy", "aryn-bot", f"approve {code}"))
-    assert "only the owner" in await reply_to(ircd, "buddy")
+    assert await silence(ircd, "PRIVMSG ")
     assert kdenlive == [] and gateway.pending_approvals()
 
     ircd.send(tagged("owner-acct", "Ownr", "aryn-bot", f"approve {code}"))
@@ -403,3 +405,90 @@ async def test_approval_request_shows_arguments_as_json(gateway, ircd, kdenlive,
     await connected(gateway, ircd)
     ircd.send(tagged("owner-acct", "Ownr", "aryn-bot", "delete clip 2"))
     assert 'delete_clip {"clip_id": 2} (destructive)' in await reply_to(ircd, "Ownr")
+
+
+# ── delivery: what a reply may reach ────────────────────────────────────────────
+
+
+class Held:
+    """A model that doesn't answer until released, so the test can act while a turn runs."""
+
+    def __init__(self, monkeypatch, reply="Done thinking."):
+        self.reply, self.entered, self.release = reply, asyncio.Event(), asyncio.Event()
+        monkeypatch.setattr(ollama_client, "chat", self.chat)
+        monkeypatch.setattr(ollama_client, "chat_stream", self.stream)
+
+    async def chat(self, *, model, messages, host=None, port=None, options=None, tools=None, timeout=None):
+        if "long-term memory" in messages[0]["content"]:
+            return {"output": '{"durable": [], "today": []}'}
+        self.entered.set()
+        await self.release.wait()
+        return {"output": self.reply, "tool_calls": None}
+
+    async def stream(self, *, model, messages, host, port, options=None, tools=None):
+        self.entered.set()
+        await self.release.wait()
+        yield {"token": self.reply, "done": True}
+
+
+async def test_model_output_cannot_send_a_ctcp_request(gateway, ircd, monkeypatch):
+    Script(monkeypatch, ["\x01DCC SEND evil 0 0 0\x01"])
+    await connected(gateway, ircd)
+    ircd.send(tagged("owner-acct", "Ownr", "aryn-bot", "hi"))
+    assert await reply_to(ircd, "Ownr") == "PRIVMSG Ownr :DCC SEND evil 0 0 0"
+
+
+async def test_owner_reply_is_held_when_the_nick_is_no_longer_theirs(gateway, monkeypatch):
+    """A turn can outlast the owner's connection, and the bot may share no channel with them,
+    so it never sees the nick change hands. Delivery re-checks the account first."""
+    from backend.gateway import irc
+    monkeypatch.setattr(irc, "VERIFY_FRESH_SECONDS", 0.0)   # as if the turn had taken minutes
+    server = FakeIrcd(accounts={})                           # by then, nobody on Ownr is owner-acct
+    await server.start()
+    try:
+        Script(monkeypatch, ["Your private notes say teal."])
+        await connected(gateway, server)
+        server.send(tagged("owner-acct", "Ownr", "aryn-bot", "what do my notes say?"))
+        await server.expect("WHOIS Ownr")
+        assert await silence(server, "PRIVMSG Ownr")
+
+        server.accounts["Ownr"] = "owner-acct"               # the owner is back on their nick
+        server.send(tagged("owner-acct", "Ownr", "aryn-bot", "again?"))
+        assert await reply_to(server, "Ownr") == "PRIVMSG Ownr :ok"
+    finally:
+        await server.stop()
+
+
+async def test_approval_request_is_held_from_an_unverified_nick(gateway, kdenlive, monkeypatch):
+    from backend.gateway import irc
+    monkeypatch.setattr(irc, "VERIFY_FRESH_SECONDS", 0.0)
+    monkeypatch.setattr(gateway, "config", {**gateway.config, "approval_timeout_seconds": 0.5})
+    server = FakeIrcd(accounts={})
+    await server.start()
+    try:
+        Script(monkeypatch, [call("delete_clip", clip_id=2), "Not deleted."])
+        await connected(gateway, server)
+        server.send(tagged("owner-acct", "Ownr", "aryn-bot", "delete clip 2"))
+        assert await silence(server, "PRIVMSG Ownr :Approval needed", seconds=1.0)
+        assert kdenlive == []
+    finally:
+        await server.stop()
+
+
+async def test_reply_follows_the_owner_to_a_new_nick(gateway, monkeypatch):
+    server = FakeIrcd(accounts={"NewOwnr": "owner-acct"})
+    await server.start()
+    try:
+        model = Held(monkeypatch)
+        adapter = await connected(gateway, server)
+        server.send(tagged("owner-acct", "Ownr", "aryn-bot", "think it over"))
+        await asyncio.wait_for(model.entered.wait(), 5)
+        server.send(":Ownr!u@h NICK NewOwnr")
+        for _ in range(100):
+            if "NewOwnr" in adapter._targets.values():
+                break
+            await asyncio.sleep(0.01)
+        model.release.set()
+        assert await reply_to(server, "NewOwnr") == "PRIVMSG NewOwnr :Done thinking."
+    finally:
+        await server.stop()

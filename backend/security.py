@@ -38,6 +38,10 @@ def inspect_security(host: str | None = None) -> dict:
         add('tools.codebase_enabled', 'warning', 'Developer tools can read and execute repository code.', 'Disable ARYNWOOD_ENABLE_CODEBASE_TOOLS for non-developer installations.')
     else:
         add('tools.codebase_enabled', 'pass', 'Developer codebase tools are disabled.')
+    if os.environ.get('ARYNWOOD_ENABLE_GATEWAY') == '1' or os.environ.get('ARYNWOOD_GATEWAY_DAEMON') == '1':
+        add('gateway.enabled', 'info', 'The experimental gateway API is served by this backend.', 'Unset ARYNWOOD_ENABLE_GATEWAY unless you use the gateway; the daemon enables it by itself.')
+    else:
+        add('gateway.enabled', 'pass', 'The experimental gateway is parked (not served).')
     if os.environ.get('ARYNWOOD_ENABLE_AUTO_PUBLISH') == '1':
         add('publishing.unattended_enabled', 'warning', 'The launcher may start unattended YouTube publishing.', 'Unset ARYNWOOD_ENABLE_AUTO_PUBLISH and review artifacts manually during private hardening.')
     else:
