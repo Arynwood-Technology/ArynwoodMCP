@@ -14,7 +14,7 @@ const CATALOG: {
   { id: 'llama3.2',          name: 'Llama 3.2 3B',        tag: 'llama3.2',            size: '2.0 GB', description: "Meta's compact model. Surprisingly capable for its size.",            category: 'fast'    },
   { id: 'llama3.1',          name: 'Llama 3.1 8B',        tag: 'llama3.1',            size: '4.7 GB', description: 'Meta 8B with 128k context. Great balance of speed and quality.',      category: 'general' },
   { id: 'llama3.1:70b',      name: 'Llama 3.1 70B',       tag: 'llama3.1:70b',        size: '40 GB',  description: 'Top-tier open model. Needs 48GB+ VRAM.',                             category: 'large'   },
-  { id: 'gemma2',            name: 'Gemma 2 9B',          tag: 'gemma2',              size: '5.4 GB', description: "Google's well-rounded 9B. Excellent instruction following.",          category: 'general' },
+  { id: 'gemma4:12b',        name: 'Gemma 4 12B',         tag: 'gemma4:12b',          size: '8.0 GB', description: "Google's current model. Most accurate in Arynwood's tests, slower: it thinks first.", category: 'general' },
   { id: 'gemma2:27b',        name: 'Gemma 2 27B',         tag: 'gemma2:27b',          size: '16 GB',  description: "Google's large Gemma. Strong reasoning and writing.",                category: 'large'   },
   { id: 'hermes3',           name: 'Hermes 3 8B',         tag: 'hermes3:8b',          size: '4.7 GB', description: "Nous Research's Llama 3.1 fine-tune. Arynwood's default for chat and tools.", category: 'general' },
   { id: 'granite3.3',        name: 'Granite 3.3 8B',      tag: 'granite3.3:8b',       size: '4.9 GB', description: "IBM's 8B model with tool calling and 128k context.",                category: 'general' },
