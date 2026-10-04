@@ -41,8 +41,17 @@ def _safe_path(rel: str) -> str:
             "docs/troubleshooting.md.",
         )
     resolved = os.path.realpath(os.path.join(BASE_DIR, rel))
-    if not resolved.startswith(BASE_DIR):
+    root = os.path.realpath(BASE_DIR)
+    if resolved != root and not resolved.startswith(root + os.sep):
         raise HTTPException(403, "Path outside project root")
+    relative = os.path.relpath(resolved, root)
+    parts = [part.lower() for part in relative.split(os.sep)]
+    sensitive_dirs = {".git", ".aws", ".ssh", ".codex", ".agents"}
+    filename = parts[-1]
+    secret_env = filename == ".env" or (filename.startswith(".env.") and filename not in {".env.example", ".env.template"})
+    private_registry = relative.replace(os.sep, "/").lower() == "mcp/config/mcp_servers.json"
+    if any(part in sensitive_dirs for part in parts) or secret_env or private_registry or filename.endswith((".db", ".sqlite", ".sqlite3", ".pem", ".key")):
+        raise HTTPException(403, "Sensitive application or credential files are not available through project tools")
     return resolved
 
 

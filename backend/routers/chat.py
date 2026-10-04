@@ -917,31 +917,33 @@ _NATIVE_TOOLS = [
 
 
 def _make_approve_callback(websocket: WebSocket) -> mcp_tool_agent.ApprovalCallback:
-    """Build an approval callback (roadmap 2.3) that pauses this turn to ask the
-    user before a destructive/external-publish MCP tool call proceeds.
+    """Confirm a matching request with literal True; always close the prompt.
 
-    Sends an 'approval_request' event and waits for the next 'approval_response'.
-    chat_ws's single receiver routes only approval responses here (a new chat message
-    sent meanwhile is queued as the next turn, not consumed as a denial). A response
-    for a different request id, a malformed payload, or a disconnect fails toward
-    denial, matching run_tool_loop's own no-callback default; it never silently allows
-    a destructive action just because something unexpected came back. The wait has no
-    timeout — the client's Stop ({"type": "cancel"}) ends it.
+    The shared runner limits the wait to 120 seconds. Cancellation, malformed
+    payloads, mismatched IDs and disconnects grant no execution authority.
     """
     async def approve(tool_name: str, arguments: dict, tier: str) -> bool:
         request_id = str(uuid.uuid4())
+        approved = False
         try:
             await websocket.send_json({
                 "type": "approval_request", "request_id": request_id,
                 "tool": tool_name, "arguments": arguments, "tier": tier,
+                **mcp_tool_agent.tool_policy.approval_metadata(),
             })
             raw = await websocket.receive_text()
             data = json.loads(raw)
-            if data.get("type") != "approval_response" or data.get("request_id") != request_id:
-                return False
-            return bool(data.get("approved", False))
+            if isinstance(data, dict) and data.get("type") == "approval_response" and data.get("request_id") == request_id:
+                approved = data.get("approved") is True
+            return approved
         except Exception:
             return False
+        finally:
+            try:
+                await websocket.send_json({"type": "approval_resolved", "request_id": request_id,
+                                           "tool": tool_name, "approved": approved})
+            except Exception:
+                pass  # a disconnected approver still grants nothing
     return approve
 
 
@@ -1612,12 +1614,18 @@ async def conversation_runs(conversation_id: int, db=Depends(get_db)):
 @router.websocket('/ws')
 async def chat_ws(websocket: WebSocket):
     await websocket.accept()
-    approval_queue = asyncio.Queue()
+    approval_queue = asyncio.Queue(maxsize=1)
+    pending_request_id = None
     turn_queue = asyncio.Queue(maxsize=8)
     active = None
 
     class SocketSink:
         async def send_json(self, event):
+            nonlocal pending_request_id
+            if event.get('type') == 'approval_request':
+                pending_request_id = event.get('request_id')
+            elif event.get('type') == 'approval_resolved' and event.get('request_id') == pending_request_id:
+                pending_request_id = None
             await websocket.send_json(event)
         async def receive_text(self):
             return await approval_queue.get()
@@ -1659,7 +1667,10 @@ async def chat_ws(websocket: WebSocket):
                 await websocket.send_json({'type': 'error', 'message': 'Invalid chat message'})
                 continue
             if data.get('type') == 'approval_response':
-                await approval_queue.put(raw)
+                # Ignore unsolicited/stale responses and bound duplicate packets.
+                # Only the currently displayed request may reach the callback.
+                if pending_request_id is not None and data.get('request_id') == pending_request_id and not approval_queue.full():
+                    approval_queue.put_nowait(raw)
             elif data.get('type') == 'cancel':
                 task = active
                 if task:

@@ -674,3 +674,21 @@ async def test_an_explicit_deny_is_reported_as_one(make_gateway, kdenlive, monke
     gateway.resolve_approval(gateway.pending_approvals()[0]["request_id"], False)
     await turn
     assert "declined" in _denial(requests) and kdenlive == []
+
+
+async def test_nonboolean_gateway_decisions_do_not_settle_pending_request(make_gateway):
+    gateway = make_gateway()
+    pending = gateway._open_approval('api:approval-strict-test', {
+        'request_id': 'strict-test', 'tool': 'delete_clip', 'arguments': {}, 'tier': 'destructive',
+    }, True)
+    for value in ['false', 'true', 1, {}, None]:
+        assert not gateway.resolve_approval(pending.request_id, value)
+        assert not pending.future.done()
+    assert gateway.resolve_approval(pending.request_id, False)
+    assert pending.future.result() is False
+
+
+def test_http_approval_requires_actual_boolean(client):
+    for value in ['false', 'true', 1]:
+        response = client.post('/api/gateway/approvals/nonexistent', json={'approved': value})
+        assert response.status_code == 422

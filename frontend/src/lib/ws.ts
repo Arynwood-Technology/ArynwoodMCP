@@ -10,7 +10,8 @@ export type WsMessage =
       kb_sources: { title: string; source: string; source_id: number; score: number; page_start: number | null; page_end: number | null }[]
       tool_servers: string[]
     }
-  | { type: 'approval_request'; request_id: string; tool: string; arguments: Record<string, unknown>; tier: string }
+  | { type: 'approval_request'; request_id: string; tool: string; arguments: Record<string, unknown>; tier: string; server?: string; expires_in_seconds?: number }
+  | { type: 'approval_resolved'; request_id: string; tool: string; approved: boolean }
   | { type: 'status'; label: string }
   | { type: 'cancelled' }
   | { type: 'turn_completed'; run_id: string; status: string; evidence: Record<string, unknown>[] }

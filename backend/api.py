@@ -23,7 +23,8 @@ import asyncio
 import logging
 
 from backend.db import init_db, DB_PATH
-from backend.services.auth import ApiKeyMiddleware
+from backend.services.auth import ApiKeyMiddleware, TRUSTED_BROWSER_ORIGINS
+from backend.services.exposure import validate_bind_host
 from backend.services import memory_index, index_jobs
 from backend.gateway import get_gateway, is_daemon, shutdown_gateway
 from backend.routers import chat, ollama, servers, tools, system, deploy, fs, memory, mcp_proxy, mcp_codebase, knowledge, studio, social, lora, video, models, music, dj, projects, community, gateway
@@ -51,6 +52,7 @@ async def _backfill_memory_index():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    validate_bind_host(os.environ.get("ARYNWOOD_BIND_HOST", "127.0.0.1"))
     await init_db()
     tasks = []
     if not os.getenv("ARYNWOOD_DISABLE_BACKGROUND_INDEX"):
@@ -88,7 +90,7 @@ async def _no_cache_api_responses(request, call_next):
         response.headers["Cache-Control"] = "no-store"
     return response
 
-app.add_middleware(ApiKeyMiddleware)  # no-op unless ARYNWOOD_API_KEY is set — see backend/services/auth.py
+app.add_middleware(ApiKeyMiddleware)  # browser origins always checked; bearer auth is opt-in
 
 # Wildcard allow_origins is a real risk with auth opt-in/off by default (see
 # ApiKeyMiddleware above): any website's JS, running in a browser tab on this same
@@ -121,8 +123,7 @@ app.add_middleware(ApiKeyMiddleware)  # no-op unless ARYNWOOD_API_KEY is set —
 # ARYNWOOD_BIND_HOST is opened up, not this list.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5180", "tauri://localhost", "null"],
-    allow_origin_regex=r"https?://(tauri\.localhost|localhost:5180)(:\d+)?",
+    allow_origins=TRUSTED_BROWSER_ORIGINS,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -165,10 +166,14 @@ if os.path.isdir(_HTML_TOOLS_DIR):
     from fastapi.responses import FileResponse
     import os as _os
 
+    _HTML_TOOLS_ROOT = _os.path.realpath(_HTML_TOOLS_DIR)
+
     @app.get("/html-tools/{filename:path}")
     async def serve_html_tool(filename: str, request: Request):
-        path = _os.path.join(_HTML_TOOLS_DIR, filename)
-        if not _os.path.isfile(path):
+        # Resolve before checking: an encoded `..%2F` or absolute path in `filename` would
+        # otherwise serve any file the backend can read, and this route is outside the /api auth.
+        path = _os.path.realpath(_os.path.join(_HTML_TOOLS_ROOT, filename))
+        if not path.startswith(_HTML_TOOLS_ROOT + _os.sep) or not _os.path.isfile(path):
             from fastapi import HTTPException
             raise HTTPException(status_code=404)
         resp = FileResponse(path)

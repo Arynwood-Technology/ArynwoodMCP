@@ -5,6 +5,7 @@ Handles IPv4 and IPv6 targets.
 import asyncio
 import io
 import os
+import posixpath
 import stat
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
@@ -24,7 +25,8 @@ _executor = ThreadPoolExecutor(max_workers=4)
 def _open_sftp(target: dict) -> tuple[paramiko.SSHClient, paramiko.SFTPClient]:
     """Open an SSH connection and return (SSHClient, SFTPClient) for the given target."""
     ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.load_system_host_keys()
+    ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
 
     host = target["host"].strip()
     # Strip IPv6 brackets if present ([::1] → ::1)
@@ -46,8 +48,12 @@ def _open_sftp(target: dict) -> tuple[paramiko.SSHClient, paramiko.SFTPClient]:
         # Fall back to SSH agent / default key files
         kwargs["look_for_keys"] = True
 
-    ssh.connect(**kwargs)
-    return ssh, ssh.open_sftp()
+    try:
+        ssh.connect(**kwargs)
+        return ssh, ssh.open_sftp()
+    except Exception:
+        ssh.close()
+        raise
 
 
 def _run(fn):
@@ -57,14 +63,24 @@ def _run(fn):
 
 def _safe_path(web_root: str, path: str) -> str:
     """Ensure path stays within web_root."""
-    root = web_root.rstrip("/")
-    if not path.startswith(root):
-        path = root + "/" + path.lstrip("/")
-    # Collapse any /../ traversal
-    norm = os.path.normpath(path)
-    if not norm.startswith(root):
-        return root
+    if not web_root.startswith("/") or "\\" in web_root or "\x00" in web_root:
+        raise HTTPException(400, "Web root must be an absolute POSIX path")
+    root = posixpath.normpath(web_root)
+    # POSIX permits implementation-defined // roots; normalize consistently.
+    root = "/" + root.lstrip("/")
+    if "\\" in path or "\x00" in path:
+        raise HTTPException(403, "Invalid remote path")
+    candidate = path if path.startswith("/") else posixpath.join(root, path)
+    norm = "/" + posixpath.normpath(candidate).lstrip("/")
+    if root != "/" and norm != root and not norm.startswith(root + "/"):
+        raise HTTPException(403, "Path is outside web root")
     return norm
+
+
+def _safe_filename(filename: str) -> str:
+    if filename in ("", ".", "..") or any(char in filename for char in "/\\\x00"):
+        raise HTTPException(400, "Filename must be a single file name")
+    return filename
 
 
 def _public_url(target: dict, remote_path: str) -> str:
@@ -245,8 +261,8 @@ async def upload_file(
     target = dict(row)
 
     remote_dir = _safe_path(target["web_root"], remote_dir or target["web_root"])
-    filename = file.filename or "upload"
-    full_path = remote_dir.rstrip("/") + "/" + filename
+    filename = _safe_filename(file.filename or "upload")
+    full_path = _safe_path(target["web_root"], remote_dir.rstrip("/") + "/" + filename)
     data = await file.read()
 
     def _upload():
@@ -301,8 +317,7 @@ async def delete_file(tid: int, remote_path: str, db=Depends(get_db)):
     if not row:
         raise HTTPException(404)
     target = dict(row)
-    if not remote_path.startswith(target["web_root"]):
-        raise HTTPException(403, "Path is outside web root")
+    remote_path = _safe_path(target["web_root"], remote_path)
 
     def _delete():
         """Call sftp.remove on the validated remote_path."""
@@ -369,7 +384,7 @@ async def publish_page(
     target = dict(row)
 
     slug = (slug.strip().replace(" ", "-") or "page")
-    filename = slug if slug.endswith(".html") else slug + ".html"
+    filename = _safe_filename(slug if slug.endswith(".html") else slug + ".html")
 
     media_block = ""
     if media_url:
@@ -413,7 +428,7 @@ async def publish_page(
 </body>
 </html>"""
 
-    remote_path = target["web_root"].rstrip("/") + "/" + filename
+    remote_path = _safe_path(target["web_root"], target["web_root"].rstrip("/") + "/" + filename)
     data = html.encode("utf-8")
 
     def _publish():

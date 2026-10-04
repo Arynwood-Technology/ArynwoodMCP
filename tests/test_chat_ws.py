@@ -164,3 +164,25 @@ def test_persona_reply_tokens_reach_generation(client, monkeypatch):
         ws.send_json({'message': SAFE_MESSAGE, 'persona': 'writer'})
         _run_until_done(ws)
     assert seen == [{'num_ctx': 8192, 'num_predict': 1800}]
+
+
+def test_unsolicited_and_stale_approval_packets_do_not_poison_next_request(client, monkeypatch):
+    decisions = []
+    async def gather(message, approve=None):
+        decisions.append(await approve('delete_clip', {}, 'destructive'))
+        return '', []
+    monkeypatch.setattr(mcp_tool_agent, 'gather_context_for_message', gather)
+    with client.websocket_connect('/api/chat/ws') as ws:
+        ws.send_json({'type': 'approval_response', 'request_id': 'unsolicited', 'approved': True})
+        ws.send_json({'message': SAFE_MESSAGE, 'persona': 'central', 'model': 'qwen2.5'})
+        for _ in range(20):
+            event = ws.receive_json()
+            if event['type'] == 'approval_request':
+                break
+        assert event['type'] == 'approval_request'
+        ws.send_json({'type': 'approval_response', 'request_id': 'stale', 'approved': True})
+        ws.send_json({'type': 'approval_response', 'request_id': event['request_id'], 'approved': False})
+        events = _run_until_done(ws, cap=20)
+        resolved = next(e for e in events if e['type'] == 'approval_resolved')
+        assert resolved['approved'] is False
+    assert decisions == [False]

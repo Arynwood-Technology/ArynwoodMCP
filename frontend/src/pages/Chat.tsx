@@ -466,7 +466,7 @@ export function Chat() {
   // (roadmap 2.3) — the request is answered, not a new chat message, so it gets
   // its own state and its own send path (ChatSocket.sendApprovalResponse).
   const [pendingApproval, setPendingApproval] = useState<
-    { requestId: string; tool: string; arguments: Record<string, unknown>; tier: string } | null
+    { requestId: string; tool: string; arguments: Record<string, unknown>; tier: string; server?: string } | null
   >(null)
   const wsRef = useRef<ChatSocket | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -522,6 +522,7 @@ export function Chat() {
           loadMessages(activeConvRef.current)
           setNotice('Stopped. Completed actions remain recorded.')
         } else if (msg.type === 'turn_completed') {
+          setPendingApproval(null)
           setRunEvidence(msg.evidence)
         } else if (msg.type === 'status') {
           setActivityStatus(msg.label)
@@ -529,6 +530,7 @@ export function Chat() {
           setStreamBuffer(prev => prev + msg.token)
           setActivityStatus('')
           if (msg.done) {
+            setPendingApproval(null)
             const newId = Date.now()
             lastMsgIdRef.current = newId
             setMessages(prev => [
@@ -581,9 +583,12 @@ export function Chat() {
           }
         } else if (msg.type === 'approval_request') {
           setPendingApproval({
-            requestId: msg.request_id, tool: msg.tool, arguments: msg.arguments, tier: msg.tier,
+            requestId: msg.request_id, tool: msg.tool, arguments: msg.arguments, tier: msg.tier, server: msg.server,
           })
+        } else if (msg.type === 'approval_resolved') {
+          setPendingApproval(pending => pending?.requestId === msg.request_id ? null : pending)
         } else if (msg.type === 'error') {
+          setPendingApproval(null)
           setStreaming(false)
           setStreamBuffer('')
           setActivityStatus('')
@@ -895,7 +900,7 @@ export function Chat() {
                 </span>
               </div>
               <p className="m-0 mb-1 text-[12.5px] text-text">
-                {assistantName} wants to run <code className="rounded bg-surface2 px-1.5 py-px font-mono">{pendingApproval.tool}</code>
+                {assistantName} wants to run <code className="rounded bg-surface2 px-1.5 py-px font-mono">{pendingApproval.server ? `${pendingApproval.server}.${pendingApproval.tool}` : pendingApproval.tool}</code>
               </p>
               {Object.keys(pendingApproval.arguments).length > 0 && (
                 <pre className="m-0 mb-2.5 max-h-25 overflow-auto whitespace-pre-wrap break-words rounded-md bg-surface2 px-2 py-1.5 font-mono text-[11px] text-muted">

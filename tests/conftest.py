@@ -28,7 +28,15 @@ def client():
     from fastapi.testclient import TestClient
     from backend.api import app
 
-    with TestClient(app) as c:
+    class LocalTestClient(TestClient):
+        def websocket_connect(self, url, *args, **kwargs):
+            # Starlette hardcodes ws://testserver for relative WebSocket URLs,
+            # independently of base_url. Exercise the real loopback Host policy.
+            if url.startswith("/"):
+                url = "ws://localhost" + url
+            return super().websocket_connect(url, *args, **kwargs)
+
+    with LocalTestClient(app, base_url="http://localhost", client=("127.0.0.1", 50000)) as c:
         yield c
 
 

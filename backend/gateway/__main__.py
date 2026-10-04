@@ -29,11 +29,14 @@ def main(argv=None) -> None:
     parser.add_argument("--port", type=int, default=config["port"])
     args = parser.parse_args(argv)
 
+    os.environ["ARYNWOOD_BIND_HOST"] = args.host
     os.environ["ARYNWOOD_GATEWAY_DAEMON"] = "1"   # before the app is imported: see gateway.is_daemon()
     sanitize_environ_for_children()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
     from backend.api import app
+    from backend.services.exposure import validate_bind_host
+    validate_bind_host(args.host)
     uvicorn.run(app, host=args.host, port=args.port, reload=False)
 
 

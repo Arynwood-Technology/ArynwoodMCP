@@ -60,11 +60,12 @@ async def test_wrong_bearer_token_is_rejected(monkeypatch):
     assert sent[0]["status"] == 401
 
 
-async def test_non_api_path_is_never_gated(monkeypatch):
+async def test_metrics_require_authentication_when_key_set(monkeypatch):
     monkeypatch.setenv("ARYNWOOD_API_KEY", "secret123")
     inner = _RecordingApp()
-    await ApiKeyMiddleware(inner)(_http_scope(path="/metrics"), None, None)
-    assert inner.called
+    sent = await _collect_sent(ApiKeyMiddleware(inner), _http_scope(path="/metrics"))
+    assert not inner.called
+    assert sent[0]["status"] == 401
 
 
 async def test_websocket_token_accepted_via_query_string(monkeypatch):

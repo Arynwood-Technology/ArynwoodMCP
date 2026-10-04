@@ -30,7 +30,7 @@ import json
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
-from pydantic import BaseModel
+from pydantic import BaseModel, StrictBool
 
 from backend.db import get_db
 from backend.gateway import GatewayBusy, InboundMessage, InvalidSession, get_gateway, is_daemon, sessions
@@ -64,7 +64,7 @@ class SessionSettings(BaseModel):
 
 
 class ApprovalDecision(BaseModel):
-    approved: bool
+    approved: StrictBool
 
 
 def _inbound(req: InboundRequest) -> InboundMessage:
@@ -230,7 +230,7 @@ async def gateway_ws(websocket: WebSocket):
                         trust_level=data.get("trust_level"),
                     ))
                 elif kind == "approval_response":
-                    if not gateway.resolve_approval(str(data.get("request_id")), bool(data.get("approved")), by="websocket"):
+                    if not gateway.resolve_approval(str(data.get("request_id")), data.get("approved"), by="websocket"):
                         await websocket.send_json({"type": "error", "message": "No pending approval with that id"})
                 elif kind == "cancel":
                     await websocket.send_json({"type": "cancelled", "session": key, "stopped": await gateway.cancel(key)})

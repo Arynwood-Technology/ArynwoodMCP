@@ -8,6 +8,9 @@ class _FakeSSH:
     def __init__(self):
         self.connect_kwargs = None
 
+    def load_system_host_keys(self):
+        pass
+
     def set_missing_host_key_policy(self, _policy):
         pass
 

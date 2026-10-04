@@ -31,6 +31,7 @@ from backend.gateway.file_memory import FileMemory
 from backend.gateway.sessions import InvalidSession
 from backend.routers import chat
 from backend.services.mcp_tool_agent import APPROVAL_TIMED_OUT, APPROVAL_UNAVAILABLE
+from backend.services.tool_policy import approval_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -103,11 +104,12 @@ class PendingApproval:
     held_for_http: bool
     created_at: float = field(default_factory=time.time)
     settled_by: str | None = None
+    metadata: dict = field(default_factory=dict)
     future: asyncio.Future = field(default_factory=lambda: asyncio.get_running_loop().create_future())
 
     def public(self) -> dict:
         return {"request_id": self.request_id, "session": self.session, "tool": self.tool,
-                "arguments": self.arguments, "tier": self.tier, "created_at": self.created_at}
+                "arguments": self.arguments, "tier": self.tier, "created_at": self.created_at, **self.metadata}
 
 
 class _GatewaySink:
@@ -186,7 +188,7 @@ class Gateway:
         answer (or the timeout), and fail closed on anything else."""
         async def approve(tool: str, arguments: dict, tier: str) -> tuple[bool, str]:
             event = {"type": "approval_request", "request_id": str(uuid.uuid4()),
-                     "tool": tool, "arguments": arguments, "tier": tier}
+                     "tool": tool, "arguments": arguments, "tier": tier, **approval_metadata()}
             self.publish(key, event)
             pending = self._open_approval(key, event, hold_for_http)
             approved = await self._await_approval(pending)
@@ -200,6 +202,7 @@ class Gateway:
         pending = PendingApproval(
             request_id=event["request_id"], session=key, tool=event.get("tool", ""),
             arguments=event.get("arguments") or {}, tier=event.get("tier", ""), held_for_http=hold_for_http,
+            metadata={field: event[field] for field in ("server", "intent_digest", "expires_in_seconds") if field in event},
         )
         self._approvals[pending.request_id] = pending
         if not hold_for_http and not self.has_approver(key):
@@ -237,6 +240,8 @@ class Gateway:
         or the answer doesn't come with owner trust (which is refused and logged, never counted)."""
         pending = self._approvals.get(request_id)
         if not pending:
+            return False
+        if type(approved) is not bool:
             return False
         if trust != "owner":
             logger.warning("gateway approval %s for %s: refused an answer from %s at %s trust",

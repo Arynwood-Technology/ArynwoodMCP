@@ -18,6 +18,7 @@ from typing import Optional
 import httpx
 
 from backend.services import ollama_client, runtime_context, index_jobs
+from backend.services.public_web import fetch_public_url
 
 OLLAMA_URL_DEFAULT = "http://localhost:11434"
 QDRANT_URL_DEFAULT = os.getenv("QDRANT_URL", "http://localhost:6333")
@@ -146,27 +147,16 @@ def extract_text_from_bytes(filename: str, data: bytes) -> str:
 
 # ── URL scraping ─────────────────────────────────────────────────────────────────
 
-_URL_RE = re.compile(r"^https?://", re.IGNORECASE)
-
-
 async def fetch_url_text(url: str) -> tuple[str, str]:
     """Fetch a URL and return (title, plain_text). Raises on network/parse errors."""
-    if not _URL_RE.match(url.strip()):
-        raise ValueError("URL must start with http:// or https://")
-
-    async with httpx.AsyncClient(
-        timeout=30.0, follow_redirects=True,
-        headers={"User-Agent": "Mozilla/5.0 (compatible; ArynBot/1.0; +local)"},
-    ) as client:
-        r = await client.get(url.strip())
-        if r.status_code == 403 and r.headers.get("cf-mitigated") == "challenge":
-            raise RuntimeError(
-                "blocked by a Cloudflare bot-check (JS challenge) that no automated "
-                "request can pass. Save the page from your browser instead, drop it in "
-                "config/knowledge_uploads/, and run !learn <filename>."
-            )
-        r.raise_for_status()
-        html = r.text
+    r = await fetch_public_url(url)
+    if r.status_code == 403 and r.headers.get("cf-mitigated") == "challenge":
+        raise RuntimeError(
+            "blocked by a Cloudflare bot-check. Save the page from your browser "
+            "and upload it instead."
+        )
+    r.raise_for_status()
+    html = r.text
 
     try:
         from bs4 import BeautifulSoup
@@ -306,7 +296,9 @@ async def _embed_and_store(
 
     if not await _ensure_collection(qdrant_url, dim):
         raise RuntimeError(
-            f"Could not reach Qdrant at {qdrant_url}. Start it with: docker run -p 6333:6333 qdrant/qdrant"
+            f"Could not reach Qdrant at {qdrant_url}. Start it from Tools → Qdrant, or run: "
+            "docker run -d --name qdrant -p 127.0.0.1:6333:6333 --restart unless-stopped "
+            "-v qdrant_storage:/qdrant/storage qdrant/qdrant"
         )
 
     if len(embeddings) != len(chunk_texts):

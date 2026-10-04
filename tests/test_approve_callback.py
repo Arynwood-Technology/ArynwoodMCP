@@ -104,3 +104,32 @@ async def test_missing_approved_field_defaults_to_denied():
 
     approve = _make_approve_callback(ws)
     assert await approve("delete_track", {}, "destructive") is False
+
+
+async def test_truthy_nonboolean_payloads_never_approve():
+    for value in ['false', 'true', 1, {'approved': True}, [True]]:
+        ws = FakeWebSocket([])
+        async def receive_text():
+            return json.dumps({'type': 'approval_response', 'request_id': ws.sent[-1]['request_id'], 'approved': value})
+        ws.receive_text = receive_text
+        assert await _make_approve_callback(ws)('delete_track', {}, 'destructive') is False
+
+
+async def test_cancelled_approval_closes_prompt_without_consent():
+    import asyncio
+    ws = FakeWebSocket([])
+    requested = asyncio.Event()
+    async def wait():
+        requested.set()
+        await asyncio.sleep(30)
+    ws.receive_text = wait
+    task = asyncio.create_task(_make_approve_callback(ws)('delete_clip', {}, 'destructive'))
+    await requested.wait()
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+    assert ws.sent[-1]['type'] == 'approval_resolved'
+    assert ws.sent[-1]['request_id'] == ws.sent[0]['request_id']
+    assert ws.sent[-1]['approved'] is False

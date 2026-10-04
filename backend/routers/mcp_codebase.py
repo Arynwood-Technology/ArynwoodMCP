@@ -16,17 +16,19 @@ one boundary governs every path-based tool this app exposes, dev-checkout-only
 """
 from __future__ import annotations
 
-import asyncio
 import fnmatch
 import json
 import os
 import re
+import sys
 import shutil
 import tempfile
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request
 
+from backend.services import tool_policy
+from backend.services.tool_process import run_developer_process
 from backend.routers.fs import BASE_DIR, MAX_FILE_BYTES, SKIP, _safe_path, _tree
 
 router = APIRouter()  # mounted at /api/mcp-codebase by backend/api.py
@@ -68,28 +70,15 @@ def _tool_text(text: str) -> dict:
 
 
 def _tool_error(message: str) -> dict:
-    return _tool_text(f"ERROR: {message}")
+    return {**_tool_text(f"ERROR: {message}"), "isError": True}
 
 
 async def _run_subprocess(cmd: list[str], cwd: Optional[str] = None, timeout: float = _SUBPROCESS_TIMEOUT) -> tuple[int, str, str]:
-    try:
-        proc = await asyncio.create_subprocess_exec(
-            *cmd, cwd=cwd,
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-        )
-    except FileNotFoundError as e:
-        return -1, "", f"command not found: {e}"
-    try:
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-    except asyncio.TimeoutError:
-        proc.kill()
-        await proc.wait()
-        return -1, "", f"command timed out after {timeout:.0f}s"
-    return proc.returncode, stdout.decode(errors="replace"), stderr.decode(errors="replace")
+    return await run_developer_process(cmd, cwd=cwd, timeout=timeout)
 
 
 async def _run_git(args: list[str], timeout: float = _SUBPROCESS_TIMEOUT) -> tuple[int, str, str]:
-    return await _run_subprocess(["git", "-C", BASE_DIR, *args], timeout=timeout)
+    return await _run_subprocess(["git", "--no-pager", "-c", "core.fsmonitor=false", "-C", BASE_DIR, *args], timeout=timeout)
 
 
 # ── list_tree / read_file ────────────────────────────────────────────────────
@@ -156,6 +145,10 @@ async def _grep(query: str, path: str, glob: Optional[str], max_results: int, *,
             cmd.append("--fixed-strings")
         if glob:
             cmd += ["--glob", glob]
+        # Add exclusions last so a supplied glob cannot re-include credentials.
+        for excluded in ("*.db", "*.sqlite", "*.sqlite3", "*.pem", "*.key", ".env", ".env.*",
+                         ".git/**", ".aws/**", ".ssh/**", ".codex/**", ".agents/**", "mcp/config/mcp_servers.json"):
+            cmd += ["--iglob", "!" + excluded]
         cmd += ["--", query, rel_target]
         code, out, err = await _run_subprocess(cmd, cwd=BASE_DIR)
         if code not in (0, 1):  # 1 = ripgrep's "no matches" exit code, not an error
@@ -172,9 +165,15 @@ async def _grep(query: str, path: str, glob: Optional[str], max_results: int, *,
         for root, dirs, files in os.walk(real):
             dirs[:] = [d for d in dirs if d not in _GREP_SKIP_DIRS and not d.startswith(".")]
             for fname in files:
+                if fname.startswith("."):
+                    continue
                 if glob and not fnmatch.fnmatch(fname, glob):
                     continue
                 fpath = os.path.join(root, fname)
+                try:
+                    fpath = _safe_path(os.path.relpath(fpath, BASE_DIR))
+                except HTTPException:
+                    continue
                 try:
                     if os.path.getsize(fpath) > _MAX_GREP_FILE_BYTES:
                         continue
@@ -208,7 +207,6 @@ async def _search_code(arguments: dict) -> dict:
 
 
 _ORBIT_QUERY_TIMEOUT = _SUBPROCESS_TIMEOUT
-_BG_INDEX_STARTED: set[str] = set()  # "{repo_path}@{commit}" already kicked off this process
 
 
 def _sql_escape(value: str) -> str:
@@ -226,25 +224,6 @@ async def _run_orbit_sql(query: str) -> tuple[bool, list[dict], str]:
         return True, json.loads(out or "[]"), ""
     except json.JSONDecodeError:
         return False, [], "orbit returned unparseable output"
-
-
-def _start_background_index(commit: str) -> None:
-    key = f"{BASE_DIR}@{commit}"
-    if key in _BG_INDEX_STARTED:
-        return
-    _BG_INDEX_STARTED.add(key)
-
-    async def _bg() -> None:
-        try:
-            proc = await asyncio.create_subprocess_exec(
-                "orbit", "index", BASE_DIR,
-                stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL,
-            )
-            await proc.wait()
-        except Exception:
-            pass
-
-    asyncio.create_task(_bg())
 
 
 async def _find_symbol_fallback(name: str, reason: str) -> dict:
@@ -276,20 +255,17 @@ async def _find_symbol(arguments: dict) -> dict:
     current_commit = git_out.strip() or None
 
     if not manifest:
-        if current_commit:
-            _start_background_index(current_commit)
         return await _find_symbol_fallback(
-            name, "this repo has not been indexed by orbit yet — indexing just started in the background, try again shortly"
+            name, "this repo has not been indexed by orbit yet — using text fallback; refresh the index explicitly through a trusted developer workflow"
         )
 
     project_id = manifest[0]["project_id"]
     indexed_commit = manifest[0]["commit_sha"]
     stale_note = ""
     if current_commit and indexed_commit != current_commit:
-        _start_background_index(current_commit)
         stale_note = (
             f"(orbit index is from commit {indexed_commit[:8]}, current is {current_commit[:8]} "
-            "— a re-index just started in the background; symbols may have moved)\n"
+            "— symbols may have moved; refresh the index explicitly through a trusted developer workflow)\n"
         )
 
     ok, rows, err = await _run_orbit_sql(
@@ -322,7 +298,7 @@ async def _git_status(arguments: dict) -> dict:
 async def _git_diff(arguments: dict) -> dict:
     path = arguments.get("path")
     staged = bool(arguments.get("staged", False))
-    args = ["diff"]
+    args = ["diff", "--no-ext-diff", "--no-textconv"]
     if staged:
         args.append("--cached")
     if path:
@@ -341,7 +317,7 @@ async def _git_diff(arguments: dict) -> dict:
 
 async def _run_tests(arguments: dict) -> dict:
     target = arguments.get("target")
-    cmd = ["python", "-m", "pytest", "-q"]
+    cmd = [sys.executable, "-m", "pytest", "-q"]
     if target:
         try:
             real = _safe_path(target)
@@ -351,6 +327,8 @@ async def _run_tests(arguments: dict) -> dict:
     code, out, err = await _run_subprocess(cmd, cwd=BASE_DIR, timeout=_TEST_TIMEOUT)
     if code == -1 and "timed out" in err:
         return _tool_error(f"{err} — narrow the target and try again")
+    if code != 0:
+        return _tool_error(_cap(out + err) or f"Command failed with exit code {code}")
     return _tool_text(_cap(out + err))
 
 
@@ -376,6 +354,8 @@ async def _run_lint(arguments: dict) -> dict:
     code, out, err = await _run_subprocess(cmd, cwd=frontend_dir, timeout=_TEST_TIMEOUT)
     if code == -1 and "timed out" in err:
         return _tool_error(f"{err} — a full run reliably exceeds this tool's time budget on this repo; pass a specific file or directory as `target` instead")
+    if code != 0:
+        return _tool_error(_cap(out + err) or f"Command failed with exit code {code}")
     return _tool_text(_cap(out + err))
 
 
@@ -553,21 +533,31 @@ async def handle_rpc(body: dict) -> dict:
     the built-in "codebase" server, so whichever process runs the tool loop (the desktop
     backend or the headless gateway daemon) uses its own tools instead of an HTTP round
     trip to a fixed port that may belong to another process, or to nothing."""
+    if not isinstance(body, dict) or body.get("jsonrpc") != "2.0":
+        return {"jsonrpc": "2.0", "id": None, "error": {"code": -32600, "message": "Invalid request"}}
+    if getattr(sys, "frozen", False):
+        return {"jsonrpc": "2.0", "id": body.get("id"), "error": {"code": -32000, "message": "Codebase tools require a source checkout"}}
     req_id = body.get("id", 1)
     method = body.get("method")
-    params = body.get("params") or {}
+    params = body.get("params", {})
+    if not isinstance(params, dict):
+        return {"jsonrpc": "2.0", "id": req_id, "error": {"code": -32602, "message": "Params must be an object"}}
 
     if method == "tools/list":
         return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": TOOLS}}
 
     if method == "tools/call":
         name = params.get("name")
-        arguments = params.get("arguments") or {}
-        handler = TOOL_HANDLERS.get(name)
+        arguments = params.get("arguments", {})
+        handler = TOOL_HANDLERS.get(name) if isinstance(name, str) else None
         if handler is None:
             return {"jsonrpc": "2.0", "id": req_id, "result": _tool_error(f'no tool named "{name}"')}
         try:
+            manifest = next(tool for tool in TOOLS if tool["name"] == name)
+            tool_policy.authorize_codebase_rpc(name, arguments, manifest["inputSchema"])
             result = await handler(arguments)
+        except (tool_policy.PolicyDenied, tool_policy.InvalidToolCall) as exc:
+            result = _tool_error(f"DENIED: {exc}")
         except Exception as exc:
             result = _tool_error(f"internal error: {exc}")
         return {"jsonrpc": "2.0", "id": req_id, "result": result}

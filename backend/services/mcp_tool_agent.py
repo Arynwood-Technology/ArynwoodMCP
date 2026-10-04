@@ -39,6 +39,9 @@ from __future__ import annotations
 from backend.services import runtime_context, run_store
 
 import json
+import asyncio
+import secrets
+import sys
 import os
 import re
 import time
@@ -99,64 +102,13 @@ MAX_TOOLS_PER_CALL = 24
 MAX_TOOL_NUM_CTX = 12288
 
 
-# ── Tool permission tiers (roadmap 2.3) ──────────────────────────────────────────
-# run_tool_loop used to call whatever tool name the model produced with no
-# distinction between a read (get_timeline_summary) and a destructive or external
-# action (delete_track, render_video, and — the moment any MCP server wraps one — a
-# real social-media publish). Classified by name pattern rather than a per-server
-# config file, since no such config format exists yet and ~180 Kdenlive tools follow
-# consistent naming (get_*/list_* read, add_*/set_*/insert_*/move_*/split_*/trim_*
-# reversible via Kdenlive's own undo, delete_*/remove_*/ripple_* and anything that
-# renders/exports a real file destructive). Defaults to destructive for anything
-# unrecognized — fail toward requiring approval, not toward silently allowing it.
-TIER_READ_ONLY = "read_only"
-TIER_REVERSIBLE = "reversible_write"
-TIER_DESTRUCTIVE = "destructive"
-TIER_EXTERNAL_PUBLISH = "external_publish"  # nothing maps here yet — no registered server publishes anywhere today
-
-_READ_ONLY_PREFIXES = ("get_", "list_", "screenshot_", "render_frame", "render_bin_frame", "render_contact_sheet", "render_crop")
-_DESTRUCTIVE_PREFIXES = ("delete_", "remove_", "ripple_delete", "render_video", "new_project", "abort_render_job")
-_REVERSIBLE_PREFIXES = (
-    "add_", "set_", "insert_", "move_", "split_", "trim_", "slip_", "slide_", "roll_",
-    "cut_", "copy_", "paste_", "group_", "ungroup_", "import_", "append_", "replace_",
-    "update_", "clear_", "edit_", "select_", "seek_", "play", "pause", "undo", "redo",
-    "save_project", "open_project", "load_project", "create_", "enable_", "rename_",
-    "checkpoint_", "go_to_", "ripple_",  # ripple_trim — ripple_delete already caught above, checked first
+# MCP tiering and argument validation live in tool_policy and are shared with
+# direct proxy and codebase RPC entry points. Re-export names for existing callers.
+from backend.services import tool_policy
+from backend.services.tool_policy import (
+    TIER_READ_ONLY, TIER_REVERSIBLE, TIER_DESTRUCTIVE, TIER_EXTERNAL_PUBLISH,
+    classify_tool_tier, _validate_tool_arguments,
 )
-# Names that don't share a clean prefix with the buckets above — checked against
-# the exact tool name rather than forcing an awkward prefix match. Verified against
-# the real ~180-tool Kdenlive manifest (see roadmap 2.3) rather than guessed:
-# anything that fell through to the destructive catch-all below got looked up here.
-# read_file/search_code/find_symbol/git_status/git_diff (mcp_codebase.py) added
-# alongside detect_scenes for the same reason: analysis only, touches nothing.
-_READ_ONLY_NAMES = {"detect_scenes", "read_file", "search_code", "find_symbol", "git_status", "git_diff"}
-_REVERSIBLE_NAMES = {
-    "build_timeline", "export_subtitles", "extract_zone", "fill_frame",
-    "rebuild_clip_proxy", "relink_clip", "resize_composition", "resize_subtitle",
-    "speech_recognition",
-    # mcp_codebase.py: don't mutate source, but write cache artifacts (__pycache__,
-    # eslint cache) — reversible, not destructive, so they auto-proceed.
-    "run_tests", "run_lint",
-}
-# mcp_codebase.py's apply_patch mutates source and gets no entry here — it falls
-# through every table above to the TIER_DESTRUCTIVE catch-all below, which is
-# correct (approval required) and self-documenting: an unrecognized name failing
-# toward "requires approval" is exactly the behavior a write tool needs.
-
-
-def classify_tool_tier(tool_name: str) -> str:
-    name = tool_name.lower()
-    if name in _READ_ONLY_NAMES:
-        return TIER_READ_ONLY
-    if name in _REVERSIBLE_NAMES:
-        return TIER_REVERSIBLE
-    if name.startswith(_DESTRUCTIVE_PREFIXES):
-        return TIER_DESTRUCTIVE
-    if name.startswith(_READ_ONLY_PREFIXES):
-        return TIER_READ_ONLY
-    if name.startswith(_REVERSIBLE_PREFIXES):
-        return TIER_REVERSIBLE
-    return TIER_DESTRUCTIVE  # unrecognized name — fail toward requiring approval
 
 
 def _filter_relevant_tools(tools: list[dict], message: str) -> list[dict]:
@@ -275,7 +227,7 @@ def _server_enabled(name: str) -> bool:
     # The codebase server is an opt-in developer feature: its router is only mounted
     # with ARYNWOOD_ENABLE_CODEBASE_TOOLS=1, so a leftover mcp_servers.json entry must
     # not make the gate fire (and the tool loop 404) or the prompt advertise it.
-    return name != "codebase" or os.environ.get("ARYNWOOD_ENABLE_CODEBASE_TOOLS") == "1"
+    return name != "codebase" or (os.environ.get("ARYNWOOD_ENABLE_CODEBASE_TOOLS") == "1" and not getattr(sys, "frozen", False))
 
 
 def available_servers() -> list[str]:
@@ -420,42 +372,6 @@ def _result_to_text(result: dict) -> str:
     return ('ERROR: ' if result.get('isError') else '') + text
 
 
-_JSON_TYPE_CHECKS = {
-    "integer": lambda v: isinstance(v, int) and not isinstance(v, bool),
-    "number": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
-    "boolean": lambda v: isinstance(v, bool),
-    "string": lambda v: isinstance(v, str),
-    "array": lambda v: isinstance(v, list),
-    "object": lambda v: isinstance(v, dict),
-}
-
-
-def _validate_tool_arguments(arguments: dict, schema: dict) -> list[str]:
-    """Lightweight validation against a tool's inputSchema (roadmap 2.4) — checks
-    required-argument presence and basic type matching for the property types JSON
-    Schema actually uses. Not a full JSON Schema implementation (no oneOf/anyOf/
-    $ref/pattern/etc.): these ~180 tool schemas are generated from plain Python
-    function signatures, not hand-authored complex schemas, so this covers what
-    actually goes wrong — a missing required arg or a value of the wrong basic
-    type — without pulling in a dependency for the cases that don't occur here.
-    Returns a list of human-readable problems; empty if nothing's wrong.
-    """
-    if not isinstance(schema, dict):
-        return []
-    problems = []
-    props = schema.get("properties", {}) or {}
-    for field in schema.get("required", []) or []:
-        if field not in (arguments or {}):
-            problems.append(f'missing required argument "{field}"')
-    for name, value in (arguments or {}).items():
-        prop_schema = props.get(name)
-        if not isinstance(prop_schema, dict):
-            continue
-        expected = prop_schema.get("type")
-        check = _JSON_TYPE_CHECKS.get(expected)
-        if check is not None and not check(value):
-            problems.append(f'argument "{name}" should be {expected}, got {type(value).__name__}')
-    return problems
 
 
 @dataclass
@@ -505,13 +421,17 @@ class _CallRunner:
         self.read_calls: set[str] = set()
         self.stall_count = 0
         self.escalated = False
+        self._policy_caller = runtime_context.run_id.get() or secrets.token_hex(16)
         self.log: list[dict] = []       # every call the model asked for, and what became of it
 
     def source(self, name: str) -> str:
         return "native" if name in self.native else self.servers.get(name, ("unknown",))[0]
 
     def tier(self, name: str) -> str:
-        return self.native[name].tier if name in self.native else classify_tool_tier(name)
+        if name in self.native:
+            return self.native[name].tier
+        server, config = self.servers.get(name, ("unknown", {}))
+        return tool_policy.classify_mcp_tool(server, config, name)
 
     def _note(self, name: str, tier: str, outcome: str) -> None:
         self.log.append({"tool": name, "server": self.source(name), "tier": tier, "outcome": outcome})
@@ -551,9 +471,46 @@ class _CallRunner:
             self._note(name, tier, "invalid")
             return f"INVALID CALL to {name}: {'; '.join(schema_problems)}. Fix the arguments and call it again.", False
 
-        decision = (await self.approve(name, arguments, tier) if self.approve else False) \
-            if tier in (TIER_DESTRUCTIVE, TIER_EXTERNAL_PUBLISH) else True
-        approved, reason = decision if isinstance(decision, tuple) else (bool(decision), None)
+        # Freeze the reviewed operation before invoking a callback. No mutable
+        # callback argument or caller-supplied bool becomes execution authority.
+        try:
+            reviewed_arguments = json.loads(tool_policy.canonical(arguments))
+            intent = (tool_policy.make_intent(source, self.servers[name][1], name,
+                      reviewed_arguments, self.schemas[name], self._policy_caller)
+                      if name not in self.native else None)
+        except tool_policy.InvalidToolCall as exc:
+            self._note(name, tier, "invalid")
+            return f"INVALID CALL to {name}: {exc}", False
+        grant = None
+        decision = True
+        approval_context = tool_policy.approval_intent.set(intent)
+        try:
+            if tool_policy.requires_approval(tier):
+                decision = (await asyncio.wait_for(self.approve(name, reviewed_arguments, tier),
+                            timeout=tool_policy.APPROVAL_TTL_SECONDS) if self.approve else False)
+        except asyncio.TimeoutError:
+            decision = (False, APPROVAL_TIMED_OUT)
+        finally:
+            tool_policy.approval_intent.reset(approval_context)
+        approved, reason = decision if isinstance(decision, tuple) and len(decision) == 2 else (decision, None)
+        approved = approved is True
+        if approved and intent is not None and tool_policy.requires_approval(tier):
+            try:
+                # Re-read owner configuration after the await. A changed endpoint,
+                # credential, tier, schema or callback argument requires new review.
+                current_config = _load_servers().get(source)
+                if current_config is None:
+                    raise tool_policy.PolicyDenied("Tool server is no longer registered")
+                current = tool_policy.make_intent(source, current_config, name, reviewed_arguments,
+                                                  self.schemas[name], self._policy_caller)
+                if current.binding != intent.binding:
+                    raise tool_policy.PolicyDenied("Reviewed tool call or configuration changed")
+                grant = tool_policy.authority.issue(intent)
+            except (tool_policy.PolicyDenied, tool_policy.InvalidToolCall) as exc:
+                self.seen_calls.add(key)
+                telemetry.record_tool_call(source, name, "denied")
+                self._note(name, tier, "denied")
+                return f"DENIED: {name} was NOT run: {exc}. Request a new approval.", False
         if not approved:
             self.seen_calls.add(key)
             tier_label = tier.replace("_", " ")
@@ -594,7 +551,7 @@ class _CallRunner:
                 text = await self.native[name].handler(arguments)
                 outcome = 'success'
             else:
-                result = await _mcp_post(self.servers[name][1], "tools/call", {"name": name, "arguments": arguments})
+                result = await tool_policy.dispatch(intent, _mcp_post, grant)
                 text = _result_to_text(result or {})
                 outcome = 'error' if result and result.get('isError') else 'success'
             telemetry.record_tool_call(source, name, outcome, time.monotonic() - call_start)

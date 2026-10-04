@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from backend._frozen import user_data_dir
+from backend.services import tool_policy
 
 router = APIRouter()
 
@@ -44,7 +45,7 @@ _IN_PROCESS_HANDLERS = {
 
 
 def _builtin_servers() -> dict:
-    if os.environ.get("ARYNWOOD_ENABLE_CODEBASE_TOOLS") == "1":  # same opt-in as its router
+    if os.environ.get("ARYNWOOD_ENABLE_CODEBASE_TOOLS") == "1" and not getattr(sys, "frozen", False):  # same opt-in as its router
         return {"codebase": {"in_process": "codebase"}}
     return {}
 
@@ -128,9 +129,18 @@ async def call_tool(body: ToolCallRequest):
     servers = _load_servers()
     if body.server not in servers:
         raise HTTPException(404, f"MCP server '{body.server}' not found")
-    result = await _mcp_post(
-        servers[body.server],
-        "tools/call",
-        {"name": body.tool, "arguments": body.arguments},
-    )
-    return result
+    config = servers[body.server]
+    # Use the current manifest for membership and schema checks; clients cannot
+    # invent tools, tiers, schemas, or an "approved" flag to relax owner policy.
+    listed = await _mcp_post(config, "tools/list", {})
+    manifest = next((tool for tool in (listed or {}).get("tools", []) if tool.get("name") == body.tool), None)
+    if manifest is None:
+        raise HTTPException(404, "Tool not found in server manifest")
+    try:
+        intent = tool_policy.make_intent(body.server, config, body.tool, body.arguments,
+                                        manifest.get("inputSchema", {}), "direct-api")
+        return await tool_policy.dispatch(intent, _mcp_post)
+    except tool_policy.InvalidToolCall as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except tool_policy.PolicyDenied as exc:
+        raise HTTPException(403, "This tool requires chat or gateway approval; direct API execution is refused") from exc

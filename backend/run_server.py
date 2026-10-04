@@ -27,4 +27,6 @@ if __name__ == "__main__":
     die_with_parent()      # the shell hard-kills its bootloader on quit; don't be left squatting :8010
     host = os.environ.get("ARYNWOOD_BIND_HOST", "127.0.0.1")
     port = int(os.environ.get("ARYNWOOD_BACKEND_PORT", "8010"))
+    from backend.services.exposure import validate_bind_host
+    validate_bind_host(host)
     uvicorn.run(app, host=host, port=port, reload=False)

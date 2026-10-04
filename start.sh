@@ -57,12 +57,17 @@ for i in $(seq 1 20); do
   sleep 0.5
 done
 
-# --- YouTube auto-publish watcher ---
-echo "[svc] Starting YouTube publish watcher..."
-cd "$ROOT"
-python3 -m triggers.youtube_watch > /tmp/youtube_watch.log 2>&1 &
-YOUTUBE_WATCH_PID=$!
-echo "      Watcher PID: $YOUTUBE_WATCH_PID (drop a video in ~/Desktop/arynwood_videos/incoming to publish it)"
+# --- YouTube auto-publish watcher (explicit opt-in) ---
+YOUTUBE_WATCH_PID=""
+if [ "${ARYNWOOD_ENABLE_AUTO_PUBLISH:-0}" = "1" ]; then
+  echo "[svc] Starting explicitly enabled YouTube auto-publish watcher..."
+  cd "$ROOT"
+  python3 -m triggers.youtube_watch > /tmp/youtube_watch.log 2>&1 &
+  YOUTUBE_WATCH_PID=$!
+  echo "      Watcher PID: $YOUTUBE_WATCH_PID (incoming videos may be published automatically)"
+else
+  echo "[svc] Unattended YouTube publishing is disabled."
+fi
 
 # --- Frontend ---
 echo "[2/2] Starting React dev server on port 5180..."
