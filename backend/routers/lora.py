@@ -437,17 +437,35 @@ async def list_styles(db=Depends(get_db)):
         rows = await cur.fetchall()
     return [
         {"id": r["id"], "label": r["trigger_word"], "lora_name": r["a1111_lora_filename"],
-         "base_style": _base_style(r["base_model_path"])}
+         "base_style": _base_style(r["base_model_path"], r["a1111_lora_filename"])}
         for r in rows
     ]
 
 
-def _base_style(base_model_path: Optional[str]) -> str:
+def _trained_on(lora_filename: Optional[str]) -> str:
+    """The checkpoint a LoRA file says it was trained on (kohya's ss_sd_model_name), or ''."""
+    if not lora_filename:
+        return ""
+    path = os.path.join(external_paths.A1111_LORA_DIR, os.path.basename(lora_filename) + ".safetensors")
+    try:
+        with open(path, "rb") as fh:
+            size = int.from_bytes(fh.read(8), "little")
+            if not 0 < size < 10_000_000:
+                return ""
+            meta = json.loads(fh.read(size)).get("__metadata__", {})
+        return os.path.basename(meta.get("ss_sd_model_name", "") or "")
+    except (OSError, ValueError):
+        return ""
+
+
+def _base_style(base_model_path: Optional[str], lora_filename: Optional[str] = None) -> str:
     """SD_CHECKPOINTS key of the checkpoint a LoRA was trained on, so it's generated on that.
 
-    Every trainable base is SDXL (see list_base_models), and an SDXL LoRA on the SD 1.5
-    checkpoint silently does nothing, so an unrecorded base falls back to an SDXL one."""
-    name = os.path.basename(base_model_path or "")
+    The project record's base_model_path first, else the LoRA file's own training metadata
+    (the Arynwood LoRA's record had none). Every trainable base is SDXL (see
+    list_base_models), and an SDXL LoRA on the SD 1.5 checkpoint silently does nothing, so an
+    unknown base falls back to an SDXL one."""
+    name = os.path.basename(base_model_path or "") or _trained_on(lora_filename)
     for key, cfg in SD_CHECKPOINTS.items():
         if key != "legacy" and cfg["checkpoint"] == name:
             return key

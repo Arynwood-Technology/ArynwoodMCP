@@ -862,9 +862,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
         <div class="lora-weight" id="lora-weight-row" style="display:none">
           <div class="pr">
             <span class="pl">LoRA Weight</span>
-            <input type="range" class="pi" id="lora-weight" min="0" max="2" step="0.05" value="1"
+            <input type="range" class="pi" id="lora-weight" min="0" max="2" step="0.05" value="0.6"
               oninput="App.onLoraWeightInput(this.value)">
-            <span id="lora-weight-val" style="font-size:10px;color:var(--muted);min-width:28px;text-align:right">1.00</span>
+            <span id="lora-weight-val" style="font-size:10px;color:var(--muted);min-width:28px;text-align:right">0.60</span>
           </div>
           <div style="font-size:9px;color:var(--muted);padding:0 2px 4px">Low = subtle influence · High = strong stylization</div>
         </div>
@@ -2528,7 +2528,10 @@ const App = {
         // weight is user-adjustable via the LoRA Weight slider (onLoraWeightInput) -
         // pos is no longer precomputed here since it depends on that live value;
         // generate() builds the actual <lora:name:weight> tag at request time.
-        weight: 1,
+        // 0.6, not 1: tested on the Arynwood SDXL LoRA (Juggernaut XL, 1024, 30 steps, CFG 5), full
+        // weight washed every image into the training set's pastel haze and ignored the prompt;
+        // 0.6 kept the style and followed it.
+        weight: 0.6,
         neg: '',
         custom: true,
         base_style: s.base_style || 'general',

@@ -9,6 +9,14 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Changed
+
+- Trained LoRAs start at weight 0.6 in the Design Center instead of 1.0. On the Arynwood SDXL
+  LoRA, full weight washed every image into its training set's pastel haze and ignored the
+  prompt; 0.6 kept the style and followed the prompt.
+- A LoRA whose project record doesn't say which checkpoint it was trained on is generated on
+  the checkpoint its own file names (kohya's `ss_sd_model_name`), not on a guess.
+
 ## [0.4.6] — 2026-10-04
 
 ### Security
