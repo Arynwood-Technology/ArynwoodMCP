@@ -9,6 +9,8 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+## [0.4.6] — 2026-10-04
+
 ### Security
 
 If you run 0.4.5, update: the first two items below close holes in that release.
