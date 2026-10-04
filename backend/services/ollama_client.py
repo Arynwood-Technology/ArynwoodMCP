@@ -27,8 +27,8 @@ DEFAULT_PORT = 11434
 DEFAULT_OPTIONS = {"temperature": 0.7}
 
 # Ollama defaults num_ctx to 2048 for any request that doesn't set it explicitly,
-# regardless of what the model itself was trained/supports (qwen2.5-coder:14b supports
-# 32768, hermes3:8b supports 131072) — every caller in this codebase used to hit that
+# regardless of what the model itself was trained/supports (hermes3:8b supports 131072)
+# — every caller in this codebase used to hit that
 # silent 2048 ceiling. context_length() below is how callers find out what a model can
 # actually take so they can set num_ctx deliberately instead of leaving it at the default.
 _context_length_cache: dict[str, int] = {}
@@ -69,7 +69,7 @@ def get_async_client(
 
 # Ollama keys a loaded model on its num_ctx: a request for the same model with a
 # different num_ctx (including an omitted one, which means the server default) unloads
-# and reloads it — measured ~3.5s for qwen2.5-coder:14b on the 12GB card, plus the lost
+# and reloads it — measured ~3.5s for a 14B model on the 12GB card, plus the lost
 # prompt cache. Small utility calls (gate classifier, memory-conflict check) don't care
 # about context size, so when a caller doesn't set num_ctx we reuse whatever the model was
 # last run with on that server instead of silently forcing a reload every chat turn.
@@ -176,9 +176,8 @@ async def chat_stream(
     """Streaming chat completion preserving text, structured calls and provider state.
 
     tools streams exactly like a normal call — verified empirically against this
-    model/Ollama version: qwen2.5-coder:14b never populates the native tool_calls
-    field whether streaming or not, it emits a tool call as a bare {...} JSON text
-    blob in content either way (same shape mcp_tool_agent._extract_tool_calls
+    Ollama version: some models never populate the native tool_calls field, streaming
+    or not, and emit a tool call as a bare {...} JSON text blob in content instead (same shape mcp_tool_agent._extract_tool_calls
     already parses on the non-streaming path). Callers that pass tools are
     responsible for peeking at the assembled content to tell a tool call apart from
     a real answer before forwarding tokens to a user — see chat.py's _stream_reply.
@@ -266,8 +265,8 @@ async def aembed_texts(
     """Async batched embeddings in a single request via Ollama's /api/embed.
 
     Runs the embedding model on CPU by default (num_gpu=0). On a 12GB card the chat
-    model (qwen2.5-coder:14b at num_ctx 8192 ≈ 11 GiB) and even the tiny nomic-embed
-    model don't fit together, so a GPU embed made Ollama evict the chat model and
+    model of the time (a 14B model, ≈ 11 GiB at num_ctx 8192) and even the tiny
+    nomic-embed model didn't fit together, so a GPU embed made Ollama evict the chat model and
     reload it — twice per chat turn (retrieval embeds, then the reply). CPU embedding
     is ~0.3s per query and ~6s per 100 chunks on this machine, and never touches
     VRAM. Set ARYNWOOD_EMBED_ON_GPU=1 on a machine with VRAM to spare.

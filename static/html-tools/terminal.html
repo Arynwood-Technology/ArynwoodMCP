@@ -1047,9 +1047,9 @@
     { cmd:'ollama ps',                         desc:'Show which models are currently loaded and running in memory',     section:'ollama',   safe:true  },
     { cmd:'ollama serve',                      desc:'Start the Ollama API server (default: localhost:11434)',            section:'ollama',   safe:true  },
     { cmd:'OLLAMA_HOST=0.0.0.0:11434 ollama serve', desc:'Expose Ollama API to all interfaces — only behind firewall', section:'ollama',  safe:false },
-    { cmd:'ollama pull qwen2.5-coder:14b',     desc:'Download qwen2.5-coder:14b — fast daily driver for workflows',    section:'ollama',   safe:true  },
-    { cmd:'ollama pull deepseek-coder:33b',    desc:'Download deepseek-coder:33b — heavy reasoning/architect tasks',   section:'ollama',   safe:true  },
-    { cmd:'ollama run qwen2.5-coder:14b "<PROMPT>"', desc:'One-shot prompt to qwen2.5-coder:14b',                     section:'ollama',   safe:true  },
+    { cmd:'ollama pull hermes3:8b',            desc:'Download hermes3:8b — example everyday model (chat, tools)',     section:'ollama',   safe:true  },
+    { cmd:'ollama pull gpt-oss:20b',           desc:'Download gpt-oss:20b — example larger model (needs ~16 GB)',     section:'ollama',   safe:true  },
+    { cmd:'ollama run hermes3:8b "<PROMPT>"',  desc:'One-shot prompt to hermes3:8b',                                section:'ollama',   safe:true  },
     { cmd:'curl http://localhost:11434/api/tags', desc:'List installed models via the Ollama REST API',                 section:'ollama',   safe:true  },
     { cmd:'curl http://localhost:11434/api/generate -d \'{"model":"<MODEL>","prompt":"Hi"}\'', desc:'Send a prompt to Ollama via REST API', section:'ollama', safe:true },
     { cmd:'systemctl status ollama',           desc:'Check if the Ollama systemd service is running',                   section:'ollama',   safe:true  },
@@ -1461,11 +1461,11 @@
 <span class="tree-path">src/</span>                   <span class="tree-desc">→ Frontend (React/Vue/Svelte)</span>`,
 
     ollama: `<span class="comment"># Ollama — Local LLM</span>
-<span class="comment"># Stack: qwen2.5-coder:14b (fast) | deepseek-coder:33b (heavy)</span>
+<span class="comment"># Examples: hermes3:8b (everyday) | gpt-oss:20b (larger, ~16 GB)</span>
 <span class="syntax-command">ollama list</span>                   <span class="comment"># Installed models</span>
-<span class="syntax-command">ollama pull qwen2.5-coder:14b</span> <span class="comment"># Fast daily driver</span>
-<span class="syntax-command">ollama pull deepseek-coder:33b</span> <span class="comment"># Heavy reasoning</span>
-<span class="syntax-command">ollama run qwen2.5-coder:14b</span>  <span class="comment"># Interactive chat</span>
+<span class="syntax-command">ollama pull hermes3:8b</span>        <span class="comment"># Everyday model</span>
+<span class="syntax-command">ollama pull gpt-oss:20b</span>       <span class="comment"># Larger model</span>
+<span class="syntax-command">ollama run hermes3:8b</span>         <span class="comment"># Interactive chat</span>
 <span class="syntax-command">ollama ps</span>                     <span class="comment"># Models in memory</span>
 <span class="syntax-command">ollama show &lt;MODEL&gt;</span>           <span class="comment"># Model metadata</span>
 <span class="syntax-command">ollama serve</span>                  <span class="comment"># Start API server (localhost:11434)</span>

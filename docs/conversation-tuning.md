@@ -1,13 +1,13 @@
 # Arynwood conversation tuning
 
-September 27, 2026. Model: `qwen2.5-coder:14b`, 8192-token context.
+September 27, 2026. Model: the 14B model Arynwood used until October 4, 2026 (now `hermes3:8b`), 8192-token context.
 
 The trigger was a concrete failure: a request to walk through a project checklist
 in copyable boxes received a generic explanation of redirects instead.
 
 ## What the dialogue showed
 
-A local four-turn interview used Arynwood's real system prompt and the local Qwen
+A local four-turn interview used Arynwood's real system prompt and that local
 model. It did not write the synthetic conversation into the user's chat history.
 Her initial self-assessment largely repeated her instructions, so implementation
 choices came from observed replies and source inspection, not her claims about

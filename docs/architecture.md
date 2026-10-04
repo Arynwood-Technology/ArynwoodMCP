@@ -369,11 +369,11 @@ Defined in `mcp/config/models.json`. Loaded at chat time and injected into the s
 
 | Key | Display Name | Role | Model |
 |-----|-------------|------|-------|
-| `central` | **Arynwood** | Coordinator | `qwen2.5-coder:14b` |
-| `doc` | **Doc** | Architect | `qwen2.5` |
-| `kona` | **Kona** | Creative | `qwen2.5` |
-| `glyph` | **Glyph** | Automation | `qwen2.5` |
-| `estra` | **Estra** | Writer | `qwen2.5` |
+| `central` | **Arynwood** | Coordinator | `hermes3:8b` |
+| `doc` | **Doc** | Architect | `hermes3:8b` |
+| `kona` | **Kona** | Creative | `hermes3:8b` |
+| `glyph` | **Glyph** | Automation | `hermes3:8b` |
+| `estra` | **Estra** | Writer | `hermes3:8b` |
 
 Only `central` gets native tool-calling, relevance-ranked memory, and MCP
 tool-server access — see "Tool-Calling Architecture" below.

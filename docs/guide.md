@@ -99,7 +99,7 @@ in-app it is just `/api/chat/ws`).
 {
   "message": "Hello, Arynwood",
   "persona": "central",
-  "model": "qwen2.5-coder:14b",
+  "model": "hermes3:8b",
   "server_host": "localhost",
   "server_port": 11434,
   "conversation_id": 42,
@@ -138,11 +138,11 @@ Defined in `mcp/config/models.json`, hot-reloaded on every `GET /api/chat/person
 
 | Key | Display Name | Character | Model |
 |-----|-------------|-----------|-------|
-| `central` | Arynwood | Coordinator, general assistant | `qwen2.5-coder:14b` |
-| `doc` | Doc | Systems architect | `qwen2.5` |
-| `kona` | Kona | Creative, exploratory | `qwen2.5` |
-| `glyph` | Glyph | Automation specialist | `qwen2.5` |
-| `estra` | Estra | Writer, editor | `qwen2.5` |
+| `central` | Arynwood | Coordinator, general assistant | `hermes3:8b` |
+| `doc` | Doc | Systems architect | `hermes3:8b` |
+| `kona` | Kona | Creative, exploratory | `hermes3:8b` |
+| `glyph` | Glyph | Automation specialist | `hermes3:8b` |
+| `estra` | Estra | Writer, editor | `hermes3:8b` |
 
 Only `central` has native tool-calling and MCP tool-server access (Kdenlive etc.) — see
 below. To change a persona's model, edit `mcp/config/models.json`.
@@ -252,7 +252,7 @@ Pull, list, and delete models from the Model Manager page or directly:
 ```bash
 curl -X POST http://localhost:8010/api/ollama/pull \
   -H "Content-Type: application/json" \
-  -d '{"model": "qwen2.5-coder:14b", "host": "localhost", "port": 11434}'
+  -d '{"model": "hermes3:8b", "host": "localhost", "port": 11434}'
 ```
 
 Pull requests stream progress back. The endpoint checks server reachability first.

@@ -17,9 +17,8 @@ gather_context_for_message) rather than one hardcoded keyword list per
 server. Wiring up a new server no longer needs a new Python module — just
 mcp_servers.json + <server>.md + a gates.json entry.
 
-Empirically (see mcp-kdenlive testing), qwen2.5-coder reliably calls real
-tools while plain qwen2.5 mostly just describes JSON instead of sending it —
-so this always uses a fixed, known-good local model for the tool-calling
+Chat models differ widely at tool calling (some only describe the JSON instead of
+sending it; measured in local-ai-benchmarks' TOOL-CALLING.md), so this always uses a fixed, known-good local model for the tool-calling
 step regardless of which model/server the user picked for the conversation
 itself. That model does the tool-calling legwork; the persona's own model
 still writes the reply the user sees.
@@ -74,17 +73,16 @@ def _load_config() -> dict:
 
 
 _CONFIG = _load_config()
-DEFAULT_AGENT_MODEL = _CONFIG.get("model", "qwen2.5-coder:14b")
+DEFAULT_AGENT_MODEL = _CONFIG.get("model", "hermes3:8b")
 DEFAULT_AGENT_OLLAMA_URL = _CONFIG.get("ollama_url", "http://localhost:11434")
 MAX_TOOL_ROUNDS = _CONFIG.get("max_tool_rounds", 6)
 # The conversational loop's backstop. It normally ends when the model answers instead of
 # calling a tool; this only stops a model that never does.
 MAX_AGENT_ROUNDS = _CONFIG.get("max_agent_rounds", 10)
 # Optional (roadmap 2.6) — no default guessed here, unlike model/ollama_url above.
-# This machine's other installed models are either similar-sized to the default
-# (qwen2.5-coder:14b, ~9GB) or meaningfully bigger (deepseek-coder:33b at ~19GB,
-# gpt-oss:20b at ~14GB) — picking one blind risks trading a stall for an OOM on a
-# 12GB card. Set "fallback_model" in config.json only once you know it fits
+# A fallback has to fit beside whatever else uses the GPU: gpt-oss:20b (~16GB at
+# num_ctx 8192) spilled onto the CPU and froze the desktop on this 12GB card in the
+# 2026-10-04 benchmark, so picking one blind risks trading a stall for an OOM. Set "fallback_model" in config.json only once you know it fits
 # alongside whatever else might be using the GPU.
 FALLBACK_MODEL = _CONFIG.get("fallback_model")
 STALL_ESCALATION_THRESHOLD = 2  # verbatim-repeat stalls before trying the fallback model
@@ -192,7 +190,7 @@ async def _route(message: str, candidates: dict[str, dict]) -> set[str]:
     """Pick which of several tool systems a message needs, in ONE classifier call.
 
     Asking each gate an isolated YES/NO misroutes whenever systems overlap: measured
-    against qwen2.5-coder:14b at temperature 0, "How many clips are on my Kdenlive
+    against the earlier 14B tool model at temperature 0, "How many clips are on my Kdenlive
     timeline?" was a YES for the Codebase gate 4/4 times (it *is* "inspecting a
     system"), running a pointless codebase tool loop on every Kdenlive question.
     Offering the systems side by side makes the choice discriminative, and costs one
@@ -392,8 +390,8 @@ class _CallRunner:
     """Runs one model-requested tool call under the rules both loops share.
 
     - A verbatim repeat is short-circuited with a nudge. Small local models at temperature
-      0 sometimes re-issue the exact same call every round (observed: qwen2.5-coder calling
-      get_active_sequence 6x straight rather than moving on to get_timeline_summary), and
+      0 sometimes re-issue the exact same call every round (observed: the earlier 14B tool
+      model calling get_active_sequence 6x straight rather than moving on to get_timeline_summary), and
       they don't reliably self-correct from prose alone. After STALL_ESCALATION_THRESHOLD
       repeats it escalates to FALLBACK_MODEL (roadmap 2.6), if one is configured and nothing
       else is queued for the GPU.
@@ -779,7 +777,7 @@ async def prepare_toolset(server_names: Iterable[str], native_tools: Iterable[Na
 
 
 # A reply that ends by announcing its next step ("Now I'll create the patch.") instead of
-# taking it. Seen live: after read_file, qwen2.5-coder:14b said exactly that and stopped, so a
+# taking it. Seen live: after read_file, the earlier 14B tool model said exactly that and stopped, so a
 # requested change silently never happened. "Let me know ..." is a sign-off, not a step.
 _ANNOUNCED_STEP = re.compile(
     r"(?:^|[.!?:]\s+|\n)\s*(?:(?:now|next|first|then),?\s+)?"
@@ -820,8 +818,8 @@ async def run_agent_loop(
     no fixed number of tool rounds: the model decides when it's done, and max_rounds only
     stops one that never does (then it gets one tool-free round to answer from what it has).
 
-    Always runs on the pinned tool-calling model (config.json `model`): plain qwen2.5 mostly
-    describes JSON instead of sending it. Every round goes through fit_request so growing
+    Always runs on the pinned tool-calling model (config.json `model`): many chat models
+    describe the JSON instead of sending it. Every round goes through fit_request so growing
     tool results evict the oldest history, then get shortened, before the context overflows.
     Raises ContextBudgetError if even the current request can't fit.
 

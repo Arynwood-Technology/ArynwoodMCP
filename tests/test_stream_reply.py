@@ -4,7 +4,7 @@ it's a tool call or a real answer, then delivered via _deliver_complete_text; no
 tools => true live network streaming, unchanged from before tool-calling existed.
 (The original design peeked at only the first few characters to decide whether to
 stream live; confirmed live against central's real system prompt that this wasn't
-reliable — qwen2.5-coder:14b can preface a tool call with a full prose sentence
+reliable — the earlier 14B tool model prefaced a tool call with a full prose sentence
 before the JSON starts — so the tool-enabled path was redesigned to buffer fully;
 see test_extract_tool_calls.py for the parsing half of that fix.) Tests drive
 _stream_reply directly against a fake websocket for precise control over what

@@ -8,11 +8,17 @@ check the probabilistic behavior hasn't regressed:
 
     pytest tests/test_evals_live_behavior.py -m eval -v
 
+They run on the configured tool-calling model (mcp/config/local_agent/config.json), or on
+ARYNWOOD_EVAL_MODEL to compare another one before switching:
+
+    ARYNWOOD_EVAL_MODEL=llama3.1:8b pytest tests/ -m eval -v
+
 Each case is a real, plausible message a user would actually type — not a synthetic
 prompt-engineering exercise — because that's the only thing worth measuring here.
 """
 
 import asyncio
+import os
 
 import pytest
 
@@ -20,6 +26,14 @@ from backend.routers.chat import _stream_reply, _NATIVE_TOOLS, build_system_prom
 from backend.services import mcp_tool_agent, ollama_client
 
 pytestmark = pytest.mark.eval
+
+EVAL_MODEL = os.environ.get("ARYNWOOD_EVAL_MODEL") or mcp_tool_agent.DEFAULT_AGENT_MODEL
+
+
+@pytest.fixture(autouse=True)
+def _eval_model(monkeypatch):
+    """Gates and routing read mcp_tool_agent.DEFAULT_AGENT_MODEL at call time."""
+    monkeypatch.setattr(mcp_tool_agent, "DEFAULT_AGENT_MODEL", EVAL_MODEL)
 
 
 def _ollama_is_up() -> bool:
@@ -192,7 +206,7 @@ async def test_native_web_search_decision(monkeypatch, message, expected_search)
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": message},
     ]
-    await _stream_reply(ws, messages, "qwen2.5-coder:14b", "localhost", 11434, 8192, db=None, tools=_NATIVE_TOOLS)
+    await _stream_reply(ws, messages, EVAL_MODEL, "localhost", 11434, 8192, db=None, tools=_NATIVE_TOOLS)
 
     called_search = "web_search" in called_tools
     assert called_search == expected_search, (
@@ -228,9 +242,9 @@ async def test_checklist_walkthrough_survives_search_results(monkeypatch):
             'web_search', 'Search Console has a Sitemaps report. Redirects can be 301 or 302. '
             'Page with redirect is an indexing status. A redirect spreadsheet can track old URLs.')},
     ]
-    messages, _ = fit_request(messages, None, 8192, model='qwen2.5-coder:14b')
+    messages, _ = fit_request(messages, None, 8192, model=EVAL_MODEL)
     ws = _RecordingWebSocket()
-    reply = await _stream_reply(ws, messages, 'qwen2.5-coder:14b', 'localhost', 11434,
+    reply = await _stream_reply(ws, messages, EVAL_MODEL, 'localhost', 11434,
                                 8192, db=None, tools=None)
     print('\nChecklist response:\n' + reply)
     assert '```' in reply, reply

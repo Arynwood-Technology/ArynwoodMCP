@@ -53,7 +53,7 @@ def _run_until_done(ws, cap=10):
 
 def test_ws_streams_tokens_and_creates_conversation(client):
     with client.websocket_connect("/api/chat/ws") as ws:
-        ws.send_json({"message": SAFE_MESSAGE, "persona": "doc", "model": "qwen2.5"})
+        ws.send_json({"message": SAFE_MESSAGE, "persona": "doc", "model": "llama3.2"})
         msgs = _run_until_done(ws)
     types = [m["type"] for m in msgs]
     assert "conversation_id" in types
@@ -76,7 +76,7 @@ def test_non_central_persona_gets_knowledge_context(client, monkeypatch):
     monkeypatch.setattr(ollama_client, "chat_stream", _capture_chat_stream)
 
     with client.websocket_connect("/api/chat/ws") as ws:
-        ws.send_json({"message": SAFE_MESSAGE, "persona": "doc", "model": "qwen2.5"})
+        ws.send_json({"message": SAFE_MESSAGE, "persona": "doc", "model": "llama3.2"})
         _run_until_done(ws)
 
     last_user_msg = captured["messages"][-1]["content"]
@@ -90,7 +90,7 @@ def test_context_used_event_discloses_kb_sources(client):
         "text": "irrelevant to this assertion", "page_start": 2, "page_end": 3, "has_table": False,
     }]
     with client.websocket_connect("/api/chat/ws") as ws:
-        ws.send_json({"message": SAFE_MESSAGE, "persona": "doc", "model": "qwen2.5"})
+        ws.send_json({"message": SAFE_MESSAGE, "persona": "doc", "model": "llama3.2"})
         msgs = _run_until_done(ws)
 
     ctx_events = [m for m in msgs if m["type"] == "context_used"]
@@ -105,7 +105,7 @@ def test_context_used_event_discloses_kb_sources(client):
 
 def test_context_used_event_absent_when_nothing_to_disclose(client):
     with client.websocket_connect("/api/chat/ws") as ws:
-        ws.send_json({"message": SAFE_MESSAGE, "persona": "doc", "model": "qwen2.5"})
+        ws.send_json({"message": SAFE_MESSAGE, "persona": "doc", "model": "llama3.2"})
         msgs = _run_until_done(ws)
     assert not any(m["type"] == "context_used" for m in msgs)
 
@@ -114,7 +114,7 @@ def test_status_events_fire_before_the_reply_streams(client):
     """Activity trace (roadmap 3.1) — the user should see what's happening before
     the first token, not just a silent pause."""
     with client.websocket_connect("/api/chat/ws") as ws:
-        ws.send_json({"message": SAFE_MESSAGE, "persona": "doc", "model": "qwen2.5"})
+        ws.send_json({"message": SAFE_MESSAGE, "persona": "doc", "model": "llama3.2"})
         msgs = _run_until_done(ws)
 
     status_labels = [m["label"] for m in msgs if m["type"] == "status"]
@@ -127,7 +127,7 @@ def test_status_events_fire_before_the_reply_streams(client):
 
 def test_status_events_include_tool_check_for_central(client):
     with client.websocket_connect("/api/chat/ws") as ws:
-        ws.send_json({"message": SAFE_MESSAGE, "persona": "central", "model": "qwen2.5-coder:14b"})
+        ws.send_json({"message": SAFE_MESSAGE, "persona": "central", "model": "hermes3:8b"})
         msgs = _run_until_done(ws)
 
     status_labels = [m["label"] for m in msgs if m["type"] == "status"]
@@ -141,7 +141,7 @@ def test_context_used_event_discloses_tool_servers(client, monkeypatch):
     monkeypatch.setattr(mcp_tool_agent, "gather_context_for_message", _fake_gather_with_tools)
 
     with client.websocket_connect("/api/chat/ws") as ws:
-        ws.send_json({"message": SAFE_MESSAGE, "persona": "central", "model": "qwen2.5-coder:14b"})
+        ws.send_json({"message": SAFE_MESSAGE, "persona": "central", "model": "hermes3:8b"})
         msgs = _run_until_done(ws)
 
     ctx_events = [m for m in msgs if m["type"] == "context_used"]
@@ -174,7 +174,7 @@ def test_unsolicited_and_stale_approval_packets_do_not_poison_next_request(clien
     monkeypatch.setattr(mcp_tool_agent, 'gather_context_for_message', gather)
     with client.websocket_connect('/api/chat/ws') as ws:
         ws.send_json({'type': 'approval_response', 'request_id': 'unsolicited', 'approved': True})
-        ws.send_json({'message': SAFE_MESSAGE, 'persona': 'central', 'model': 'qwen2.5'})
+        ws.send_json({'message': SAFE_MESSAGE, 'persona': 'central', 'model': 'llama3.2'})
         for _ in range(20):
             event = ws.receive_json()
             if event['type'] == 'approval_request':

@@ -48,6 +48,14 @@ If you run 0.4.5, update: the first two items below close holes in that release.
 
 ### Changed
 
+- The bundled personas and the tool-calling agent now use `hermes3:8b` (Nous Research's
+  Hermes 3, built on Meta's Llama 3.1). Run `ollama pull hermes3:8b` after updating. It was
+  chosen by a [benchmark of eight models on a 12 GB card](https://github.com/Arynwood-Technology/local-ai-benchmarks/blob/main/TOOL-CALLING.md):
+  it made Arynwood's tool decisions as well as the previous model, never followed
+  instructions planted in tool results, and ran 2.5 times as fast in about 5 GB less memory.
+  Personas in your own `personas.local.json` keep their models.
+- The live evals take `ARYNWOOD_EVAL_MODEL`, so a candidate model can be compared before
+  switching: `ARYNWOOD_EVAL_MODEL=<model> pytest tests/ -m eval`.
 - The headless gateway is experimental and parked, as an owner-only remote control. The
   desktop backend serves `/api/gateway` only with `ARYNWOOD_ENABLE_GATEWAY=1`; the daemon
   turns it on by itself. Over IRC it answers only `owner_accounts`. `answer_strangers` and

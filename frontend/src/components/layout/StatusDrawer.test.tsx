@@ -24,7 +24,7 @@ function mockApi(overrides: Record<string, unknown> = {}) {
     },
     '/api/mcp/servers': [],
     '/api/studio/sidecars': {},
-    '/api/ollama/models?host=localhost&port=11434': { models: [{ name: 'qwen2.5-coder:14b' }] },
+    '/api/ollama/models?host=localhost&port=11434': { models: [{ name: 'hermes3:8b' }] },
     ...overrides,
   }
 

@@ -246,7 +246,7 @@ def test_stop_mid_stream_saves_the_partial_reply(client, monkeypatch, stub_turn)
 
     monkeypatch.setattr(ollama_client, "chat_stream", slow_stream)
     with client.websocket_connect("/api/chat/ws") as ws:
-        ws.send_json({"message": "please summarize chapter three", "persona": "doc", "model": "qwen2.5"})
+        ws.send_json({"message": "please summarize chapter three", "persona": "doc", "model": "llama3.2"})
         conversation_id = None
         while True:
             m = ws.receive_json()
@@ -272,7 +272,7 @@ def test_stop_during_post_reply_work_does_not_duplicate_the_reply(client, monkey
     monkeypatch.setattr(ollama_client, "chat_stream", quick_stream)
     monkeypatch.setattr(chat, "_process_memories", slow_memories)
     with client.websocket_connect("/api/chat/ws") as ws:
-        ws.send_json({"message": "please summarize chapter three", "persona": "central", "model": "qwen2.5"})
+        ws.send_json({"message": "please summarize chapter three", "persona": "central", "model": "llama3.2"})
         conversation_id = None
         while True:
             m = ws.receive_json()
@@ -294,7 +294,7 @@ def test_first_turn_does_not_announce_a_summary(client, monkeypatch, stub_turn):
 
     monkeypatch.setattr(ollama_client, "chat_stream", stream)
     with client.websocket_connect("/api/chat/ws") as ws:
-        ws.send_json({"message": "please summarize chapter three", "persona": "doc", "model": "qwen2.5"})
+        ws.send_json({"message": "please summarize chapter three", "persona": "doc", "model": "llama3.2"})
         events = []
         while not (events and events[-1]["type"] == "token" and events[-1].get("done")):
             events.append(ws.receive_json())

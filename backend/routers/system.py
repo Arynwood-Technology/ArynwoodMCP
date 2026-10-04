@@ -205,15 +205,15 @@ async def get_hardware():
     if ram_gb >= 32: ram_notes.append("Can CPU-offload 30B models via Ollama")
     if ram_gb >= 64: ram_notes.append("Can CPU-run 70B models (q4 ~40GB) — slow but works")
 
-    # Recommended Ollama models for this GPU tier
+    # Example Ollama models for this GPU tier (examples, not recommendations)
     recommended_models = [
         {"name": "deepseek-r1:8b",      "size": "4.9GB", "desc": "Reasoning / chain-of-thought",    "pull": "ollama pull deepseek-r1:8b"},
-        {"name": "gemma3:9b",           "size": "5.8GB", "desc": "Google Gemma 3 — great all-rounder", "pull": "ollama pull gemma3:9b"},
+        {"name": "gemma3:12b",          "size": "8.1GB", "desc": "Google Gemma 3 — all-rounder",   "pull": "ollama pull gemma3:12b"},
         {"name": "llava:13b",           "size": "8.0GB", "desc": "Vision LLM — chat about images",  "pull": "ollama pull llava:13b"},
         {"name": "moondream2",          "size": "1.7GB", "desc": "Lightweight vision model",         "pull": "ollama pull moondream2"},
         {"name": "nomic-embed-text",    "size": "274MB", "desc": "Embeddings for RAG workflows",     "pull": "ollama pull nomic-embed-text"},
         {"name": "phi4",                "size": "9.1GB", "desc": "Microsoft Phi-4, excellent coding","pull": "ollama pull phi4"},
-        {"name": "qwen2.5:14b",         "size": "9.0GB", "desc": "Qwen 2.5 14B — strong reasoning", "pull": "ollama pull qwen2.5:14b"},
+        {"name": "hermes3:8b",          "size": "4.7GB", "desc": "Nous Research Hermes 3 — chat and tool calling", "pull": "ollama pull hermes3:8b"},
         {"name": "mistral-nemo:12b",    "size": "7.1GB", "desc": "Mistral NeMo, multilingual",      "pull": "ollama pull mistral-nemo:12b"},
     ]
 

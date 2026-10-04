@@ -32,8 +32,8 @@ MAX_HISTORY = 30
 
 # ── Token budgeting ──────────────────────────────────────────────────────────────
 # Ollama silently caps num_ctx at 2048 unless a request sets it explicitly, regardless
-# of what the model actually supports (qwen2.5-coder:14b supports 32768; hermes3:8b
-# supports 131072) — every persona in this app was hitting that default. MAX_NUM_CTX
+# of what the model actually supports (hermes3:8b supports 131072) — every persona in
+# this app was hitting that default. MAX_NUM_CTX
 # is a deliberate ceiling below any model's native max: this machine has a single 12GB
 # GPU already contending with A1111/SD for VRAM (see CLAUDE.md's Known Issues), and
 # num_ctx drives Ollama's KV-cache size — doubling it roughly doubles that VRAM cost.
@@ -47,11 +47,10 @@ MAX_NUM_CTX = 8192
 # squeeze that out along with the reply itself.
 #
 # Originally set to 16384, reasoning that the smaller-model personas already validated
-# that number on this exact 12GB card — wrong: their num_ctx precedent doesn't transfer
-# here, because they run much smaller models (hermes3:8b-class) than central's
-# qwen2.5-coder:14b. Confirmed live via `ollama ps`: at 16384,
-# qwen2.5-coder:14b needs ~14GB total (9GB weights + ~5GB KV-cache) — more than
-# this card has — forcing partial CPU offload (observed 80%/20% GPU/CPU) that
+# that number on this exact 12GB card — wrong: their num_ctx precedent didn't transfer
+# to the 14B model central ran until 2026-10-04 (now hermes3:8b). Confirmed live via
+# `ollama ps`: at 16384 that 14B model needed ~14GB total (9GB weights + ~5GB KV-cache) —
+# more than this card has — forcing partial CPU offload (observed 80%/20% GPU/CPU) that
 # turned a routine question into a 200+ second reply. MAX_TOOL_NUM_CTX (below)
 # is the actually-proven ceiling for this specific model on this specific card —
 # already used all day for the tool-calling loop without this problem — so reuse
@@ -844,15 +843,15 @@ def _should_search(message: str) -> bool:
 # "search the web" is exactly the kind of thing that should be an on-demand
 # decision rather than an always-on guess.
 #
-# Originally central-only: it's the persona whose configured model
-# (qwen2.5-coder:14b) is the same model mcp_tool_agent's side-loop already relies on
-# for reliable tool-calling — a model not verified to call tools reliably shouldn't
-# be added here regardless of whether it has a matching tool to call. glyph added on
-# that same basis: it also runs qwen2.5-coder:14b (see models.json) and now has a
-# real reason to need it (generate_spreadsheet, below). doc and estra run that same
-# model too but have no tool that does anything for them yet, so there's nothing to
-# gain by adding them — kona runs hermes3:8b, unverified for this. Add a persona here
-# only when both hold: its model is qwen2.5-coder:14b, and it has an actual reason to.
+# Originally central-only: it's the persona whose configured model is the model
+# mcp_tool_agent's side-loop relies on for tool calling (local_agent/config.json, now
+# hermes3:8b, chosen by measurement: local-ai-benchmarks' TOOL-CALLING.md) — a model not
+# verified to call tools reliably shouldn't be added here regardless of whether it has a
+# matching tool to call. glyph added on that same basis: it runs that model too (see
+# models.json) and has a real reason to need it (generate_spreadsheet, below). doc, estra
+# and kona run it as well but have no tool that does anything for them yet, so there's
+# nothing to gain by adding them. Add a persona here only when both hold: its model is
+# the pinned tool-calling model, and it has an actual reason to.
 NATIVE_TOOLS_PERSONAS = {"central", "glyph"}
 NATIVE_TOOLS_MAX_ROUNDS = 4
 
@@ -1037,8 +1036,8 @@ async def _stream_reply(
     buffered (never forwarded live) before deciding whether it's a tool call or a
     real answer — confirmed live, not just in theory, that peeking at only the
     first few characters isn't reliable enough: against central's real (long,
-    conversational) system prompt, qwen2.5-coder:14b can preface a tool call with a
-    full prose lead-in sentence before the JSON even starts ("To find out who won
+    conversational) system prompt, the 14B tool model used until 2026-10-04 prefaced
+    a tool call with a full prose lead-in sentence before the JSON even starts ("To find out who won
     the most recent Super Bowl, I'll need to search for the latest information."
     "\\n\\n```json\\n{...}\\n```"), which a starts-with-'{'-or-backtick check
     misses entirely — the exact bug this buffer-first design closes. A real answer

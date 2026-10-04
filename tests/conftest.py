@@ -21,6 +21,10 @@ _tmp_gateway_overlay = os.path.join(_tmp_gateway_dir, "gateway.json")
 with open(_tmp_gateway_overlay, "w") as _f:
     json.dump({"file_memory": {"dir": os.path.join(_tmp_gateway_dir, "memory")}}, _f)
 os.environ["ARYNWOOD_GATEWAY_CONFIG"] = _tmp_gateway_overlay
+# Personas too: the user's own personas.local.json (in the per-user data dir) overrides bundled
+# personas and their models, so the suite would test the owner's config instead of the shipped
+# one. Point it at a file that doesn't exist; overlay tests set their own.
+os.environ["ARYNWOOD_PERSONAS_FILE"] = os.path.join(_tmp_gateway_dir, "personas.local.json")
 # The gateway's API is parked behind an opt-in (backend.gateway.is_enabled); its tests need it.
 os.environ["ARYNWOOD_ENABLE_GATEWAY"] = "1"
 

@@ -804,7 +804,7 @@ function HardwareCard() {
 
       <button onClick={() => setModelsOpen(o => !o)} style={{ background: 'none', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 5 }}>
         {modelsOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-        Recommended Ollama models for your GPU
+        Example Ollama models for your GPU
       </button>
 
       {modelsOpen && hw.recommended_models && (

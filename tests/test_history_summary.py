@@ -13,7 +13,7 @@ async def _db():
 
 
 async def _make_conversation(db):
-    cur = await db.execute("INSERT INTO conversations (persona, model) VALUES ('central','qwen2.5-coder:14b')")
+    cur = await db.execute("INSERT INTO conversations (persona, model) VALUES ('central','hermes3:8b')")
     await db.commit()
     return cur.lastrowid
 
@@ -54,7 +54,7 @@ async def test_no_summary_when_conversation_shorter_than_max_history(client, mon
             raise AssertionError("should not summarize when nothing has aged out")
 
         monkeypatch.setattr(ollama_client, "chat", _fail_if_called)
-        await _summarize_aged_out_history(conv_id, "qwen2.5-coder:14b", "localhost", 11434)
+        await _summarize_aged_out_history(conv_id, "hermes3:8b", "localhost", 11434)
         assert called["n"] == 0
 
         async with db.execute("SELECT history_summary FROM conversations WHERE id=?", (conv_id,)) as cur:
@@ -83,7 +83,7 @@ async def test_summarizes_and_persists_when_history_exceeds_max(client, monkeypa
         monkeypatch.setattr(ollama_client, "context_length", _fake_context_length)
         monkeypatch.setattr(ollama_client, "chat", _fake_chat)
 
-        await _summarize_aged_out_history(conv_id, "qwen2.5-coder:14b", "localhost", 11434)
+        await _summarize_aged_out_history(conv_id, "hermes3:8b", "localhost", 11434)
 
         assert "message 0" in captured["prompt"]
         assert "message 5" in captured["prompt"]
@@ -104,7 +104,7 @@ async def test_summarizes_and_persists_when_history_exceeds_max(client, monkeypa
             raise AssertionError("should not re-summarize the same range")
 
         monkeypatch.setattr(ollama_client, "chat", _fail_if_called_again)
-        await _summarize_aged_out_history(conv_id, "qwen2.5-coder:14b", "localhost", 11434)
+        await _summarize_aged_out_history(conv_id, "hermes3:8b", "localhost", 11434)
         assert called_again["n"] == 0
     finally:
         await _set_setting(db, "agent_max_history", str(MAX_HISTORY))  # agent_max_history is a global setting

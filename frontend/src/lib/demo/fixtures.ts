@@ -10,11 +10,11 @@ import type {
 } from '../api'
 
 export const PERSONAS: Persona[] = [
-  { id: 'central', name: 'Arynwood', role: 'MCP Interface and Coordinator', model: 'qwen2.5-coder:14b' },
-  { id: 'doc', name: 'Doc', role: 'Senior Mentor and Technical Architect', model: 'qwen2.5-coder:14b' },
+  { id: 'central', name: 'Arynwood', role: 'MCP Interface and Coordinator', model: 'hermes3:8b' },
+  { id: 'doc', name: 'Doc', role: 'Senior Mentor and Technical Architect', model: 'hermes3:8b' },
   { id: 'kona', name: 'Kona', role: 'Creative AI Assistant', model: 'hermes3:8b' },
-  { id: 'glyph', name: 'Glyph', role: 'Automation Expert and Data Bot', model: 'qwen2.5-coder:14b' },
-  { id: 'estra', name: 'Estra', role: 'Writer, Editor, Fact-checker', model: 'qwen2.5-coder:14b' },
+  { id: 'glyph', name: 'Glyph', role: 'Automation Expert and Data Bot', model: 'hermes3:8b' },
+  { id: 'estra', name: 'Estra', role: 'Writer, Editor, Fact-checker', model: 'hermes3:8b' },
 ]
 
 export const STATUS: SystemStatus = {
@@ -68,7 +68,7 @@ export const LORAS: ModelFileList = {
 }
 
 export const OLLAMA_MODELS = [
-  { name: 'qwen2.5-coder:14b', size: 9_012_345_678, digest: 'sha256:demo1', modified_at: '2026-08-01T00:00:00Z', details: { parameter_size: '14B', quantization_level: 'Q4_K_M' } },
+  { name: 'granite3.3:8b', size: 4_942_345_678, digest: 'sha256:demo1', modified_at: '2026-08-01T00:00:00Z', details: { parameter_size: '8B', quantization_level: 'Q4_K_M' } },
   { name: 'hermes3:8b', size: 4_912_345_678, digest: 'sha256:demo2', modified_at: '2026-08-01T00:00:00Z', details: { parameter_size: '8B', quantization_level: 'Q4_K_M' } },
   { name: 'nomic-embed-text', size: 274_000_000, digest: 'sha256:demo3', modified_at: '2026-08-01T00:00:00Z', details: { parameter_size: '137M', quantization_level: 'F16' } },
 ]
@@ -124,7 +124,7 @@ export const SEED_CONVERSATION: Conversation = {
   id: 1,
   title: 'Clean up my timeline',
   persona: 'glyph',
-  model: 'qwen2.5-coder:14b',
+  model: 'hermes3:8b',
   server_id: 1,
   created_at: '2026-09-20 14:02:00',
   updated_at: '2026-09-20 14:02:41',

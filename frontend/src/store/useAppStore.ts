@@ -70,7 +70,7 @@ export const useAppStore = create<AppState>()(
       status: null,
       setStatus: (status) => set({ status }),
 
-      activeModel: 'qwen2.5-coder:14b',
+      activeModel: 'hermes3:8b',
       setActiveModel: (activeModel) => set({ activeModel }),
       activeServer: null,
       setActiveServer: (activeServer) => set({ activeServer }),

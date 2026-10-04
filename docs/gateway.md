@@ -66,8 +66,8 @@ Shared defaults: `mcp/config/gateway/config.json`. Personal settings go in the o
 at `~/.local/share/arynwood-mcp/gateway.json` (or `ARYNWOOD_GATEWAY_CONFIG`), which is
 outside the repo. Keys are documented in `mcp/config/gateway/README.md`.
 
-Leave `max_concurrent_turns` at 1 on a single 12GB GPU. The chat model
-(`qwen2.5-coder:14b` at `num_ctx` 8192, about 11 GiB) only fits once, so turns from
+Leave `max_concurrent_turns` at 1 on a single 12GB GPU. One model
+serves every turn, and loading a second copy alongside other GPU work isn't worth it, so turns from
 different sessions wait their turn instead of competing for VRAM. Turns in the same
 session always run in order.
 
@@ -374,15 +374,15 @@ on a local 14B model.
 
 ### Which local model is reliable for tool calling on a 12 GB GPU?
 
-In this project's testing, `qwen2.5-coder:14b`. Plain `qwen2.5` mostly describes the
-JSON for a tool call instead of sending it, so Arynwood MCP pins the coder model for
-tool-using turns.
+In this project's testing, `hermes3:8b` (Nous Research's Hermes 3, built on Meta's Llama 3.1).
+It made all 20 of Arynwood MCP's tool decisions correctly, never called a tool it didn't need,
+and ignored instructions planted in tool results. The full comparison of eight models is in the
+[tool-calling benchmark](https://github.com/Arynwood-Technology/local-ai-benchmarks/blob/main/TOOL-CALLING.md).
 
-- **Measured on an RTX 3060 (12 GB):** with about 1 GB already used by other programs, it
-  runs 95% on GPU at an 8,192-token context and 86% at 12,288. Tool turns need the larger
-  context.
-- **Keep one turn at a time.** Running two would mean loading the model twice, which
-  doesn't fit.
+- **Measured on an RTX 3060 (12 GB):** 6.7 GB at an 8,192-token context and 7.5 GB at 12,288,
+  all on the GPU, at about 44 tokens per second. Tool turns use the larger context.
+- **Keep one turn at a time.** One model serves every turn, and the GPU also runs image
+  generation.
 
 ### How do I stop a local AI agent from deleting files or publishing without asking?
 

@@ -11,10 +11,9 @@ import pytest
 
 from backend.routers.chat import build_system_prompt, _stream_reply, HISTORY_SUMMARY_PROMPT
 from backend.services import ollama_client
-from test_evals_live_behavior import skip_if_ollama_down, _RecordingWebSocket
+from test_evals_live_behavior import EVAL_MODEL as MODEL, skip_if_ollama_down, _RecordingWebSocket
 
 pytestmark = [pytest.mark.eval, skip_if_ollama_down]
-MODEL = 'qwen2.5-coder:14b'
 
 
 def conversation(**kwargs):

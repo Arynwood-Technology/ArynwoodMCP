@@ -26,7 +26,7 @@ function makeSocket() {
 }
 
 const basePayload: ChatPayload = {
-  message: '', persona: 'glyph', model: 'qwen2.5-coder:14b', server_host: 'localhost', server_port: 11434,
+  message: '', persona: 'glyph', model: 'hermes3:8b', server_host: 'localhost', server_port: 11434,
 }
 
 describe('DemoWebSocket', () => {

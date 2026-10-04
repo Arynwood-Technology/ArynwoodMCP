@@ -161,8 +161,7 @@ cp .env.example .env
 ### 3. Pull the models the default personas actually use
 
 ```bash
-ollama pull qwen2.5-coder:14b   # central (Arynwood) - also the fixed tool-calling model
-ollama pull qwen2.5             # doc, kona, glyph, estra
+ollama pull hermes3:8b          # every bundled persona, and the tool-calling model
 ollama pull nomic-embed-text    # knowledge base + memory retrieval embeddings
 ```
 Swap any of these for whatever you'd rather run by editing
@@ -332,9 +331,9 @@ the chat showing exactly which tool and arguments, and nothing runs until you
 approve or deny it.
 
 That loop always uses one fixed local model for tool-calling
-(`qwen2.5-coder:14b` by default), independent of whichever model/persona
-you're actually chatting with - smaller/non-coder models don't reliably
-call tools at all.
+(`hermes3:8b` by default), independent of whichever model/persona
+you're actually chatting with. It was chosen by measurement: see the
+[tool-calling benchmark](https://github.com/Arynwood-Technology/local-ai-benchmarks/blob/main/TOOL-CALLING.md).
 
 **Currently registered** (`mcp/config/mcp_servers.json` - gitignored, per-install,
 **and not guaranteed to exist on a fresh checkout** - without it, none of the

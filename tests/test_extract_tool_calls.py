@@ -1,5 +1,5 @@
 """_extract_tool_calls (roadmap 2.1/3.3 fix) — found live, not by inspection: with
-central's real (long, conversational) system prompt, qwen2.5-coder:14b sometimes
+central's real (long, conversational) system prompt, the earlier 14B tool model sometimes
 prefaces a tool call with a full lead-in sentence before the JSON, e.g.
 'To find out who won the most recent Super Bowl, I'll need to search for the '
 'latest information.\\n\\n```json\\n{"name": "web_search", ...}\\n```'

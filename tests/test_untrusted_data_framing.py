@@ -48,7 +48,7 @@ async def test_kb_context_is_wrapped_in_ws_flow(client, monkeypatch):
     monkeypatch.setattr(mcp_tool_agent, "gather_context_for_message", fake_gather)
 
     with client.websocket_connect("/api/chat/ws") as ws:
-        ws.send_json({"message": SAFE_MESSAGE, "persona": "doc", "model": "qwen2.5"})
+        ws.send_json({"message": SAFE_MESSAGE, "persona": "doc", "model": "llama3.2"})
         for _ in range(10):
             msg = ws.receive_json()
             if msg.get("type") == "token" and msg.get("done"):

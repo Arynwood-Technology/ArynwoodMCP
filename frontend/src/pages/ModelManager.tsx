@@ -16,14 +16,14 @@ const CATALOG: {
   { id: 'llama3.1:70b',      name: 'Llama 3.1 70B',       tag: 'llama3.1:70b',        size: '40 GB',  description: 'Top-tier open model. Needs 48GB+ VRAM.',                             category: 'large'   },
   { id: 'gemma2',            name: 'Gemma 2 9B',          tag: 'gemma2',              size: '5.4 GB', description: "Google's well-rounded 9B. Excellent instruction following.",          category: 'general' },
   { id: 'gemma2:27b',        name: 'Gemma 2 27B',         tag: 'gemma2:27b',          size: '16 GB',  description: "Google's large Gemma. Strong reasoning and writing.",                category: 'large'   },
-  { id: 'qwen2.5',           name: 'Qwen 2.5 7B',         tag: 'qwen2.5',             size: '4.4 GB', description: "Alibaba's multilingual model. Great for diverse tasks.",              category: 'general' },
-  { id: 'qwen2.5:14b',       name: 'Qwen 2.5 14B',        tag: 'qwen2.5:14b',         size: '9.0 GB', description: 'Strong across reasoning, code, and writing.',                        category: 'general' },
+  { id: 'hermes3',           name: 'Hermes 3 8B',         tag: 'hermes3:8b',          size: '4.7 GB', description: "Nous Research's Llama 3.1 fine-tune. Arynwood's default for chat and tools.", category: 'general' },
+  { id: 'granite3.3',        name: 'Granite 3.3 8B',      tag: 'granite3.3:8b',       size: '4.9 GB', description: "IBM's 8B model with tool calling and 128k context.",                category: 'general' },
   { id: 'deepseek-r1',       name: 'DeepSeek R1 7B',      tag: 'deepseek-r1',         size: '4.7 GB', description: 'Reasoning-focused. Shows step-by-step thinking.',                    category: 'general' },
   { id: 'neural-chat',       name: 'Neural Chat 7B',      tag: 'neural-chat',         size: '4.1 GB', description: 'Intel-tuned conversational model. Smooth and friendly.',              category: 'general' },
   { id: 'codellama',         name: 'CodeLlama 7B',        tag: 'codellama',           size: '3.8 GB', description: 'Meta code model. Good for most languages and debugging.',             category: 'code'    },
   { id: 'codellama:13b',     name: 'CodeLlama 13B',       tag: 'codellama:13b',       size: '7.4 GB', description: 'Larger CodeLlama. Better at complex code.',                          category: 'code'    },
-  { id: 'qwen2.5-coder',     name: 'Qwen 2.5 Coder 7B',  tag: 'qwen2.5-coder',       size: '4.4 GB', description: 'Top-ranked open code model. Excellent for agentic coding.',           category: 'code'    },
-  { id: 'qwen2.5-coder:14b', name: 'Qwen 2.5 Coder 14B', tag: 'qwen2.5-coder:14b',   size: '9.0 GB', description: 'Near GPT-4 on code benchmarks.',                                    category: 'code'    },
+  { id: 'granite-code',      name: 'Granite Code 8B',     tag: 'granite-code:8b',     size: '4.6 GB', description: "IBM's open code model family.",                                     category: 'code'    },
+  { id: 'codegemma',         name: 'CodeGemma 7B',        tag: 'codegemma:7b',        size: '5.0 GB', description: "Google's lightweight code model.",                                  category: 'code'    },
   { id: 'deepseek-coder-v2', name: 'DeepSeek Coder V2',  tag: 'deepseek-coder-v2',   size: '8.9 GB', description: 'Excellent at coding and math. Strong tool-use support.',              category: 'code'    },
   { id: 'starcoder2',        name: 'StarCoder2 7B',       tag: 'starcoder2',          size: '4.0 GB', description: '600+ programming languages. Great for niche langs.',                 category: 'code'    },
   { id: 'phi3',              name: 'Phi-3 Mini',          tag: 'phi3',                size: '2.3 GB', description: "Microsoft's tiny but smart model. Very fast on CPU.",                category: 'fast'    },
@@ -346,7 +346,7 @@ export function ModelManager() {
                 value={customPull}
                 onChange={e => setCustomPull(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && customPull.trim()) { startPull(customPull.trim()); setCustomPull('') } }}
-                placeholder="Pull any model by name (e.g. llama3.2, qwen2.5:14b)…"
+                placeholder="Pull any model by name (e.g. llama3.2, hermes3:8b)…"
                 style={{ flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 8, padding: '8px 12px', fontSize: 13 }}
               />
               <button

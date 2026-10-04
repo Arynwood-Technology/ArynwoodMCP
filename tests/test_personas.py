@@ -17,4 +17,4 @@ def test_list_personas_excludes_non_persona_entries(client):
 def test_central_persona_has_its_configured_model(client):
     r = client.get("/api/chat/personas")
     central = next(p for p in r.json() if p["id"] == "central")
-    assert central["model"] == "qwen2.5-coder:14b"
+    assert central["model"] == "hermes3:8b"

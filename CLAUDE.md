@@ -168,14 +168,14 @@ outline, so keyboard users previously had no focus indicator anywhere.
 There are now two separate ways a reply can involve a tool — don't conflate them
 when reading `chat.py`/`mcp_tool_agent.py`.
 
-**1. Native tool-calling (central only).** `central`'s own model (`qwen2.5-coder:14b`
-— chosen specifically because it's the same model mechanism 2 below already trusts
-for reliable tool-calling) gets a small curated toolset — `web_search`,
+**1. Native tool-calling (central only).** `central`'s own model (`hermes3:8b`
+— the same model mechanism 2 below uses, chosen by measurement on 2026-10-04, see
+`local-ai-benchmarks/TOOL-CALLING.md`) gets a small curated toolset — `web_search`,
 `search_memory`, `search_knowledge_base` — via `chat.py`'s `_stream_reply` /
-`_NATIVE_TOOLS`. Ollama streams identically whether or not tools are attached (it
-never populates the native `tool_calls` field for this model; a tool call arrives as
+`_NATIVE_TOOLS`. Ollama streams identically whether or not tools are attached. A tool call
+arrives in the native `tool_calls` field (hermes3:8b uses it) or, from some models, as
 `{"name":...,"arguments":...}` JSON in plain content, sometimes *prefaced with a full
-prose lead-in sentence* — confirmed live, not just in theory). Because of that,
+prose lead-in sentence* — confirmed live with the earlier 14B tool model, not just in theory. Because of that,
 `_stream_reply` fully buffers a tools-enabled round before deciding whether it's a
 tool call or a real answer, then delivers a real answer as a progressive reveal
 (`_deliver_complete_text`) rather than a true live network stream. Every other
@@ -194,9 +194,10 @@ Codebase gate said YES to "how many clips are on my Kdenlive timeline?" 4/4 time
 `ROUTE_CASES` in the eval suite. On a match, it runs a small bounded tool-calling loop *before* the streaming reply via
 `mcp_tool_agent.run_tool_loop` (same "auto-injected context block" idiom as the
 web-search / knowledge-base injections in `chat.py`). This loop always uses the fixed
-local model in `mcp/config/local_agent/config.json` (currently `qwen2.5-coder:14b`)
-regardless of which model the conversation itself is using — empirically the other
-persona models don't reliably call tools at all.
+local model in `mcp/config/local_agent/config.json` (currently `hermes3:8b`)
+regardless of which model the conversation itself is using. Keep the personas on that
+same model: two models don't fit the 12GB card together, so each turn would reload one.
+Compare a candidate first with `ARYNWOOD_EVAL_MODEL=<model> pytest tests/ -m eval`.
 
 To wire up a new server: register it in `mcp/config/mcp_servers.json`, add
 `mcp/config/local_agent/<server>.md` with its tool/schema hints and (ideally) a few
@@ -363,11 +364,11 @@ Personas live in `mcp/config/models.json`, keyed by id:
 
 | Key | Name | Role | Model |
 |---|---|---|---|
-| `central` | Arynwood | Coordinator | `qwen2.5-coder:14b` |
-| `doc` | Doc | Architect | `qwen2.5-coder:14b` |
+| `central` | Arynwood | Coordinator | `hermes3:8b` |
+| `doc` | Doc | Architect | `hermes3:8b` |
 | `kona` | Kona | Creative | `hermes3:8b` |
-| `glyph` | Glyph | Automation | `qwen2.5-coder:14b` |
-| `estra` | Estra | Writer | `qwen2.5-coder:14b` |
+| `glyph` | Glyph | Automation | `hermes3:8b` |
+| `estra` | Estra | Writer | `hermes3:8b` |
 
 The frontend does **not** hardcode this list — `GET /api/chat/personas` (see `backend/routers/chat.py`) reads `mcp/config/models.json` fresh on every call, overlays the user's own `personas.local.json` on top (see below), and the Chat page renders whatever comes back — so adding/editing a persona takes effect immediately with no frontend change and no restart.
 
@@ -721,8 +722,8 @@ below the visible area inside an `overflow-hidden` parent — its bottom control
 `flex: 1 0 auto` (fill when there's room, never shrink below content), not a fixed `height: 100%`.
 
 ### One 12GB GPU: keep the chat model resident (found 2026-09-23)
-`qwen2.5-coder:14b` at `num_ctx` 8192 needs ~11 GiB, so *anything* else Ollama loads on the GPU evicts
-it, and reloading costs ~3.5s plus the prompt cache. Two things used to do that on every turn: GPU
+The 14B chat model used until 2026-10-04 needed ~11 GiB at `num_ctx` 8192 (hermes3:8b, now: 6.7 GB), so
+*anything* else Ollama loaded on the GPU evicted it, and reloading costs ~3.5s plus the prompt cache. Two things used to do that on every turn: GPU
 embeddings (nomic-embed for memory/knowledge retrieval), and utility calls that omitted `num_ctx`
 (gate classifier, memory-conflict check), which Ollama treats as a different configuration
 (server default 4096) and reloads for. Now `aembed_texts` runs embeddings on CPU (`num_gpu: 0`,

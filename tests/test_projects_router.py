@@ -58,7 +58,7 @@ async def test_ensure_conversation_stores_project_id(client):
     db = await aiosqlite.connect(os.environ["ARYNWOOD_DB_PATH"])
     db.row_factory = aiosqlite.Row
     try:
-        conv_id = await ensure_conversation(db, "central", "qwen2.5-coder:14b", project_id=project)
+        conv_id = await ensure_conversation(db, "central", "hermes3:8b", project_id=project)
         async with db.execute("SELECT project_id FROM conversations WHERE id=?", (conv_id,)) as cur:
             row = await cur.fetchone()
         assert row["project_id"] == project

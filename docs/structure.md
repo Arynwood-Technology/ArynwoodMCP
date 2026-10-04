@@ -273,11 +273,11 @@ Seven personas available in the chat interface:
 
 | Key | Name | Role | Model |
 |-----|------|------|-------|
-| `central` | Arynwood | Coordinator, general assistant | `qwen2.5-coder:14b` |
-| `doc` | Doc | Systems architect | `qwen2.5` |
-| `kona` | Kona | Creative, exploratory | `qwen2.5` |
-| `glyph` | Glyph | Automation, workflows | `qwen2.5` |
-| `estra` | Estra | Writer, editor | `qwen2.5` |
+| `central` | Arynwood | Coordinator, general assistant | `hermes3:8b` |
+| `doc` | Doc | Systems architect | `hermes3:8b` |
+| `kona` | Kona | Creative, exploratory | `hermes3:8b` |
+| `glyph` | Glyph | Automation, workflows | `hermes3:8b` |
+| `estra` | Estra | Writer, editor | `hermes3:8b` |
 
 Corrected: the frontend does **not** hardcode this list in a `PERSONAS` constant —
 `GET /api/chat/personas` reads `mcp/config/models.json` fresh on every call (filtering
