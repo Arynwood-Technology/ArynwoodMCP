@@ -6,7 +6,7 @@
   <title>Terminal - Linux Hub | Arynwood</title>
   <meta name="description" content="Linux system command reference and terminal interface">
   <style>
-    @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap");
+    @import url("fonts/fonts.css");
 
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(20px); }
@@ -359,7 +359,7 @@
       <div class="output">Linux arynwood 6.8.0-51 #52-Ubuntu SMP x86_64 GNU/Linux</div>
       <div class="output" style="margin-top:2rem;">
         <span class="comment"># Use the search bar above to find any command by keyword or description</span>
-        <span class="comment"># Or type a category: filesystem, nginx, docker, git, ollama, tailscale, aider, rust, cargo, tauri, npm, etc.</span>
+        <span class="comment"># Or type a category: filesystem, nginx, docker, git, ollama, tailscale, rust, cargo, tauri, npm, etc.</span>
       </div>
 
       <div class="category-grid">
@@ -516,17 +516,6 @@
           <div class="category-title">Tailscale</div>
           <div class="category-desc">Zero-config mesh VPN, peer connectivity</div>
           <span class="category-count">→ tailscale</span>
-        </div>
-        <div class="category-card" data-category="aider">
-          <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-            <circle cx="19" cy="19" r="3"/>
-            <path d="M19 16v3h3"/>
-          </svg>
-          <div class="category-title">Aider</div>
-          <div class="category-desc">AI pair programmer with local Ollama models</div>
-          <span class="category-count">→ aider</span>
         </div>
         <div class="category-card" data-category="n8n">
           <svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1090,21 +1079,6 @@
     { cmd:'curl -s http://100.x.ooo.ooo.o:11434/api/tags', desc:'Test connectivity to home Ollama API over Tailscale mesh',   section:'tailscale', safe:true  },
     { cmd:'curl -I http://100.x.ooo.ooo.o:11434/', desc:'Check HTTP response from home Ollama endpoint over Tailscale',       section:'tailscale', safe:true  },
 
-    // ── AIDER ────────────────────────────────────────────────────────────
-    { cmd:'sudo apt install -y pipx',          desc:'Install pipx — recommended way to install Python CLI tools in isolation', section:'aider',    safe:false },
-    { cmd:'pipx ensurepath',                   desc:'Add pipx binary path to shell PATH — re-open terminal after running',     section:'aider',    safe:true  },
-    { cmd:'pipx install aider-chat',           desc:'Install aider-chat into an isolated pipx environment',                   section:'aider',    safe:false },
-    { cmd:'pipx upgrade aider-chat',           desc:'Upgrade aider to the latest available version via pipx',                 section:'aider',    safe:false },
-    { cmd:'aider --version',                   desc:'Show the installed aider version',                                       section:'aider',    safe:true  },
-    { cmd:'aider --model ollama/qwen2.5-coder:14b', desc:'Start aider with qwen2.5-coder:14b via Ollama — fast daily driver', section:'aider',   safe:true  },
-    { cmd:'aider --model ollama/deepseek-coder:33b', desc:'Start aider with deepseek-coder:33b — heavier architecture and review tasks', section:'aider', safe:true },
-    { cmd:'aider --model ollama/qwen2.5-coder:14b --no-auto-commits', desc:'Run aider without auto-committing changes to git', section:'aider',   safe:true  },
-    { cmd:'aider --model ollama/qwen2.5-coder:14b --dry-run', desc:'Preview what aider would change without writing any files', section:'aider', safe:true  },
-    { cmd:'aider <FILE1> <FILE2>',             desc:'Start aider with specific files added to the chat context',               section:'aider',    safe:true  },
-    { cmd:'export OLLAMA_HOST="http://127.0.0.1:11434"', desc:'Point aider to local Ollama instance explicitly',              section:'aider',    safe:true  },
-    { cmd:'export OLLAMA_HOST="http://100.x.ooo.ooo.o:11434"', desc:'Point aider to home GPU box over Tailscale mesh',        section:'aider',   safe:true  },
-    { cmd:'aider --list-models ollama/',       desc:'List all Ollama models aider can see and use',                            section:'aider',    safe:true  },
-    { cmd:'aider --help',                      desc:'Show all aider command-line flags and options',                           section:'aider',    safe:true  },
 
     // ── N8N ──────────────────────────────────────────────────────────────
     { cmd:'mkdir -p ~/docker/n8n && cd ~/docker/n8n', desc:'Create and navigate to the n8n compose working directory', section:'n8n',     safe:true  },
@@ -1519,22 +1493,6 @@
 <span class="syntax-command">sudo systemctl edit ollama</span>    <span class="comment"># Set OLLAMA_HOST=100.x.ooo.ooo.o:11434</span>
 <span class="syntax-command">sudo systemctl daemon-reload && sudo systemctl restart ollama</span>`,
 
-    aider: `<span class="comment"># Aider — AI Pair Programmer (local Ollama)</span>
-<span class="comment"># Models: qwen2.5-coder:14b (fast) | deepseek-coder:33b (heavy)</span>
-<span class="syntax-command">sudo apt install -y pipx</span>
-<span class="syntax-command">pipx ensurepath</span>               <span class="comment"># Add to PATH, then reopen shell</span>
-<span class="syntax-command">pipx install aider-chat</span>       <span class="comment"># Install aider</span>
-<span class="syntax-command">pipx upgrade aider-chat</span>       <span class="comment"># Upgrade aider</span>
-<span class="syntax-command">aider --version</span>               <span class="comment"># Verify install</span>
-<span class="comment"># Run inside a git repo — use local Ollama models:</span>
-<span class="syntax-command">aider --model ollama/qwen2.5-coder:14b</span>   <span class="comment"># Fast daily driver</span>
-<span class="syntax-command">aider --model ollama/deepseek-coder:33b</span>   <span class="comment"># Architecture / review</span>
-<span class="syntax-command">aider --model ollama/qwen2.5-coder:14b --no-auto-commits</span>
-<span class="syntax-command">aider --model ollama/qwen2.5-coder:14b --dry-run</span>
-<span class="syntax-command">aider --list-models ollama/</span>   <span class="comment"># See available models</span>
-<span class="comment"># Point to Ollama endpoint (local or over Tailscale):</span>
-<span class="syntax-command">export OLLAMA_HOST="http://127.0.0.1:11434"</span>
-<span class="syntax-command">export OLLAMA_HOST="http://100.x.ooo.ooo.o:11434"</span>  <span class="comment"># Tailscale mesh</span>`,
 
     n8n: `<span class="comment"># n8n — Workflow Automation (Docker)</span>
 <span class="comment"># n8n Ollama creds: Base URL = http://100.x.ooo.ooo.o:11434</span>
@@ -1626,7 +1584,6 @@
 <span class="syntax-command">tauri</span>       desktop app dev, plugins, icons
 <span class="syntax-command">ollama</span>      local LLM models + API
 <span class="syntax-command">tailscale</span>   mesh VPN, peer connectivity
-<span class="syntax-command">aider</span>       AI pair programmer + Ollama
 <span class="syntax-command">n8n</span>         workflow automation in Docker
 <span class="syntax-command">terraform</span>   IaC lifecycle
 <span class="syntax-command">dns</span>         BIND9, zones, dig

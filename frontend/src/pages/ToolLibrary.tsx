@@ -9,7 +9,7 @@ import {
 import { useAppStore } from '../store/useAppStore'
 import {
   getTools, generateImage, generateTTS,
-  removeBg, upscaleImg, searchSearx, listQdrant,
+  removeBg, searchSearx, listQdrant,
   generateAlltalk, generateKokoro, scrapeFetch,
   openTool, installToolStream, apiUrl,
   type Tool,
@@ -249,59 +249,6 @@ function RembgPanel() {
           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Result (transparent PNG):</div>
           <img src={result} alt="result" style={{ maxWidth: '100%', borderRadius: 8, background: 'repeating-conic-gradient(#555 0% 25%, #333 0% 50%) 0 0 / 16px 16px' }} />
           <a href={result} download="no-bg.png" style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>Download PNG</a>
-        </>
-      )}
-    </div>
-  )
-}
-
-function RealESRGANPanel() {
-  const [file, setFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState('')
-  const [result, setResult] = useState('')
-  const [scale, setScale] = useState(4)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  const onFile = (f: File) => { setFile(f); setResult(''); setPreview(URL.createObjectURL(f)) }
-
-  const run = async () => {
-    if (!file) return
-    setLoading(true); setError('')
-    try {
-      const form = new FormData()
-      form.append('image', file)
-      form.append('scale', String(scale))
-      const r = await upscaleImg(form)
-      if (r.image_base64) setResult(`data:image/png;base64,${r.image_base64}`)
-      else throw new Error(r.detail ?? 'No result')
-    } catch (e: any) { setError(e.message) }
-    finally { setLoading(false) }
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <label style={{ fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', border: '1px dashed var(--border)', borderRadius: 6, padding: 12, textAlign: 'center' }}>
-        {file ? file.name : 'Click to upload image'}
-        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => e.target.files?.[0] && onFile(e.target.files[0])} />
-      </label>
-      {preview && <img src={preview} alt="input" style={{ maxHeight: 160, objectFit: 'contain', borderRadius: 6 }} />}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Scale:</span>
-        {[2, 4].map(s => (
-          <button key={s} onClick={() => setScale(s)} style={{ background: scale === s ? 'var(--accent)' : 'var(--surface2)', border: '1px solid var(--border)', color: scale === s ? '#fff' : 'var(--text)', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: 12 }}>
-            {s}×
-          </button>
-        ))}
-      </div>
-      <button onClick={run} disabled={loading || !file} style={runBtn(loading || !file)}>
-        {loading ? `Upscaling ${scale}×…` : `Upscale ${scale}×`}
-      </button>
-      {error && <div style={{ color: '#ef4444', fontSize: 12 }}>{error}</div>}
-      {result && (
-        <>
-          <img src={result} alt="upscaled" style={{ maxWidth: '100%', borderRadius: 8 }} />
-          <a href={result} download="upscaled.png" style={{ fontSize: 11, color: 'var(--accent)', textDecoration: 'none' }}>Download PNG</a>
         </>
       )}
     </div>
@@ -650,7 +597,10 @@ function ActionSection({ tool }: { tool: Tool & { local_html?: boolean } }) {
 
   const cmd = tool.install || ''
   const isDockerCmd = cmd.startsWith('docker')
-  const hasInstall = !!cmd && !cmd.startsWith('#') && !cmd.startsWith('xdg-open')
+  // A command starting with '#' is setup guidance for the user, never run.
+  const guidance = cmd.startsWith('#') ? cmd.replace(/^#\s*/, '') : ''
+  // Starting a service that's already up would only fail on its port or container name.
+  const hasInstall = !!cmd && !guidance && !cmd.startsWith('xdg-open') && !(isDockerCmd && tool.status === 'online')
   const hasOpenUrl = !!tool.homepage
   const hasLocalFile = !!tool.local_html
 
@@ -663,7 +613,11 @@ function ActionSection({ tool }: { tool: Tool & { local_html?: boolean } }) {
     setRunning(true); setLog(`$ ${cmd}\n\n`); setExitOk(null)
     try {
       const r = await installToolStream(tool.id)
-      if (!r.ok || !r.body) { setLog(l => l + `\nHTTP ${r.status}\n`); setRunning(false); return }
+      if (!r.ok || !r.body) {
+        let detail = `HTTP ${r.status}`
+        try { detail = (await r.json()).detail || detail } catch { /* not JSON */ }
+        setLog(l => l + detail + '\n'); setExitOk(false); setRunning(false); return
+      }
       const reader = r.body.getReader()
       const dec = new TextDecoder()
       while (true) {
@@ -721,7 +675,10 @@ function ActionSection({ tool }: { tool: Tool & { local_html?: boolean } }) {
         </pre>
       )}
 
-      {!log && !hasOpenUrl && !hasLocalFile && !hasInstall && (
+      {!log && guidance && (
+        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{guidance}</div>
+      )}
+      {!log && !cmd && !hasOpenUrl && !hasLocalFile && (
         <div style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>
           No automated install available — see project documentation.
         </div>
@@ -756,7 +713,6 @@ const TOOL_PANELS: Record<string, (tool: Tool) => React.ReactNode> = {
   chatterbox:        () => <ChatterboxPanel />,
   sadtalker:         () => <SadTalkerPanel />,
   rembg:             () => <RembgPanel />,
-  realesrgan:        () => <RealESRGANPanel />,
   florence2:         () => <Florence2Panel />,
   scrapling:         () => <ScraplingPanel />,
   searxng:           () => <SearXNGPanel />,
@@ -1165,7 +1121,9 @@ export function ToolLibrary() {
               <>
                 {(selectedTool.status === 'offline' || selectedTool.status === 'unavailable') && (
                   <div style={{ fontSize: 11, color: '#f59e0b', marginBottom: 12 }}>
-                    ⚠ {selectedTool.status === 'offline' ? 'Service is offline — use the button above to start it.' : 'Not installed — use the Install button above first.'}
+                    ⚠ {selectedTool.status !== 'offline' ? 'Not installed — use the Install button above first.'
+                      : selectedTool.install?.startsWith('#') ? 'Service is offline — see the setup note above.'
+                      : 'Service is offline — use the button above to start it.'}
                   </div>
                 )}
                 <div style={{ borderTop: '1px solid var(--border)', paddingTop: 18 }}>

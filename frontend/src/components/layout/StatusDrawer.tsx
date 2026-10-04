@@ -274,17 +274,17 @@ function DrawerBody() {
           <StatusRow
             label="Stable Diffusion" state={status?.stable_diffusion ? 'ok' : 'down'}
             detail="A1111 · localhost:7860"
-            fix="docker restart a1111 — check /sdapi/v1/progress first so nothing is mid-render."
+            fix="Start it from Tools → Stable Diffusion. A1111 must run with --api."
           />
           <StatusRow
             label="TortoiseTTS" state={status?.tortoise_tts ? 'ok' : 'down'}
             detail="localhost:5003"
-            fix="docker compose up -d tortoise-tts"
+            fix="Optional. Arynwood doesn't include a Tortoise server — see Tools → Tortoise TTS."
           />
           <StatusRow
             label="Prometheus" state={status?.prometheus ? 'ok' : 'down'}
             detail="localhost:9090"
-            fix="docker compose up -d prometheus"
+            fix="Optional. From a source checkout: docker compose -f docker/monitoring/docker-compose.yml up -d"
           />
           {community && (
             <StatusRow

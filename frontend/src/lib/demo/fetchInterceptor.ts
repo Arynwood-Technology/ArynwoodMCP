@@ -22,8 +22,8 @@ import {
 // default 4KB assetsInlineLimit) rather than emit a separate hashed file — a plain
 // import wouldn't matter for code-splitting purposes either way (this module is only
 // ever reached via the dynamic bootstrap import), but inlining means no extra network
-// round-trip is needed to turn it into the base64 string the real SD/rembg/upscale
-// endpoints all return.
+// round-trip is needed to turn it into the base64 string the real SD/rembg
+// endpoints both return.
 import demoImageDataUrl from './assets/demo-generated-image.png?inline'
 
 const DEMO_IMAGE_BASE64 = demoImageDataUrl.replace(/^data:image\/png;base64,/, '')
@@ -85,11 +85,10 @@ const STATIC: Record<string, Handler | undefined> = {
   'GET /dj/sessions': () => ({ body: DJ_SESSIONS }),
   // "AI image generation" gets a real, working response — a placeholder we made and
   // clearly labeled as a demo image (see assets/demo-generated-image.png), not a 403.
-  // Shapes match the real A1111/rembg/Real-ESRGAN responses exactly (ToolLibrary.tsx
+  // Shapes match the real A1111/rembg responses exactly (ToolLibrary.tsx
   // prepends the data: URI prefix itself), so the same UI code renders it identically.
   'POST /tools/stable_diffusion/generate': () => ({ body: { images: [DEMO_IMAGE_BASE64] } }),
   'POST /tools/rembg/remove': () => ({ body: { image_base64: DEMO_IMAGE_BASE64 } }),
-  'POST /tools/realesrgan/upscale': () => ({ body: { image_base64: DEMO_IMAGE_BASE64 } }),
   // File upload can be genuinely real — no backend needed to read a File client-side.
   'POST /chat/upload': async (_params, req) => {
     const file = req.formData?.get('file') as File | undefined

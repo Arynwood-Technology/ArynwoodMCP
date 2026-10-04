@@ -265,7 +265,7 @@ Registered in `tools.py`. Categories:
 
 | Category | Tools |
 |----------|-------|
-| Image | Stable Diffusion (A1111), Real-ESRGAN, rembg, Florence-2 |
+| Image | Stable Diffusion (A1111), rembg, Florence-2 |
 | Audio | TortoiseTTS, AllTalk (XTTSv2), Kokoro, Chatterbox, Whisper |
 | Video | SadTalker |
 | Search / Data | SearXNG, Qdrant, Scrapling (web scraping) |

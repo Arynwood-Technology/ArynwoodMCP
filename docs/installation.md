@@ -47,7 +47,7 @@ requires a source checkout — clicking them in the packaged app gives a clear e
 explaining why, not a crash, but they don't work either way:
 
 - **LoRA training** (dataset prep + training) — Design Center → GPU Model Manager.
-- **GPU generation tool scripts** — Real-ESRGAN, Whisper, SadTalker, and the other
+- **GPU generation tool scripts** — Whisper, SadTalker, AnimateDiff and the other
   `scripts/*.py`-backed entries in the Tools page (Stable Diffusion via A1111 and
   TortoiseTTS are unaffected — those are separate Docker services reached over
   HTTP, not local scripts).

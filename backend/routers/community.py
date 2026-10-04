@@ -28,6 +28,7 @@ import httpx
 from fastapi import APIRouter, HTTPException
 
 from backend import external_paths
+from backend.external_paths import display_path
 from backend._frozen import sanitize_environ_for_children, xdg_data_dir
 
 router = APIRouter()
@@ -44,12 +45,6 @@ _failure: str | None = None
 
 def community_dir() -> str:
     return os.environ.get("ARYNWOOD_COMMUNITY_DIR") or external_paths.COMMUNITY_DIR
-
-
-def display_path(path: str) -> str:
-    """Home-relative form for anything shown to the user (no absolute home directory)."""
-    home = os.path.expanduser("~")
-    return "~" + path[len(home):] if path == home or path.startswith(home + os.sep) else path
 
 
 def community_url() -> str:

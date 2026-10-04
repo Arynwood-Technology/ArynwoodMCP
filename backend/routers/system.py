@@ -192,10 +192,10 @@ async def get_hardware():
     vram_gb = vram_mb / 1024
     can_run = []
     if vram_gb >= 4:  can_run += ["7B models (q4)", "Whisper large", "Kokoro TTS", "rembg", "SD 1.5"]
-    if vram_gb >= 6:  can_run += ["SDXL", "Wan2.1 1.3B", "CogVideoX-2B", "LTX-Video"]
-    if vram_gb >= 8:  can_run += ["13B models (q4)", "FLUX.1 schnell", "SD3.5 Medium", "TripoSR", "Florence-2"]
+    if vram_gb >= 6:  can_run += ["SDXL", "Wan2.1 1.3B", "LTX-Video"]
+    if vram_gb >= 8:  can_run += ["13B models (q4)", "Florence-2"]
     if vram_gb >= 10: can_run += ["14B models (q4)", "SDXL + ControlNet"]
-    if vram_gb >= 12: can_run += ["FLUX.1 dev (q8)", "Wan2.1 14B (q4 — tight)"]
+    if vram_gb >= 12: can_run += ["Wan2.1 14B (q4 — tight)"]
 
     too_large = []
     if vram_gb < 24:  too_large += ["Wan2.1 14B (fp16)", "FLUX.1 dev (fp16)", "Llama 70B on GPU"]

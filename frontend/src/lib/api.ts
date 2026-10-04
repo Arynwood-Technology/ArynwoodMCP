@@ -218,11 +218,10 @@ export const openTool = (id: string) =>
   fetch(`/api/tools/${id}/open`, { method: 'POST' }).then(r => r.json())
 
 export const installToolStream = (id: string) =>
-  fetch(`/api/tools/${id}/install/stream`)
+  fetch(`/api/tools/${id}/install/stream`, { method: 'POST' })
 
 // Tool-specific API calls
 export const removeBg    = (form: FormData) => fetch('/api/tools/rembg/remove',    { method: 'POST', body: form }).then(r => r.json())
-export const upscaleImg  = (form: FormData) => fetch('/api/tools/realesrgan/upscale', { method: 'POST', body: form }).then(r => r.json())
 export const searchSearx = (q: string, engines = '') =>
   request<SearXResult>(`/tools/searxng/search?q=${encodeURIComponent(q)}&engines=${engines}`)
 export const listQdrant  = () => request<{ collections: { name: string }[] }>('/tools/qdrant/collections')

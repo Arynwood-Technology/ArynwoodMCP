@@ -3,6 +3,7 @@ import base64
 import io
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -186,286 +187,226 @@ async def _validate_sd_checkpoints():
 
 
 # ── Tool registry ──────────────────────────────────────────────────────────────
-# Each entry: id → { name, description, type, category, port?, endpoint?, script?, homepage, install }
+# Each entry: id → { name, description, type, category, port?, endpoint?, script?, homepage?,
+#                    install?, install_cwd?, install_cwd_setting?, vram_gb? }
+#
+# `install` is shown in the Tool Library and run by its Install / Start Container button
+# (install_tool_stream). A command starting with "#" is guidance only: shown, never run.
+# `install_cwd` is the folder it runs in (default: the app dir), and `install_cwd_setting`
+# names the .env setting that moves that folder. Keep these strings short and free of
+# absolute home paths (_sh_path); the reasons behind a command go in comments here.
+
+
+def _sh_path(path: str) -> str:
+    """A path for a shell command shown to the user: home-relative (the shell expands `~/`)."""
+    shown = external_paths.display_path(path)
+    return "~/" + shlex.quote(shown[2:]) if shown.startswith("~/") else shlex.quote(shown)
+
+
+def _docker_run(name: str, port: str, image: str, *options: str, args: str = "") -> str:
+    """`docker run` for a tool's container: detached, named so a second Start reuses it, and
+    published on 127.0.0.1 only, because none of these services require a login by default."""
+    return " ".join(["docker run -d --name", name, f"-p 127.0.0.1:{port}", *options, image, args]).strip()
+
+
+_WHISPER_VENV = _sh_path(external_paths.WHISPER_VENV)
+_CHATTERBOX_VENV = _sh_path(external_paths.CHATTERBOX_VENV)
+
+# Wan2.1 and LTX-Video run under the app's own interpreter. transformers>=5 can't convert the
+# T5/UMT5 sentencepiece tokenizers both models ship without a tokenizer.json (confirmed broken
+# on 5.13.0/5.13.1), so stay on 4.x until upstream fixes it.
+_VIDEO_DIFFUSERS_INSTALL = ("pip install -U torch diffusers 'transformers<5' sentencepiece accelerate "
+                            "imageio imageio-ffmpeg")
 
 TOOLS = {
     # ── Image ────────────────────────────────────────────────────────────────
     "stable_diffusion": {
         "name": "Stable Diffusion (A1111)",
-        "description": "Text-to-image generation via AUTOMATIC1111 WebUI. Supports SD1.5, SDXL, ControlNet. "
-                       "Generation style presets: style: realistic | general | stylized.",
+        "description": "Text-to-image and image-to-image through the AUTOMATIC1111 WebUI (SDXL and "
+                       "SD 1.5). Styles: realistic, general, stylized.",
         "type": "image", "category": "image",
         "port": 7860, "endpoint": "http://localhost:7860",
         "homepage": "http://localhost:7860",
-        "install": "docker compose up -d  # or launch A1111 webui.sh",
-    },
-    "comfyui": {
-        "name": "ComfyUI",
-        "description": "Node-based image/video pipeline. Supports FLUX.1, SDXL, SD3, ControlNet, LoRA, Wan2.1.",
-        "type": "image", "category": "image",
-        "port": 8188, "endpoint": "http://localhost:8188",
-        "homepage": "http://localhost:8188",
-        "install": "docker run -p 8188:8188 ghcr.io/ai-dock/comfyui",
+        # Runs in A1111's own compose project. The app dir is the wrong place: in a packaged
+        # build it's the read-only bundle, with no compose file at all.
+        "install": "docker compose up -d",
+        "install_cwd": external_paths.A1111_DIR,
+        "install_cwd_setting": "ARYNWOOD_A1111_DIR",
     },
     "fooocus": {
         "name": "Fooocus",
-        "description": "Simplified SDXL/FLUX UI. Midjourney-like quality with zero configuration.",
+        "description": "Simplified SDXL image generator with sensible defaults.",
         "type": "image", "category": "image",
         "port": 7865, "endpoint": "http://localhost:7865",
         "homepage": "http://localhost:7865",
-        "install": "git clone https://github.com/lllyasviel/Fooocus && python launch.py",
-    },
-    "realesrgan": {
-        "name": "Real-ESRGAN",
-        "description": "AI image upscaling (2×/4×). Works on photos, illustrations, and video frames.",
-        "type": "image", "category": "image",
-        "port": None,
-        "script": os.path.join(APP_DIR, "scripts", "run_realesrgan.py"),
-        "install": "pip install realesrgan basicsr",
+        "install": "# Install from github.com/lllyasviel/Fooocus. It serves on port 7865.",
     },
     "rembg": {
         "name": "rembg",
-        "description": "Background removal using U2-Net. Instant results with no GPU required.",
+        "description": "Removes image backgrounds (U²-Net).",
         "type": "image", "category": "image",
         "port": None,
-        "install": "pip install rembg[gpu] onnxruntime-gpu",
+        "install": "pip install 'rembg[gpu]' onnxruntime-gpu",
     },
     # ── Audio ────────────────────────────────────────────────────────────────
     "tortoise_tts": {
         "name": "Tortoise TTS",
-        "description": "High-quality multi-voice TTS. Slow but very natural-sounding.",
+        "description": "Multi-voice text-to-speech. Slow, very natural.",
         "type": "audio", "category": "audio",
         "port": 5003, "endpoint": "http://localhost:5003",
-        "install": "docker compose up -d  # tortoise service",
+        "install": "# Arynwood doesn't include a Tortoise server. It uses one on port 5003 (POST /generate).",
     },
     "alltalk_tts": {
         "name": "AllTalk TTS",
-        "description": "Web UI wrapping XTTSv2 and Kokoro. Supports voice cloning from a 3s clip.",
+        "description": "Text-to-speech web UI (XTTSv2 and others) with voice cloning from a short clip.",
         "type": "audio", "category": "audio",
         "port": 7851, "endpoint": "http://localhost:7851",
         "homepage": "http://localhost:7851",
-        "install": "git clone https://github.com/erew123/alltalk_tts && pip install -r requirements.txt",
+        "install": "# Install from github.com/erew123/alltalk_tts. It serves on port 7851.",
     },
     "kokoro_tts": {
         "name": "Kokoro TTS",
-        "description": "Ultra-fast 82M-param TTS. Apache 2.0. Near-instant synthesis, runs on CPU or GPU.",
+        "description": "Fast 82M-parameter text-to-speech (Apache 2.0). Runs on CPU or GPU.",
         "type": "audio", "category": "audio",
         "port": None,
-        "script": os.path.join(APP_DIR, "scripts", "run_kokoro.py"),
         "install": "pip install kokoro soundfile",
     },
-    "f5_tts": {
-        "name": "F5-TTS",
-        "description": "Zero-shot voice cloning from a 3-second reference clip. State-of-the-art (2024).",
-        "type": "audio", "category": "audio",
-        "port": None,
-        "script": os.path.join(APP_DIR, "scripts", "run_f5tts.py"),
-        "install": "pip install f5-tts",
-    },
-    "musicgen": {
-        "name": "MusicGen (AudioCraft)",
-        "description": "Meta's text-to-music model. Generate background music from a text description.",
-        "type": "audio", "category": "audio",
-        "port": None,
-        "script": os.path.join(APP_DIR, "scripts", "run_musicgen.py"),
-        "install": "pip install audiocraft",
-    },
     "whisper": {
-        "name": "Whisper STT",
-        "description": "OpenAI Whisper speech-to-text. Accurate transcription for any audio/video.",
+        "name": "Whisper",
+        "description": "Speech-to-text for audio and video (OpenAI Whisper).",
         "type": "audio", "category": "audio",
         "port": None,
         "script": os.path.join(APP_DIR, "scripts", "run_whisper.py"),
-        "install": f"{external_paths.WHISPER_VENV}/bin/pip install -U openai-whisper",
+        "install": f"python3 -m venv {_WHISPER_VENV} && {_WHISPER_VENV}/bin/pip install -U openai-whisper",
     },
     # ── Video ────────────────────────────────────────────────────────────────
     "sadtalker": {
         "name": "SadTalker",
-        "description": "Talking-head video from a portrait image + audio file.",
+        "description": "Talking-head video from a portrait and an audio clip.",
         "type": "video", "category": "video",
         "port": None,
         "script": os.path.join(APP_DIR, "scripts", "run_sadtalker.py"),
-        "install": f"# Checkout + checkpoints at {external_paths.SADTALKER_DIR}, conda env 'sadtalker'",
-    },
-    "musetalk": {
-        "name": "MuseTalk",
-        "description": "Real-time talking head synthesis. Faster than SadTalker, same portrait+audio workflow.",
-        "type": "video", "category": "video",
-        "port": None,
-        "script": os.path.join(APP_DIR, "scripts", "run_musetalk.py"),
-        "install": "git clone https://github.com/TMElyralab/MuseTalk && pip install -r requirements.txt",
+        "install": f"# Needs a SadTalker checkout with its checkpoints in "
+                   f"{external_paths.display_path(external_paths.SADTALKER_DIR)} and a conda env named "
+                   "sadtalker. Both locations can be changed in .env.",
     },
     "wan2": {
         "name": "Wan2.1 Video",
-        "description": "Alibaba's open text-to-video model (T2V-1.3B). Runs in Video Studio (/video) — "
-                        "weights auto-download from HuggingFace on first run, fits comfortably in 12GB VRAM.",
+        "description": "Text-to-video (Wan2.1 T2V-1.3B) for Video Studio. Weights download from "
+                       "Hugging Face on first run. Fits a 12 GB GPU.",
         "type": "video", "category": "video",
         "port": None,
         "script": os.path.join(APP_DIR, "scripts", "run_wan2.py"),
-        "install": "pip install -U diffusers 'transformers<5' sentencepiece accelerate imageio imageio-ffmpeg  "
-                   "# already satisfied in the main project venv; weights pull from "
-                   "Wan-AI/Wan2.1-T2V-1.3B-Diffusers on first job. transformers>=5 has a tokenizer-conversion "
-                   "bug (github.com/huggingface/transformers, confirmed broken on 5.13.0/5.13.1) that breaks "
-                   "any T5/UMT5 sentencepiece tokenizer without a prebuilt tokenizer.json, which both "
-                   "Wan2.1 and LTX-Video need — stay on the 4.x line until upstream fixes it.",
+        "install": _VIDEO_DIFFUSERS_INSTALL,
     },
     "animatediff": {
         "name": "AnimateDiff",
-        "description": "Animate any SD1.5 model. Text→looping animation.",
+        "description": "Looping animations from a text prompt, using an SD 1.5 model.",
         "type": "video", "category": "video",
         "port": None,
         "script": os.path.join(APP_DIR, "scripts", "run_anim.py"),
-        "install": f"cd {external_paths.ANIMATEDIFF_DIR} && python3.11 -m venv venv && "
-                   "venv/bin/pip install -r requirements.txt  # needs 3.11, not 3.12 — tokenizers==0.13.3 has "
-                   "no cp312 wheel and fails to build from source. Motion module + SD1.5 base auto-download on first run.",
+        # Python 3.11, not 3.12: tokenizers==0.13.3 has no cp312 wheel and fails to build from
+        # source. The motion module and SD 1.5 base download on first run.
+        "install": "python3.11 -m venv venv && venv/bin/pip install -r requirements.txt",
+        "install_cwd": external_paths.ANIMATEDIFF_DIR,
+        "install_cwd_setting": "ARYNWOOD_ANIMATEDIFF_DIR",
+    },
+    "ltx_video": {
+        "name": "LTX-Video",
+        "description": "Lightricks' 2B-parameter video model (Apache 2.0): image-to-video and "
+                       "text-to-video. Weights (about 5 GB) download on first run. Fits a 12 GB GPU.",
+        "type": "video", "category": "video",
+        "port": None,
+        "script": os.path.join(APP_DIR, "scripts", "run_ltxvideo.py"),
+        "install": _VIDEO_DIFFUSERS_INSTALL,
+        "vram_gb": 6,
     },
     # ── AI Infrastructure ────────────────────────────────────────────────────
     "localai": {
         "name": "LocalAI",
-        "description": "OpenAI-compatible API for GGUF/GPTQ models, Whisper, SD, and TTS — all in one Docker container.",
+        "description": "OpenAI-compatible API for local LLM, speech, image and TTS models in one container.",
         "type": "llm", "category": "ai",
         "port": 8080, "endpoint": "http://localhost:8080",
         "homepage": "http://localhost:8080",
-        "install": "docker run -p 8080:8080 quay.io/go-skynet/local-ai:latest",
+        "install": _docker_run("local-ai", "8080:8080", "quay.io/go-skynet/local-ai:latest"),
     },
     "open_webui": {
         "name": "Open WebUI",
-        "description": "Full-featured Ollama chat UI with RAG, document upload, image gen, multi-user support.",
+        "description": "Chat interface for Ollama with document upload, RAG and multiple users.",
         "type": "llm", "category": "ai",
         "port": 3000, "endpoint": "http://localhost:3000",
         "homepage": "http://localhost:3000",
-        "install": "docker run -p 3000:8080 ghcr.io/open-webui/open-webui",
+        # host-gateway lets the container reach Ollama on this machine (per Open WebUI's docs).
+        "install": _docker_run("open-webui", "3000:8080", "ghcr.io/open-webui/open-webui",
+                               "--add-host=host.docker.internal:host-gateway",
+                               "-v open-webui:/app/backend/data"),
     },
     "tabby": {
         "name": "Tabby",
-        "description": "Self-hosted AI code completion server. OpenAI-compatible. Works with VS Code and JetBrains.",
+        "description": "Self-hosted code completion for VS Code and JetBrains.",
         "type": "code", "category": "ai",
         "port": 11029, "endpoint": "http://localhost:11029",
         "homepage": "http://localhost:11029",
-        "install": "docker run -p 11029:11029 tabbyml/tabby serve --model StarCoder-1B",
-    },
-    # ── 3D ───────────────────────────────────────────────────────────────────
-    "triposr": {
-        "name": "TripoSR",
-        "description": "Image → 3D mesh in seconds. Exports .obj/.glb for Blender or OrcaSlicer. Needs ~3GB VRAM.",
-        "type": "3d", "category": "3d",
-        "port": None,
-        "script": os.path.join(APP_DIR, "scripts", "run_triposr.py"),
-        "install": "pip install tsr  # github.com/VAST-AI-Research/TripoSR",
-        "vram_gb": 3,
-    },
-    "instantmesh": {
-        "name": "InstantMesh",
-        "description": "High-quality image → 3D mesh via multi-view diffusion. Better geometry than TripoSR. ~8GB VRAM.",
-        "type": "3d", "category": "3d",
-        "port": None,
-        "script": os.path.join(APP_DIR, "scripts", "run_instantmesh.py"),
-        "install": "git clone https://github.com/TencentARC/InstantMesh && pip install -r requirements.txt",
-        "vram_gb": 8,
-    },
-    "shap_e": {
-        "name": "Shap-E",
-        "description": "Text or image → 3D (OpenAI, MIT). Generates .ply / .obj point clouds and meshes.",
-        "type": "3d", "category": "3d",
-        "port": None,
-        "script": os.path.join(APP_DIR, "scripts", "run_shape.py"),
-        "install": "pip install shap-e",
-        "vram_gb": 4,
-    },
-    "depth_anything": {
-        "name": "Depth Anything V2",
-        "description": "Monocular depth estimation from any image. Feeds 3D reconstruction and video pipelines. ~1GB VRAM.",
-        "type": "image", "category": "3d",
-        "port": None,
-        "script": os.path.join(APP_DIR, "scripts", "run_depth.py"),
-        "install": "pip install depth-anything-v2  # or via transformers",
-        "vram_gb": 1,
+        # Tabby listens on 8080 inside the container.
+        "install": _docker_run("tabby", "11029:8080", "tabbyml/tabby", "-v tabby:/data",
+                               args="serve --model StarCoder-1B"),
     },
     # ── Vision ────────────────────────────────────────────────────────────────
     "florence2": {
         "name": "Florence-2",
-        "description": "Microsoft vision model (MIT). OCR, image captioning, object detection, grounding — all in one. ~1.5GB VRAM.",
+        "description": "Microsoft vision model (MIT): captions, OCR and object detection. About 1.5 GB VRAM.",
         "type": "image", "category": "image",
         "port": None,
-        "script": os.path.join(APP_DIR, "scripts", "run_florence2.py"),
         "install": "pip install transformers timm einops",
         "vram_gb": 2,
-    },
-    # ── More Video ────────────────────────────────────────────────────────────
-    "ltx_video": {
-        "name": "LTX-Video",
-        "description": "Lightricks' open video model (Apache 2.0), 2B-param line built for consumer GPUs. "
-                       "Image-to-video and text-to-video. Uses whole-submodule CPU offload, comfortably "
-                       "fits this 12GB card. Weights auto-download from Hugging Face on first run (~4-5GB).",
-        "type": "video", "category": "video",
-        "port": None,
-        "script": os.path.join(APP_DIR, "scripts", "run_ltxvideo.py"),
-        "install": f"{_PIP} install -U diffusers 'transformers<5' sentencepiece accelerate imageio imageio-ffmpeg"
-                   " # transformers>=5 breaks this tokenizer, see wan2's install note",
-        "vram_gb": 6,
-    },
-    "cogvideox": {
-        "name": "CogVideoX-2B",
-        "description": "SAP/THUDM text-to-video (Apache 2.0). High quality 6s clips. 2B param model fits in 7-8GB VRAM.",
-        "type": "video", "category": "video",
-        "port": None,
-        "script": os.path.join(APP_DIR, "scripts", "run_cogvideo.py"),
-        "install": "pip install diffusers transformers accelerate",
-        "vram_gb": 8,
     },
     # ── More Audio ────────────────────────────────────────────────────────────
     "rvc": {
         "name": "RVC (Voice Conversion)",
-        "description": "Retrieval-based Voice Conversion. Clone any voice from a short clip. Real-time capable on GPU.",
+        "description": "Retrieval-based voice conversion from a short voice sample.",
         "type": "audio", "category": "audio",
-        "port": 7865,
-        "endpoint": "http://localhost:7865",
-        "homepage": "http://localhost:7865",
-        "install": "git clone https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI && pip install -r requirements.txt",
+        # 7866, not RVC's default 7865, which Fooocus also uses.
+        "port": 7866,
+        "endpoint": "http://localhost:7866",
+        "homepage": "http://localhost:7866",
+        "install": "# Install from github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI "
+                   "and start it with --port 7866.",
         "vram_gb": 2,
     },
     "chatterbox": {
         "name": "Chatterbox TTS",
-        "description": "Resemble AI zero-shot TTS (Apache 2.0, 2025). Clones voice from 5-10s reference. State-of-the-art quality.",
+        "description": "Resemble AI's zero-shot text-to-speech (MIT). Clones a voice from 5–10 seconds of audio.",
         "type": "audio", "category": "audio",
         "port": None,
         "script": os.path.join(APP_DIR, "scripts", "run_chatterbox.py"),
-        "install": "# Needs its own venv, not the main one — chatterbox-tts pins torch==2.6.0 and "
-                   "transformers==5.2.0, which would downgrade the main venv's torch 2.12 and break the "
-                   "transformers<5 pin Wan2.1/LTX-Video need. One-time setup: "
-                   f"python3 -m venv {external_paths.CHATTERBOX_VENV} && "
-                   f"{external_paths.CHATTERBOX_VENV}/bin/pip install chatterbox-tts",
+        # Its own venv: chatterbox-tts pins torch==2.6.0 and transformers==5.2.0, which would
+        # break the transformers<5 pin Wan2.1/LTX-Video need in the main one.
+        "install": f"python3 -m venv {_CHATTERBOX_VENV} && {_CHATTERBOX_VENV}/bin/pip install chatterbox-tts",
         "vram_gb": 2,
     },
     # ── Agents & RAG ─────────────────────────────────────────────────────────
     "anythingllm": {
         "name": "AnythingLLM",
-        "description": "All-in-one RAG hub. Document Q&A, agents, multi-user, works with Ollama. Best local RAG solution.",
+        "description": "Document Q&A and agents in workspaces. Works with Ollama.",
         "type": "llm", "category": "ai",
         "port": 3001, "endpoint": "http://localhost:3001",
         "homepage": "http://localhost:3001",
-        "install": "docker run -p 3001:3001 mintplexlabs/anythingllm",
+        "install": _docker_run("anythingllm", "3001:3001", "mintplexlabs/anythingllm",
+                               "-v anythingllm:/app/server/storage", "-e STORAGE_DIR=/app/server/storage"),
     },
     "flowise": {
         "name": "Flowise",
-        "description": "Visual LangChain flow builder (Apache 2.0). Build RAG pipelines, chatbots, and agents graphically.",
+        "description": "Visual builder for LLM flows, RAG pipelines and agents (Apache 2.0).",
         "type": "llm", "category": "ai",
-        "port": 3000, "endpoint": "http://localhost:3000",
-        "homepage": "http://localhost:3000",
-        "install": "docker run -p 3000:3000 flowiseai/flowise",
-    },
-    "aider": {
-        "name": "Aider",
-        "description": "AI pair programmer in your terminal (Apache 2.0). Works with local Ollama. Edit real codebases with AI.",
-        "type": "code", "category": "ai",
-        "port": None,
-        "script": os.path.join(APP_DIR, "scripts", "run_aider.py"),
-        "install": "pip install aider-chat  # then: aider --model ollama/qwen2.5-coder:14b",
+        # 3002 on this machine: Open WebUI already uses 3000.
+        "port": 3002, "endpoint": "http://localhost:3002",
+        "homepage": "http://localhost:3002",
+        "install": _docker_run("flowise", "3002:3000", "flowiseai/flowise", "-v flowise:/root/.flowise"),
     },
     # ── Local HTML Tools ─────────────────────────────────────────────────────
     "design_center": {
         "name": "Design Center",
-        "description": "Canva-style graphic design tool with layers, gradients, SVG shapes, AI image generation, text effects, snap guides, and template gallery.",
+        "description": "Graphic design canvas with layers, shapes, text effects, templates and AI image generation.",
         "type": "creative", "category": "creative",
         "port": None,
         "script": os.path.join(APP_DIR, "static", "html-tools", "design-center.html"),
@@ -473,7 +414,7 @@ TOOLS = {
     },
     "terminal_hub": {
         "name": "Terminal — Linux Hub",
-        "description": "Linux command reference and terminal interface for the Arynwood system.",
+        "description": "Searchable Linux command reference.",
         "type": "code", "category": "code",
         "port": None,
         "script": os.path.join(APP_DIR, "static", "html-tools", "terminal.html"),
@@ -481,7 +422,7 @@ TOOLS = {
     },
     "client_intake": {
         "name": "Client Intake / Website Generator",
-        "description": "Client intake form and website generator tool for onboarding and project scoping.",
+        "description": "Client intake form and website generator for scoping new projects.",
         "type": "code", "category": "code",
         "port": None,
         "script": os.path.join(APP_DIR, "static", "html-tools", "client-intake.html"),
@@ -489,7 +430,7 @@ TOOLS = {
     },
     "flowchart": {
         "name": "Arynwood Flowchart",
-        "description": "Visual workflow designer for building and visualizing process flows and diagrams.",
+        "description": "Draw process flows and diagrams.",
         "type": "code", "category": "code",
         "port": None,
         "script": os.path.join(APP_DIR, "static", "html-tools", "flowchart.html"),
@@ -498,7 +439,7 @@ TOOLS = {
     # ── Scraping ─────────────────────────────────────────────────────────────
     "scrapling": {
         "name": "Scrapling",
-        "description": "Adaptive web scraper with Cloudflare bypass and JS rendering. CSS/XPath extraction, stealthy fetch, full browser automation.",
+        "description": "Web scraper with CSS/XPath extraction and JavaScript rendering.",
         "type": "scraping", "category": "scraping",
         "port": None,
         "install": 'pip install "scrapling[fetchers]" && scrapling install',
@@ -506,26 +447,29 @@ TOOLS = {
     # ── Search & Data ────────────────────────────────────────────────────────
     "searxng": {
         "name": "SearXNG",
-        "description": "Privacy-first metasearch engine. Used by AI agents (Perplexica, Open-WebUI) for live web search.",
+        "description": "Private metasearch engine.",
         "type": "search", "category": "search",
         "port": 8888, "endpoint": "http://localhost:8888",
         "homepage": "http://localhost:8888",
-        "install": "docker run -p 8888:8080 searxng/searxng",
+        "install": _docker_run("searxng", "8888:8080", "searxng/searxng", "--restart unless-stopped"),
     },
     "qdrant": {
         "name": "Qdrant",
-        "description": "Local vector database for RAG workflows. Store and search embeddings from Ollama or LocalAI.",
+        "description": "Vector database behind the knowledge base and memory search.",
         "type": "vector", "category": "data",
         "port": 6333, "endpoint": "http://localhost:6333",
-        "install": "docker run -p 6333:6333 qdrant/qdrant",
+        # Same name as the README's command, so a container set up from there is reused.
+        "install": _docker_run("qdrant", "6333:6333", "qdrant/qdrant", "--restart unless-stopped",
+                               "-v qdrant_storage:/qdrant/storage"),
     },
     "perplexica": {
         "name": "Perplexica",
-        "description": "Local Perplexity alternative. AI-powered search combining SearXNG + Ollama.",
+        "description": "AI search engine built on SearXNG and Ollama.",
         "type": "search", "category": "search",
-        "port": 3001, "endpoint": "http://localhost:3001",
-        "homepage": "http://localhost:3001",
-        "install": "git clone https://github.com/ItzCrazyKns/Perplexica && docker compose up -d",
+        # 3003: Open WebUI and AnythingLLM already use 3000 and 3001.
+        "port": 3003, "endpoint": "http://localhost:3003",
+        "homepage": "http://localhost:3003",
+        "install": "# Install from github.com/ItzCrazyKns/Perplexica and publish it on port 3003.",
     },
 }
 
@@ -615,7 +559,19 @@ async def open_tool(tool_id: str):
     return {"opened": target}
 
 
-@router.get("/{tool_id}/install/stream")
+# A bare `pip`/`pip3` starting a shell word. A path ending in /pip (a tool's own venv) isn't one.
+_BARE_PIP = re.compile(r"(?<![\w/.~-])pip3? install")
+_DOCKER_RUN_NAME = re.compile(r"^docker run .*?--name (\S+)")
+
+
+async def _container_exists(name: str) -> bool:
+    proc = await asyncio.create_subprocess_exec(
+        "docker", "container", "inspect", name,
+        stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+    return await proc.wait() == 0
+
+
+@router.post("/{tool_id}/install/stream")
 async def install_tool_stream(tool_id: str):
     """Run a tool's install command and stream stdout+stderr as plain text."""
     if os.name == "nt":
@@ -626,21 +582,36 @@ async def install_tool_stream(tool_id: str):
     cmd = (info.get("install") or "").strip()
     if not cmd or cmd.startswith("#") or cmd.startswith("xdg-open"):
         raise HTTPException(400, "No runnable install command for this tool")
+    if getattr(sys, "frozen", False) and _BARE_PIP.search(cmd):
+        # The packaged backend is a frozen binary: packages installed with pip never reach it.
+        raise HTTPException(501, "The desktop app can't add Python packages to itself. "
+                                 "This tool needs a source checkout of Arynwood.")
+    cwd = info.get("install_cwd") or APP_DIR
+    if not os.path.isdir(cwd):
+        setting = info.get("install_cwd_setting")
+        raise HTTPException(404, f"Folder not found: {external_paths.display_path(cwd)}."
+                                 + (f" Set {setting} in your .env to where it is." if setting else ""))
 
     from fastapi.responses import StreamingResponse as SR
 
     async def _stream():
         """Async generator that streams shell output lines from the install command."""
-        # Replace bare 'pip' with the venv pip so installs land in the right environment
-        _venv_bin = os.path.join(APP_DIR, "venv", "bin")
-        resolved_cmd = cmd.replace("pip install", f"{_PIP} install").replace("pip3 install", f"{_PIP} install")
+        resolved_cmd = _BARE_PIP.sub(f"{_PIP} install", cmd)
+        if cwd != APP_DIR:
+            yield f"(in {external_paths.display_path(cwd)})\n".encode()
+        name = _DOCKER_RUN_NAME.match(cmd)
+        if name and await _container_exists(name.group(1)):
+            # A second Start would otherwise fail on the name: reuse the existing container.
+            resolved_cmd = f"docker start {name.group(1)}"
+            yield f"Container {name.group(1)} already exists, starting it.\n".encode()
         # Prepend venv/bin to PATH so venv-installed scripts (e.g. scrapling) are found
+        _venv_bin = os.path.join(APP_DIR, "venv", "bin")
         env = {**os.environ, "PATH": f"{_venv_bin}:{os.environ.get('PATH', '')}"}
         proc = await asyncio.create_subprocess_shell(
             resolved_cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
-            cwd=APP_DIR,
+            cwd=cwd,
             env=env,
         )
         async for line in proc.stdout:
@@ -846,40 +817,6 @@ async def rembg_remove(image: UploadFile = File(...)):
 
 # ── Real-ESRGAN upscaling ──────────────────────────────────────────────────────
 
-@router.post("/realesrgan/upscale")
-async def realesrgan_upscale(
-    image: UploadFile = File(...),
-    scale: int = Form(4),
-):
-    """POST /realesrgan/upscale — upscale an image via the Real-ESRGAN script; returns base64 PNG."""
-    script = TOOLS["realesrgan"]["script"]
-    if not os.path.exists(script):
-        raise HTTPException(404, "Real-ESRGAN script not found. Create scripts/run_realesrgan.py")
-    try:
-        import tempfile, shutil, uuid
-        tmp = tempfile.mkdtemp()
-        in_path = os.path.join(tmp, f"input_{uuid.uuid4().hex}.png")
-        out_path = os.path.join(tmp, f"output.png")
-        img_bytes = await image.read()
-        with open(in_path, "wb") as f:
-            f.write(img_bytes)
-        proc = await asyncio.create_subprocess_exec(
-            "python3", script, in_path, out_path, "--scale", str(scale),
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
-        )
-        stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=120)
-        if proc.returncode != 0:
-            raise HTTPException(500, f"Real-ESRGAN error: {stderr.decode()[:400]}")
-        with open(out_path, "rb") as f:
-            result_b64 = base64.b64encode(f.read()).decode()
-        shutil.rmtree(tmp, ignore_errors=True)
-        return {"image_base64": result_b64, "format": "png", "scale": scale}
-    except asyncio.TimeoutError:
-        raise HTTPException(504, "Real-ESRGAN timed out")
-    except Exception as e:
-        raise HTTPException(500, f"Upscale error: {e}")
-
-
 # ── SearXNG search proxy ───────────────────────────────────────────────────────
 
 @router.get("/searxng/search")
@@ -895,6 +832,10 @@ async def searxng_search(
     async with httpx.AsyncClient(timeout=15.0) as client:
         try:
             r = await client.get("http://localhost:8888/search", params=params)
+            if r.status_code == 403:
+                # A stock SearXNG only serves HTML; JSON has to be switched on in its config.
+                raise HTTPException(502, "SearXNG refused JSON results. Add json to search.formats "
+                                         "in its settings.yml, then restart it.")
             r.raise_for_status()
             data = r.json()
             return {
@@ -903,8 +844,10 @@ async def searxng_search(
                 "suggestions": data.get("suggestions", []),
                 "answers": data.get("answers", []),
             }
+        except HTTPException:
+            raise
         except httpx.ConnectError:
-            raise HTTPException(503, "SearXNG is not running. Start it with: docker run -p 8888:8080 searxng/searxng")
+            raise HTTPException(503, "SearXNG isn't running. Start it from Tools → SearXNG.")
         except Exception as e:
             raise HTTPException(502, f"SearXNG error: {e}")
 
@@ -1205,7 +1148,16 @@ async def sd_proxy_generate(payload: dict):
 
 @router.post("/sd/img2img")
 async def sd_proxy_img2img(payload: dict):
-    """Proxy image-to-image request to Stable Diffusion."""
+    """Proxy image-to-image request to Stable Diffusion.
+
+    An optional "style" selects the checkpoint, VAE and sampler the same way /sd/generate does.
+    Without it, A1111 uses whatever checkpoint happens to be loaded. Size, steps, CFG and
+    denoising strength come from the caller.
+    """
+    if "style" in payload:
+        params = _style_txt2img_params(payload.pop("style"))
+        defaults = {k: params[k] for k in ("sampler_name", "scheduler", "override_settings")}
+        payload = {**defaults, **payload}
     try:
         async with httpx.AsyncClient(timeout=180.0) as client:
             r = await client.post(f"{SD_BASE}/sdapi/v1/img2img", json=payload)
@@ -1399,7 +1351,7 @@ async def animatediff_start_job(
     if not os.path.exists(_ANIMATEDIFF_PYTHON):
         raise HTTPException(
             404, f"AnimateDiff env not set up — expected {_ANIMATEDIFF_PYTHON}. "
-                 f"Run: {TOOLS['animatediff']['install']}")
+                 "Install it from Tools → AnimateDiff.")
 
     output_dir = os.path.join(DATA_DIR, "triggers", "gpu_watch", "animatediff_output")
     os.makedirs(output_dir, exist_ok=True)
@@ -1461,7 +1413,7 @@ async def whisper_start_job(
     if not os.path.exists(_WHISPER_PYTHON):
         raise HTTPException(
             404, f"Whisper env not set up — expected {_WHISPER_PYTHON}. "
-                 f"Run: {TOOLS['whisper']['install']}")
+                 "Install it from Tools → Whisper.")
 
     tmp = tempfile.mkdtemp()
     aud_ext = os.path.splitext(audio.filename or "")[1] or ".wav"
@@ -1666,7 +1618,7 @@ async def chatterbox_start_job(
     if not os.path.exists(_CHATTERBOX_PYTHON):
         raise HTTPException(
             404, f"Chatterbox env not set up — expected {_CHATTERBOX_PYTHON}. "
-                 f"Run: {TOOLS['chatterbox']['install']}")
+                 "Install it from Tools → Chatterbox.")
 
     tmp = tempfile.mkdtemp()
     text_path = os.path.join(tmp, "script.txt")

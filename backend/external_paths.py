@@ -34,6 +34,12 @@ def _env(name: str, default: str) -> str:
     return os.environ.get(name) or default
 
 
+def display_path(path: str) -> str:
+    """Home-relative form for anything shown to the user (no absolute home directory)."""
+    home = os.path.expanduser("~")
+    return "~" + path[len(home):] if path == home or path.startswith(home + os.sep) else path
+
+
 TOOLS_DIR = _env("ARYNWOOD_TOOLS_DIR", _home("tools"))
 SERVICES_DIR = _env("ARYNWOOD_SERVICES_DIR", _home("services"))
 PROJECTS_DIR = _env("ARYNWOOD_PROJECTS_DIR", _home("GitHub"))

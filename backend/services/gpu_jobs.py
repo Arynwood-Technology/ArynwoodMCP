@@ -128,6 +128,15 @@ def _newest_file(root: str, exts: tuple, since: float) -> Optional[str]:
 async def _sd_unload_checkpoint():
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(f"{SD_BASE}/sdapi/v1/unload-checkpoint")
+        if response.is_error:
+            # A1111 can fail partway through an unload ("CUDA error: invalid argument") with
+            # some weights already on the CPU. It doesn't move them back by itself, so every
+            # generate then fails with "Input type (torch.cuda.HalfTensor) and weight type
+            # (torch.HalfTensor) should be the same". Put the model back before reporting.
+            try:
+                await client.post(f"{SD_BASE}/sdapi/v1/reload-checkpoint", timeout=60.0)
+            except httpx.HTTPError:
+                pass
     response.raise_for_status()
 
 
@@ -159,11 +168,14 @@ async def _free_sd_vram_for_job():
         raise RuntimeError(f"Could not unload Stable Diffusion before this GPU job: {exc}") from exc
 
     await asyncio.sleep(1)
+    # Callers only restore SD after this returns, so restore it here on every failure path.
     try:
         active_bytes = await _sd_active_bytes()
     except Exception as exc:
+        await _restore_sd_vram_after_job()
         raise RuntimeError(f"Stable Diffusion unloaded but GPU memory could not be verified: {exc}") from exc
     if active_bytes > 1_000_000_000:
+        await _restore_sd_vram_after_job()
         raise RuntimeError(
             f"Stable Diffusion is still holding {active_bytes / 1024**3:.1f} GB of VRAM. "
             "Unload or restart it, then retry the video job."

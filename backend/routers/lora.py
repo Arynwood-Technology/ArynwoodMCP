@@ -431,14 +431,27 @@ async def list_styles(db=Depends(get_db)):
     actually resolve in a generation call.
     """
     async with db.execute(
-        "SELECT id, name, trigger_word, a1111_lora_filename FROM lora_projects "
+        "SELECT id, name, trigger_word, a1111_lora_filename, base_model_path FROM lora_projects "
         "WHERE status='done' AND a1111_lora_filename IS NOT NULL ORDER BY updated_at DESC"
     ) as cur:
         rows = await cur.fetchall()
     return [
-        {"id": r["id"], "label": r["trigger_word"], "lora_name": r["a1111_lora_filename"]}
+        {"id": r["id"], "label": r["trigger_word"], "lora_name": r["a1111_lora_filename"],
+         "base_style": _base_style(r["base_model_path"])}
         for r in rows
     ]
+
+
+def _base_style(base_model_path: Optional[str]) -> str:
+    """SD_CHECKPOINTS key of the checkpoint a LoRA was trained on, so it's generated on that.
+
+    Every trainable base is SDXL (see list_base_models), and an SDXL LoRA on the SD 1.5
+    checkpoint silently does nothing, so an unrecorded base falls back to an SDXL one."""
+    name = os.path.basename(base_model_path or "")
+    for key, cfg in SD_CHECKPOINTS.items():
+        if key != "legacy" and cfg["checkpoint"] == name:
+            return key
+    return "general"
 
 
 @router.get("/base-models")

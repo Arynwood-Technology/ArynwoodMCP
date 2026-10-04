@@ -47,7 +47,6 @@ export const TOOLS: Tool[] = [
   { id: 'stable_diffusion', name: 'Stable Diffusion (A1111)', description: 'Image generation', type: 'gpu', category: 'image', port: 7860, status: 'online' },
   { id: 'tortoise_tts', name: 'TortoiseTTS', description: 'Text-to-speech', type: 'gpu', category: 'audio', port: 5003, status: 'online' },
   { id: 'rembg', name: 'Background Removal', description: 'Remove image backgrounds', type: 'gpu', category: 'image', status: 'available' },
-  { id: 'realesrgan', name: 'Real-ESRGAN', description: 'Image upscaling', type: 'gpu', category: 'image', status: 'available' },
   { id: 'searxng', name: 'SearXNG', description: 'Private web search', type: 'service', category: 'search', status: 'online' },
   { id: 'qdrant', name: 'Qdrant', description: 'Vector database', type: 'service', category: 'storage', status: 'online' },
 ]

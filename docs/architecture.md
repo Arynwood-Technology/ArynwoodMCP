@@ -238,7 +238,6 @@ POST /chatterbox/generate       — Chatterbox TTS
 POST /sadtalker/run             — SadTalker video generation
 POST /florence2/caption         — Florence-2 image captioning
 POST /rembg/remove              — background removal
-POST /realesrgan/upscale        — 2x/4x upscaling
 GET  /searxng/search             — SearXNG meta-search
 GET  /qdrant/collections         — Qdrant vector DB collections
 POST /scrapling/fetch            — web scraping (basic/stealthy/playwright)
@@ -467,7 +466,6 @@ Arynwood MCP
 │
 ├── Vision / Image Processing
 │   ├── Florence-2                  Python subprocess (captioning, OCR, detection)
-│   ├── Real-ESRGAN                 Python subprocess (2x/4x upscale)
 │   └── rembg                       Python subprocess (background removal)
 │
 ├── Search & Data

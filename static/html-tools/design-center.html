@@ -2531,6 +2531,7 @@ const App = {
         weight: 1,
         neg: '',
         custom: true,
+        base_style: s.base_style || 'general',
       }));
     } catch { this.customStyles = []; }
     this.buildStyleChips();
@@ -2566,9 +2567,11 @@ const App = {
         const neg = document.getElementById('gen-neg');
         if (neg && s.neg) neg.value = s.neg + (s.neg ? ', ugly, blurry, watermark, low quality' : 'ugly, blurry, watermark, low quality');
         else if (neg && !s.neg) neg.value = 'ugly, blurry, watermark, low quality';
-        // In Auto checkpoint mode, switching the style tag can change which checkpoint
-        // will actually be used — keep the size/steps/cfg fields in sync with that.
-        if (this.activeCheckpoint === 'auto') this.syncGenFieldsToEffectiveCheckpoint();
+        // Switching the style can change which checkpoint is actually used (Auto mode, or a
+        // trained LoRA overriding SD 1.5) — keep the size/steps/cfg fields in sync with that.
+        const before = this._syncedCheckpoint;
+        if (this.effectiveCheckpointStyle() !== before) this.syncGenFieldsToEffectiveCheckpoint();
+        this.updateCheckpointDesc();
         // Trained LoRAs get an adjustable weight slider; built-in style presets don't
         // carry a LoRA at all, so the row only makes sense (and only shows) for those.
         const weightRow = document.getElementById('lora-weight-row');
@@ -2625,17 +2628,33 @@ const App = {
     const sel = document.getElementById('gen-checkpoint');
     if (!sel) return;
     this.activeCheckpoint = sel.value;
+    this.updateCheckpointDesc();
+    this.syncGenFieldsToEffectiveCheckpoint();
+  },
+
+  updateCheckpointDesc() {
     const desc = document.getElementById('gen-checkpoint-desc');
-    if (desc) {
+    if (!desc) return;
+    const effective = this.effectiveCheckpointStyle();
+    if (this.activeLora() && this.activeCheckpoint === 'legacy') {
+      desc.textContent = `Trained LoRAs are SDXL and don't work on SD 1.5 — using ${this.checkpointOptions[effective]?.label || effective}.`;
+    } else {
       desc.textContent = this.activeCheckpoint === 'auto'
         ? 'Picks a checkpoint automatically based on the selected Style tag below.'
         : (this.checkpointOptions[this.activeCheckpoint]?.description || '');
     }
-    this.syncGenFieldsToEffectiveCheckpoint();
+  },
+
+  activeLora() {
+    return this.customStyles.find(s => s.id === this.activeStyle) || null;
   },
 
   // Which SD_CHECKPOINTS key will actually be used for the next generate() call.
   effectiveCheckpointStyle() {
+    // A trained LoRA runs on the checkpoint it was trained on in Auto mode, and never on
+    // SD 1.5 — it's SDXL, and A1111 silently leaves its style out there.
+    const lora = this.activeLora();
+    if (lora && (this.activeCheckpoint === 'auto' || this.activeCheckpoint === 'legacy')) return lora.base_style;
     if (this.activeCheckpoint !== 'auto') return this.activeCheckpoint;
     return this.TAG_TO_CHECKPOINT_STYLE[this.activeStyle] || 'general';
   },
@@ -2643,7 +2662,8 @@ const App = {
   // Fills Width/Height/Steps/CFG from the effective checkpoint's tuned defaults so the
   // UI reflects what will actually be sent — still editable/overridable by hand afterward.
   syncGenFieldsToEffectiveCheckpoint() {
-    const cfg = this.checkpointOptions[this.effectiveCheckpointStyle()];
+    this._syncedCheckpoint = this.effectiveCheckpointStyle();
+    const cfg = this.checkpointOptions[this._syncedCheckpoint];
     if (!cfg) return;
     const w = document.getElementById('gen-w'), h = document.getElementById('gen-h');
     const steps = document.getElementById('gen-steps'), cfgEl = document.getElementById('gen-cfg');
@@ -2721,9 +2741,8 @@ const App = {
           denoising_strength: +document.getElementById('i2i-strength').value,
         };
         endpoint = '/api/tools/sd/img2img';
-      } else {
-        payload = { ...base, style: this.effectiveCheckpointStyle() };
       }
+      payload.style = this.effectiveCheckpointStyle();
       const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
       if(!res.ok){
         let msg='SD error '+res.status;

@@ -92,7 +92,7 @@ describe('StatusDrawer', () => {
     render(<StatusDrawer />)
 
     // TTS is down in the fixture, so its remedy shows...
-    await waitFor(() => expect(screen.getByText(/docker compose up -d tortoise-tts/)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/doesn't include a Tortoise server/)).toBeInTheDocument())
     // ...while a healthy Qdrant keeps its remedy hidden.
     expect(screen.queryByText(/needs Qdrant up/)).not.toBeInTheDocument()
   })
