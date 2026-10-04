@@ -458,7 +458,7 @@ async def ensure_conversation(db, session: sessions.Session) -> sessions.Session
             if await cur.fetchone():
                 return session
     persona = chat.get_personas().get(session.persona, {})
-    model = session.model or persona.get("llm", {}).get("model", "mistral")  # same fallback as _execute_turn
+    model = session.model or persona.get("llm", {}).get("model", "hermes3:8b")  # same fallback as _execute_turn
     conversation_id = await chat.ensure_conversation(db, session.persona, model, session.project_id)
     await db.execute("UPDATE conversations SET title=? WHERE id=?", (session.label or session.key, conversation_id))
     await db.commit()

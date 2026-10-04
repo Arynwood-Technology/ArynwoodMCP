@@ -54,6 +54,9 @@ If you run 0.4.5, update: the first two items below close holes in that release.
   it made Arynwood's tool decisions as well as the previous model, never followed
   instructions planted in tool results, and ran 2.5 times as fast in about 5 GB less memory.
   Personas in your own `personas.local.json` keep their models.
+- Model examples in the Model Manager and Tool Library name only models from US companies
+  (Meta, Google, OpenAI, Microsoft, IBM, NVIDIA, Nous Research, Snowflake), and a persona with
+  no model set falls back to `hermes3:8b`.
 - The live evals take `ARYNWOOD_EVAL_MODEL`, so a candidate model can be compared before
   switching: `ARYNWOOD_EVAL_MODEL=<model> pytest tests/ -m eval`.
 - The headless gateway is experimental and parked, as an owner-only remote control. The

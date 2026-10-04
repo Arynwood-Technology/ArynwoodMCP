@@ -141,7 +141,7 @@ async def _execute(sink, db, session, msg, trust: str, policy: dict, approve,
         # section (the project root, i.e. this machine's home path), the project tree and the
         # local URLs; the external-content rules stay.
         persona = {**persona, "app_aware": False}
-    model = session.model or persona.get("llm", {}).get("model", "mistral")  # same fallback as _execute_turn
+    model = session.model or persona.get("llm", {}).get("model", "hermes3:8b")  # same fallback as _execute_turn
     server_host, server_port = "localhost", 11434
     if session.server_id is not None:
         async with db.execute("SELECT * FROM servers WHERE id=? AND enabled=1", (session.server_id,)) as cur:

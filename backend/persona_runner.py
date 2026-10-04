@@ -1,6 +1,6 @@
 from backend.services import ollama_client
 
-MODEL_NAME = "mistral"  # or whatever is running: llama3, codellama, etc.
+MODEL_NAME = "hermes3:8b"  # or whatever is running
 
 def get_persona_response(persona_key, message):
     try:

@@ -43,7 +43,7 @@ from backend.routers.video import _ffprobe_json
 VIDEO_EXTS = (".mp4", ".mov", ".avi", ".mkv", ".webm")
 
 OLLAMA_BASE = os.environ.get("YOUTUBE_PIPELINE_OLLAMA", "http://localhost:11434")
-OLLAMA_MODEL = "mistral"
+OLLAMA_MODEL = "hermes3:8b"
 
 
 def _dirs(project: dict) -> dict:

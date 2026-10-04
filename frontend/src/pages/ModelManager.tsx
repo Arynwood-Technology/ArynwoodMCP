@@ -10,7 +10,7 @@ const CATALOG: {
   id: string; name: string; tag: string; size: string
   description: string; category: 'general' | 'code' | 'vision' | 'fast' | 'large' | 'embed'
 }[] = [
-  { id: 'mistral',           name: 'Mistral 7B',          tag: 'mistral',             size: '4.1 GB', description: 'Fast, capable all-rounder. Great for chat and reasoning.',            category: 'general' },
+  { id: 'phi4-mini',         name: 'Phi-4-mini 3.8B',     tag: 'phi4-mini',           size: '2.5 GB', description: "Microsoft's small model with tool calling. Quick on modest GPUs.", category: 'general' },
   { id: 'llama3.2',          name: 'Llama 3.2 3B',        tag: 'llama3.2',            size: '2.0 GB', description: "Meta's compact model. Surprisingly capable for its size.",            category: 'fast'    },
   { id: 'llama3.1',          name: 'Llama 3.1 8B',        tag: 'llama3.1',            size: '4.7 GB', description: 'Meta 8B with 128k context. Great balance of speed and quality.',      category: 'general' },
   { id: 'llama3.1:70b',      name: 'Llama 3.1 70B',       tag: 'llama3.1:70b',        size: '40 GB',  description: 'Top-tier open model. Needs 48GB+ VRAM.',                             category: 'large'   },
@@ -18,24 +18,23 @@ const CATALOG: {
   { id: 'gemma2:27b',        name: 'Gemma 2 27B',         tag: 'gemma2:27b',          size: '16 GB',  description: "Google's large Gemma. Strong reasoning and writing.",                category: 'large'   },
   { id: 'hermes3',           name: 'Hermes 3 8B',         tag: 'hermes3:8b',          size: '4.7 GB', description: "Nous Research's Llama 3.1 fine-tune. Arynwood's default for chat and tools.", category: 'general' },
   { id: 'granite3.3',        name: 'Granite 3.3 8B',      tag: 'granite3.3:8b',       size: '4.9 GB', description: "IBM's 8B model with tool calling and 128k context.",                category: 'general' },
-  { id: 'deepseek-r1',       name: 'DeepSeek R1 7B',      tag: 'deepseek-r1',         size: '4.7 GB', description: 'Reasoning-focused. Shows step-by-step thinking.',                    category: 'general' },
+  { id: 'gpt-oss:20b',       name: 'gpt-oss 20B',         tag: 'gpt-oss:20b',         size: '14 GB',  description: "OpenAI's open-weight reasoning model. Needs about 16 GB of GPU memory.", category: 'large'   },
   { id: 'neural-chat',       name: 'Neural Chat 7B',      tag: 'neural-chat',         size: '4.1 GB', description: 'Intel-tuned conversational model. Smooth and friendly.',              category: 'general' },
   { id: 'codellama',         name: 'CodeLlama 7B',        tag: 'codellama',           size: '3.8 GB', description: 'Meta code model. Good for most languages and debugging.',             category: 'code'    },
   { id: 'codellama:13b',     name: 'CodeLlama 13B',       tag: 'codellama:13b',       size: '7.4 GB', description: 'Larger CodeLlama. Better at complex code.',                          category: 'code'    },
   { id: 'granite-code',      name: 'Granite Code 8B',     tag: 'granite-code:8b',     size: '4.6 GB', description: "IBM's open code model family.",                                     category: 'code'    },
   { id: 'codegemma',         name: 'CodeGemma 7B',        tag: 'codegemma:7b',        size: '5.0 GB', description: "Google's lightweight code model.",                                  category: 'code'    },
-  { id: 'deepseek-coder-v2', name: 'DeepSeek Coder V2',  tag: 'deepseek-coder-v2',   size: '8.9 GB', description: 'Excellent at coding and math. Strong tool-use support.',              category: 'code'    },
   { id: 'starcoder2',        name: 'StarCoder2 7B',       tag: 'starcoder2',          size: '4.0 GB', description: '600+ programming languages. Great for niche langs.',                 category: 'code'    },
   { id: 'phi3',              name: 'Phi-3 Mini',          tag: 'phi3',                size: '2.3 GB', description: "Microsoft's tiny but smart model. Very fast on CPU.",                category: 'fast'    },
   { id: 'phi3:medium',       name: 'Phi-3 Medium',        tag: 'phi3:medium',         size: '7.9 GB', description: 'Bigger Phi-3. Strong reasoning for a mid-size model.',               category: 'fast'    },
-  { id: 'tinyllama',         name: 'TinyLlama 1.1B',      tag: 'tinyllama',           size: '638 MB', description: 'Runs anywhere. Use for quick tests or low-RAM setups.',              category: 'fast'    },
+  { id: 'llama3.2:1b',       name: 'Llama 3.2 1B',        tag: 'llama3.2:1b',         size: '1.3 GB', description: "Meta's smallest Llama. Runs almost anywhere.",                     category: 'fast'    },
   { id: 'smollm2',           name: 'SmolLM2 1.7B',        tag: 'smollm2',             size: '1.0 GB', description: "HuggingFace compact model. Surprisingly capable at 1.7B.",           category: 'fast'    },
   { id: 'llava',             name: 'LLaVA 7B',            tag: 'llava',               size: '4.5 GB', description: 'Understands images. Send a photo, get analysis.',                    category: 'vision'  },
   { id: 'llava:13b',         name: 'LLaVA 13B',           tag: 'llava:13b',           size: '8.0 GB', description: 'Larger vision model. Better at detailed image understanding.',       category: 'vision'  },
   { id: 'moondream',         name: 'Moondream 2',         tag: 'moondream',           size: '1.7 GB', description: 'Tiny vision model. Fast image captioning and Q&A.',                  category: 'vision'  },
-  { id: 'bakllava',          name: 'BakLLaVA',            tag: 'bakllava',            size: '4.7 GB', description: 'Mistral + LLaVA. Vision with Mistral quality language.',              category: 'vision'  },
+  { id: 'llama3.2-vision',   name: 'Llama 3.2 Vision 11B', tag: 'llama3.2-vision',    size: '7.8 GB', description: "Meta's image-understanding Llama.",                                category: 'vision'  },
   { id: 'nomic-embed-text',  name: 'Nomic Embed',         tag: 'nomic-embed-text',    size: '274 MB', description: 'Text embeddings for RAG, semantic search, clustering.',               category: 'embed'   },
-  { id: 'mxbai-embed-large', name: 'MxBAI Embed Large',  tag: 'mxbai-embed-large',   size: '670 MB', description: 'High quality embeddings. Best for retrieval tasks.',                  category: 'embed'   },
+  { id: 'snowflake-arctic-embed', name: 'Arctic Embed',   tag: 'snowflake-arctic-embed', size: '669 MB', description: "Snowflake's text embeddings for retrieval.",                     category: 'embed'   },
 ]
 
 const CATEGORY_LABELS: Record<string, string> = {

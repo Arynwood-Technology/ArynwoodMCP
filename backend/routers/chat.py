@@ -153,7 +153,7 @@ async def list_personas():
             "id": key,
             "name": cfg.get("name", key),
             "role": cfg.get("role", ""),
-            "model": cfg.get("llm", {}).get("model", "mistral"),
+            "model": cfg.get("llm", {}).get("model", "hermes3:8b"),
         }
         for key, cfg in get_personas().items()
         if "name" in cfg and "llm" in cfg
@@ -1331,7 +1331,7 @@ async def _execute_turn(websocket, data, db):
         server_port = config['port']
     personas = get_personas()
     persona  = personas.get(persona_key, {})
-    model    = model or persona.get("llm", {}).get("model", "mistral")
+    model    = model or persona.get("llm", {}).get("model", "hermes3:8b")
 
     # Set num_ctx deliberately (see MAX_NUM_CTX comment above) instead of
     # leaving every call at Ollama's silent 2048-token default, and derive a

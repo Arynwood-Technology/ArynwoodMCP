@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS conversations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT,
     persona TEXT NOT NULL DEFAULT 'central',
-    model TEXT NOT NULL DEFAULT 'mistral',
+    model TEXT NOT NULL DEFAULT 'hermes3:8b',
     server_id INTEGER,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
@@ -104,7 +104,7 @@ INSERT OR IGNORE INTO servers (id, name, host, port, type) VALUES
     (1, 'Local Ollama', 'localhost', 11434, 'ollama');
 
 INSERT OR IGNORE INTO settings (key, value) VALUES
-    ('default_model', 'mistral'),
+    ('default_model', 'hermes3:8b'),
     ('default_persona', 'central'),
     ('default_server_id', '1'),
     ('theme', 'dark');
