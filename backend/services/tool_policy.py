@@ -33,7 +33,7 @@ _REVERSIBLE_PREFIXES = (
 # anything that fell through to the destructive catch-all below got looked up here.
 # read_file/search_code/find_symbol/git_status/git_diff (mcp_codebase.py) added
 # alongside detect_scenes for the same reason: analysis only, touches nothing.
-_READ_ONLY_NAMES = {"detect_scenes", "read_file", "search_code", "find_symbol", "git_status", "git_diff"}
+_READ_ONLY_NAMES = {"detect_scenes", "find_clip", "read_file", "search_code", "find_symbol", "git_status", "git_diff"}
 _REVERSIBLE_NAMES = {
     "build_timeline", "export_subtitles", "extract_zone", "fill_frame",
     "rebuild_clip_proxy", "relink_clip", "resize_composition", "resize_subtitle",

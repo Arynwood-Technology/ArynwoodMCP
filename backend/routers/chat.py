@@ -853,6 +853,14 @@ def _should_search(message: str) -> bool:
 # nothing to gain by adding them. Add a persona here only when both hold: its model is
 # the pinned tool-calling model, and it has an actual reason to.
 NATIVE_TOOLS_PERSONAS = {"central", "glyph"}
+
+# Prefixed to the tool-loop record injected into the user's message (see chat_ws).
+TOOL_RESULTS_NOTE = (
+    "Arynwood's own tools already handled this request, and the record is below. The calls it "
+    "lists really ran, or were really denied or failed. Tell the user plainly what was done, "
+    "denied or failed. Don't give manual steps for something that was already done, and don't "
+    "say you can't access a tool that just ran."
+)
 NATIVE_TOOLS_MAX_ROUNDS = 4
 
 _NATIVE_TOOLS = [
@@ -1470,7 +1478,14 @@ async def _execute_turn(websocket, data, db):
             approve=_make_approve_callback(websocket),
         )
         if tool_ctx:
-            messages[-1]["content"] = messages[-1]["content"] + "\n\n" + _untrusted_block("tool results", tool_ctx)
+            # The note is ours (outside the untrusted block); the record and tool output inside it
+            # are data. Without the note, hermes3:8b read a successful delete as outside material
+            # and told the user it had no access and how to do it by hand.
+            messages[-1]["content"] = (messages[-1]["content"] + "\n\n" + TOOL_RESULTS_NOTE + "\n"
+                                       + _untrusted_block("tool results", tool_ctx))
+            facts = mcp_tool_agent.tool_outcome_facts(runtime_context.evidence.get())
+            if facts:
+                messages[-1]["content"] += "\n\n" + facts
         if "Codebase" in tool_servers_used:
             num_ctx = min(native_ctx, CODEBASE_REPLY_NUM_CTX)
 

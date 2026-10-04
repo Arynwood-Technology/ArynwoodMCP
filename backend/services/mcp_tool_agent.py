@@ -570,6 +570,46 @@ class _CallRunner:
         return text, True
 
 
+def _action_line(name: str, arguments: dict, text: str, ok: bool) -> tuple[str, str]:
+    """One line of the factual call record run_tool_loop hands the persona, and its outcome:
+    done, denied, rejected or failed."""
+    args = json.dumps(arguments, ensure_ascii=False, sort_keys=True)
+    args = args if len(args) <= 160 else args[:159] + "…"
+    first = (text or "").strip().splitlines()[0][:160] if (text or "").strip() else ""
+    if first.startswith("DENIED"):
+        kind, outcome = "denied", "DENIED, so it was not run"
+    elif first.startswith("INVALID CALL"):
+        kind, outcome = "rejected", "rejected for invalid arguments, not run"
+    elif ok and not first.upper().startswith("ERROR"):
+        # mcp-kdenlive reports failures as successful MCP results with an "ERROR:" text; seen
+        # live, a crashed editor's "ERROR: Cutroom isn't running" was recorded as done.
+        kind, outcome = "done", (f"done: {first}" if first else "done")
+    else:
+        kind, outcome = "failed", (f"failed: {first}" if first else "failed")
+    return f"- {name} {args}: {outcome}", kind
+
+
+def tool_outcome_facts(evidence: list[dict] | None) -> str:
+    """Plain statements of what the tool loop really did this turn, built from the run evidence
+    rather than any model's words. chat_ws puts them last before the reply: seen live, hermes3:8b
+    answered a DENIED delete with "has been successfully deleted", echoing its previous reply."""
+    actions = [e for e in (evidence or []) if e.get("kind") == "tool_action"]
+    if not actions:
+        return ""
+    said = {
+        "done": "ran and succeeded",
+        "denied": "was DENIED by the user, so it did not run and nothing changed",
+        "rejected": "was rejected for invalid arguments, so it did not run and nothing changed",
+        "failed": "failed, so it did not complete",
+    }
+    lines = [f"- {a['tool']} {a['arguments']}: {said.get(a['outcome'], a['outcome'])}"
+             + (f" ({a['detail']})" if a["outcome"] in ("done", "failed") and a.get("detail") else "")
+             for a in actions]
+    return ("What actually happened with your tools this turn (recorded by Arynwood, not written by a "
+            "model):\n" + "\n".join(lines) + "\nReport exactly this. Never say a denied, rejected or "
+            "failed action happened.")
+
+
 async def run_tool_loop(
     server_name: str,
     system_prompt: str,
@@ -620,6 +660,20 @@ async def run_tool_loop(
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": message},
     ]
+    # What actually ran, recorded from the runner rather than taken from the model's summary:
+    # a model can end the loop with no summary (seen live with hermes3:8b after a successful
+    # delete), and the persona replying to the user must still know the action happened.
+    actions: list[str] = []
+
+    def block(content: str) -> str:
+        parts = [f"[{label} — live results]"]
+        if actions:
+            parts.append("Tool calls made for this request:\n" + "\n".join(actions))
+        if content:
+            parts.append(("Summary: " if actions else "") + content)
+        if len(parts) == 1:
+            parts.append(f"No {label} tool was called for this request, so nothing was changed.")
+        return "\n".join(parts)
 
     async def _chat(with_tools: bool) -> dict:
         # 300s: 120s was too tight once real tool-result data is in context — a
@@ -642,16 +696,21 @@ async def run_tool_loop(
             msg = await _chat(with_tools=True)
             calls = _extract_tool_calls(msg)
             if not calls:
-                content = (msg.get("content") or "").strip()
-                return f"[{label} — live results]\n{content}" if content else ""
+                return block((msg.get("content") or "").strip())
 
             messages.append({
                 "role": "assistant", "content": msg.get("content") or "",
                 "tool_calls": [{"function": {"name": n, "arguments": a}} for n, a in calls],
             })
             for name, arguments in calls:
-                text, _ = await runner.run(name, arguments)
+                text, ok = await runner.run(name, arguments)
                 messages.append({"role": "tool", "content": text, "tool_name": name})
+                line, kind = _action_line(name, arguments, text, ok)
+                actions.append(line)
+                runtime_context.record_evidence(
+                    "tool_action", server=server_name, tool=name, outcome=kind,
+                    arguments=json.dumps(arguments, ensure_ascii=False, sort_keys=True)[:160],
+                    detail=((text or "").strip().splitlines() or [""])[0][:160])
 
         # Round cap hit — force a tool-free final turn instead of
         # silently returning nothing.
@@ -660,8 +719,7 @@ async def run_tool_loop(
             "content": "Stop calling tools. Summarize what you found or did, in plain text.",
         })
         msg = await _chat(with_tools=False)
-        content = (msg.get("content") or "").strip()
-        return f"[{label} — live results]\n{content}" if content else ""
+        return block((msg.get("content") or "").strip())
     except Exception as exc:
         runtime_context.record_evidence("tool_service", server=server_name, outcome="unavailable", error=str(exc))
         return f"[{label} — unavailable] {exc}"

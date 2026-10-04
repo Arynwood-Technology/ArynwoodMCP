@@ -93,6 +93,14 @@ If you run 0.4.5, update: the first two items below close holes in that release.
 
 ### Fixed
 
+- After Kdenlive tools ran, Arynwood could tell you it had no access, or that a denied delete
+  had succeeded. Found in live testing with Hermes 3: the tool loop handed the reply only the
+  model's own summary, which was sometimes empty or echoed an earlier reply. The reply now
+  gets a factual record of every call (done, denied, rejected or failed), taken from what
+  actually ran, and Arynwood states it in plain words before the reply. A tool error returned
+  as a normal result counts as failed.
+- `find_clip` is a read-only lookup and no longer asks for approval.
+- The Kdenlive instructions tell the model never to guess a clip id and to look it up first.
 - Stable Diffusion recovers when A1111 fails partway through unloading a model, instead of
   failing every later generation with a tensor type mismatch.
 - A LoRA generates on the checkpoint it was trained on. An SDXL LoRA on the SD 1.5
