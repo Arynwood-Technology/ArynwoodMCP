@@ -34,6 +34,8 @@ current plan (0.4.6). Security posture and known gaps are in [SECURITY.md](SECUR
 - Bounded subprocesses and minimal environments are protections, **not an OS sandbox** or an
   offline mode. Don't claim isolation, offline, internet or multi-user readiness.
 - Developer codebase tools are source-only and opt-in; packaged builds must not offer them.
+- Name only models from US companies anywhere public (docs, UI, demo data, the website), and
+  as examples, not recommendations. Measured benchmark data is the only exception.
 - Run the relevant tests and say exactly what passed and what wasn't run. Don't run live-model,
   GPU, publishing or real-data tests without an isolated setup.
 

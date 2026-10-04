@@ -29,6 +29,10 @@ proposes. The owner decides anything that can't be taken back.
 - **Not shared, hosted or multi-user.** Trust levels are one owner's settings, not tenant
   isolation.
 - **Not unattended.** No scheduled publishing, deleting or self-modification.
+- **Not a showcase for any model maker.** Models named in docs, the app and the website are
+  from US companies, offered as examples, not recommendations. The default is chosen by
+  measurement ([tool-calling benchmark](https://github.com/Arynwood-Technology/local-ai-benchmarks/blob/main/TOOL-CALLING.md)).
+  Published benchmark data is the only place other models appear.
 - **Not "nothing leaves your machine".** It's local by default, and the docs name every way
   data can leave: web search, URL learning, downloads, publishing, deploys, IRC, and remote
   model servers. Enforced offline mode doesn't exist.
