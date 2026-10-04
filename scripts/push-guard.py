@@ -34,6 +34,11 @@ ALLOWED_PUBLIC_REFS = (re.compile(r"^refs/heads/main$"), re.compile(r"^refs/tags
 FORBIDDEN_PATHS = [re.compile(p) for p in (
     r"personas\.local\.json$", r"(^|/)\.env$", r"\.db$",
     r"(^|/)mcp_servers\.json$", r"push-denylist", r"private-remotes", r"(^|/)arynwood-private/",
+    # Where conversations and other owner data live: SQLite side files, the gateway's file
+    # memory and overlay (IRC password), and what the app writes into a source checkout.
+    r"\.db-(wal|shm|journal)$", r"\.sqlite3?$", r"(^|/)MEMORY\.md$", r"(^|/)memory/daily/",
+    r"(^|/)gateway\.json$", r"(^|/)triggers/gpu_watch/", r"(^|/)static/social-media/",
+    r"(^|/)music/assets/", r"(^|/)generated/(spreadsheets|images|audio)/",
 )]
 
 

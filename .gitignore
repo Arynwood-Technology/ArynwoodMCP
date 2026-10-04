@@ -104,6 +104,13 @@ transcend-hackathon-*
 # Generated user content (backend/services/spreadsheet_gen.py etc.) — mutable
 # per-install output, not app payload; see user_data_dir() in backend/_frozen.py
 generated/
+# More of the same in a source checkout: GPU job outputs (saved voices included) and social posts.
+triggers/gpu_watch/
+static/social-media/
+# The gateway's file memory and overlay, if ever pointed inside the checkout.
+MEMORY.md
+memory/daily/
+gateway.json
 
 # Personal persona overlay lives in the per-user data dir, not the repo — ignore a stray copy anyway.
 personas.local.json
