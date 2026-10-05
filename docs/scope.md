@@ -22,7 +22,8 @@ proposes. The owner decides anything that can't be taken back.
 ## What it isn't
 
 - **Not a chat bot for other people.** The gateway doesn't talk with strangers or other
-  accounts.
+  accounts. A website chat for visitors is a separate product with its own server and no access
+  to this app or its data: [Arynwood Chat Window](https://github.com/Arynwood-Technology/arynwood-chat-window).
 - **Not in a race for more channels or integrations,** and not shaped by other products.
   Adopting an outside agent framework was considered and rejected: it would replace the parts
   of Arynwood MCP that were just hardened.
