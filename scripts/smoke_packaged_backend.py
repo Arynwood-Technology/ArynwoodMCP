@@ -137,6 +137,9 @@ def main(binary: str) -> int:
         ids = [p["id"] for p in (api("/api/chat/personas")[1] or [])]
         check("user persona overlay is loaded", "smoke_persona" in ids, f"personas: {ids}")
 
+        check("CPU mode and the image endpoint answer",
+              api("/api/system/cpu-mode")[0] == 200 and api("/api/images/config")[0] == 200)
+
         st, body = api(f"/api/studio/sidecars/{SIDECAR_ID}/start", "POST", timeout=30)
         check("a sidecar starts under the AppImage environment", st == 200, f"{st} {body}")
         running = wait_until(lambda: api("/api/studio/sidecars")[1][SIDECAR_ID]["status"] == "running", 20)
@@ -158,6 +161,23 @@ def main(binary: str) -> int:
         check("backend and sidecar both die with it (no orphans)", gone,
               f"backend alive={bool(backend and alive(backend))} sidecar alive={bool(sidecar and alive(sidecar))}")
         check("its ports are released", listener_pid(PORT) is None and listener_pid(SIDECAR_PORT) is None)
+
+        # A crashed app skips the shell's cleanup, so nothing kills the launcher: the backend has to
+        # notice the app itself is gone (ARYNWOOD_APP_PID, see backend/_frozen.py exit_with_process).
+        print("  ...starting again for a stand-in app, then killing only the app, as a crash does")
+        app = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(600)"])
+        boot = subprocess.Popen([binary], env={**env, "ARYNWOOD_APP_PID": str(app.pid)}, stdout=log,
+                                stderr=subprocess.STDOUT, start_new_session=True)
+        if check("starts again", wait_until(ready, 90)):
+            backend = listener_pid(PORT)
+            app.kill()
+            app.wait()
+            gone = wait_until(lambda: not alive(boot.pid) and not (backend and alive(backend)), 15)
+            check("backend and launcher exit when the app crashes", gone,
+                  f"launcher alive={alive(boot.pid)} backend alive={bool(backend and alive(backend))}")
+            check("...and release the port for the next launch", listener_pid(PORT) is None)
+        if app.poll() is None:
+            app.kill()
     finally:
         for pid in (boot.pid, backend, sidecar):
             if pid and alive(pid):

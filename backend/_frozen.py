@@ -136,3 +136,57 @@ def die_with_parent(sig: int = signal.SIGTERM) -> bool:
     if os.getppid() == 1:            # the parent already died before we could ask: we'd never be signalled
         os.kill(os.getpid(), sig)
     return True
+
+
+def _process_stat(pid: int) -> tuple[str, str] | None:
+    """(state, start time) from /proc/<pid>/stat: the start time (field 22) tells a reused pid
+    apart, and state "Z" is a zombie, dead for our purposes. None without /proc."""
+    try:
+        with open(f"/proc/{pid}/stat") as f:
+            fields = f.read().rsplit(")", 1)[1].split()
+        return fields[0], fields[19]
+    except (OSError, IndexError):
+        return None
+
+
+def exit_with_process(pid: int, interval: float = 1.0, grace: float = 10.0) -> bool:
+    """Shut this process down when process `pid` (the desktop app) is gone.
+
+    die_with_parent covers the PyInstaller bootloader, but the bootloader's own parent is the
+    desktop app. When the app crashes or is killed, nothing ends the bootloader, so the backend
+    lived on holding :8010 and the next launch failed. This watches the app itself: a SIGTERM to
+    ourselves runs the normal shutdown (sidecars stopped), then a hard exit after `grace` seconds
+    in case that hangs. A daemon thread; Linux and macOS (Windows uses a job object, see main.rs).
+    Returns False where unsupported or when the pid isn't running.
+    """
+    import threading
+    import time
+
+    if os.name == "nt" or pid <= 1:
+        return False
+    first = _process_stat(pid)
+
+    def alive() -> bool:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return False
+        except PermissionError:
+            pass
+        if first is None:        # no /proc (macOS): the signal check is all there is
+            return True
+        now = _process_stat(pid)
+        return now is not None and now[0] != "Z" and now[1] == first[1]
+
+    if not alive():
+        return False
+
+    def watch():
+        while alive():
+            time.sleep(interval)
+        os.kill(os.getpid(), signal.SIGTERM)
+        time.sleep(grace)
+        os._exit(0)
+
+    threading.Thread(target=watch, name="exit-with-app", daemon=True).start()
+    return True

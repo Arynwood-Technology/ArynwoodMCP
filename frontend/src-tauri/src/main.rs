@@ -116,6 +116,21 @@ fn port_open(port: u16) -> bool {
     std::net::TcpStream::connect(("127.0.0.1", port)).is_ok()
 }
 
+/// Wait up to `ms` for the port to close; true once it's free. A backend orphaned by a crashed
+/// app exits by itself within a second or two (it watches ARYNWOOD_APP_PID, see
+/// backend/_frozen.py's exit_with_process), so a relaunch right after a crash waits for it
+/// instead of adopting a backend that is about to disappear.
+fn wait_for_port_free(port: u16, ms: u64) -> bool {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_millis(ms);
+    while std::time::Instant::now() < deadline {
+        if !port_open(port) {
+            return true;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(200));
+    }
+    !port_open(port)
+}
+
 /// Spawn the FastAPI/uvicorn backend from the live venv — dev mode only
 /// (tauri dev / arynwood-desktop.sh). See start_backend_sidecar() for the
 /// production-build equivalent, which uses the packaged PyInstaller binary
@@ -214,14 +229,16 @@ fn start_backend() {
 fn start_backend_sidecar(app: &tauri::AppHandle) {
     use tauri_plugin_shell::ShellExt;
 
-    if port_open(8010) {
+    if port_open(8010) && !wait_for_port_free(8010, 3000) {
         println!("[arynwood] Backend already running on :8010 — skipping sidecar launch.");
         SIDECAR_BACKEND.get_or_init(|| Mutex::new(None));
         return;
     }
 
     let sidecar = match app.shell().sidecar("arynwood-backend") {
-        Ok(cmd) => cmd,
+        // The backend exits when this process is gone, even after a crash or a kill that
+        // skips RunEvent::Exit (see kill_backend), instead of holding :8010 for the next launch.
+        Ok(cmd) => cmd.env("ARYNWOOD_APP_PID", std::process::id().to_string()),
         Err(e) => {
             eprintln!("[arynwood] Failed to resolve backend sidecar: {e}");
             SIDECAR_BACKEND.get_or_init(|| Mutex::new(None));
