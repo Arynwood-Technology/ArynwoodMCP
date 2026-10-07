@@ -9,6 +9,36 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+One program for every computer: features that need an NVIDIA GPU are marked, and an endpoint
+on another computer can run what this one can't.
+
+### Added
+
+- **CPU mode**, set in Tools (Auto, On, Off). Auto turns it on when no NVIDIA GPU is found.
+  Tools that need one are marked and can't be started, and the backend refuses them too.
+  Music and Video Studio keep their CPU features and mark the GPU ones. Chat on this computer's
+  CPU uses a 6144-token context, keeps the model loaded for an hour, loads it when the app
+  opens, gives background summaries longer, and says that the CPU is working.
+- **Endpoints for chat.** The server chosen on the Servers page (Use for chat) is remembered
+  across launches, an OpenAI-compatible server can carry its own chat model, and its model
+  list shows in the palette and status drawer. Guide: `docs/endpoints.md`.
+- **Endpoints for images.** Design Center's AI Gen can use any OpenAI-compatible images API
+  (Servers → Use for images) instead of local Stable Diffusion, for text-to-image and
+  image-to-image.
+- **Installer presets** in the backend's `.env`: `ARYNWOOD_ENDPOINT_URL`, `_TYPE`, `_TOKEN`,
+  `_MODEL`, `_IMAGE_MODEL`, `_NAME`, and `ARYNWOOD_CPU_MODE`.
+
+### Fixed
+
+- The backend no longer outlives a crashed or killed app. It used to keep port 8010, so the
+  next launch failed until it was killed by hand. It now exits within a couple of seconds of
+  the app, and a relaunch waits for it.
+
+### Security
+
+- The Servers API no longer returns stored tokens to the page; it reports only whether one
+  is set.
+
 ### Changed
 
 - Trained LoRAs start at weight 0.6 in the Design Center instead of 1.0. On the Arynwood SDXL

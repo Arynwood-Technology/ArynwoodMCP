@@ -5,7 +5,7 @@
 **A local-first personal AI and creative workspace.** Default model inference, memory,
 and conversations stay on your hardware. Network features contact outside services:
 web search, URL learning, model/tool downloads, social integrations, publishing, deployment,
-IRC, and any remote model or MCP server you configure. This is a local-first default,
+IRC, and any remote model, image endpoint or MCP server you configure. This is a local-first default,
 not an enforced offline mode. See [SECURITY.md](SECURITY.md) for what is protected and what isn't yet.
 
 Local-first AI workspace for Linux and Windows desktops: multi-persona chat with local Ollama models, knowledge search
@@ -371,11 +371,15 @@ Manage Ollama models across all registered servers.
 
 #### Servers
 
-Register multiple Ollama or OpenAI-compatible endpoints.
+Register multiple Ollama or OpenAI-compatible endpoints. An endpoint can run chat and image
+generation that this computer can't: see [docs/endpoints.md](docs/endpoints.md).
 
-- Add by name, host, port, and optional auth token
+- Add by name, host or URL, port, and optional auth token (kept in the backend, never shown again)
 - Ping any server to check latency and online status
-- Set a server as the active source for a conversation
+- **Use for chat**: the server chat uses, remembered across launches, with its own model for an
+  OpenAI-compatible server
+- **Use for images**: an OpenAI-compatible server and image model for Design Center's AI Gen
+- An installer can preset an endpoint and CPU mode in the backend's `.env`
 
 ---
 

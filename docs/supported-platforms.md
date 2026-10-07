@@ -25,7 +25,7 @@ system can raise the required glibc version.
 | Component | Minimum | Notes |
 |---|---|---|
 | CPU | any x86_64 | |
-| RAM | 16 GB | Ollama model loading is the main consumer; a 14B-parameter model (the default for the `central`/Arynwood persona) needs headroom beyond the OS + app |
+| RAM | 16 GB | Ollama model loading is the main consumer; the default 8B model needs headroom beyond the OS + app. 8 GB works with a smaller model or a [remote endpoint](endpoints.md) |
 | Disk | 20 GB free, more per model/LoRA/generated media you keep | SQLite DB, Qdrant storage, and any local Ollama models all live outside the app bundle in your user data directory |
 | GPU | **Optional for chat**, **required for GPU generation features** | See below |
 
@@ -53,6 +53,29 @@ will work for chat-only use with Ollama running a smaller model.
 
 None of the GPU-bound services are bundled with the desktop app — see
 `docs/installation.md` for what's installed separately.
+
+### CPU mode
+
+One program runs on every computer. On a computer without an NVIDIA GPU, **CPU mode** (in
+**Tools**) switches off the tools that need one and tunes chat for the CPU:
+
+- **Marked, not hidden.** Tools that need an NVIDIA GPU carry a GPU mark and can't be started:
+  Stable Diffusion, Fooocus, Tortoise and AllTalk TTS, Chatterbox, RVC voice conversion,
+  SadTalker, AnimateDiff, LTX-Video, Wan2.1, Music Lab generation (Generate, Jam with AI) and
+  LoRA training. Music and Video Studio stay in the sidebar with a GPU mark; recording, stem
+  separation, effects, the DJ Toolkit, video assembly and captions work on the CPU. The backend
+  refuses the GPU tools too, with a message saying why.
+- **Chat on this computer's CPU** uses a smaller context (6144 tokens instead of 8192), keeps
+  the model loaded for an hour instead of five minutes, loads it when the app opens, and gives
+  background summaries longer to finish. While the CPU works, chat says so. A persona's own
+  `llm.num_ctx` still wins, and none of this applies to a chat endpoint.
+- **Auto** (the default) turns CPU mode on when `nvidia-smi` finds no NVIDIA GPU; **On** and
+  **Off** force it. An installer can set the starting value with `ARYNWOOD_CPU_MODE` in the
+  backend's `.env`.
+
+A CPU reads the prompt and writes the reply many times slower than a GPU: expect minutes, not
+seconds, for a reply from an 8B model on a small server, and less with a 3B model. An
+[endpoint](endpoints.md) runs chat and image generation on another computer instead.
 
 ## Required external services (not bundled)
 

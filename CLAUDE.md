@@ -135,6 +135,7 @@ outline, so keyboard users previously had no focus indicator anywhere.
 - **`backend/services/mcp_tool_agent.py`** — shared bounded tool-calling loop that bridges Arynwood's chat to any server in `mcp/config/mcp_servers.json`; `gather_context_for_message` dispatches across every registered server whose `mcp/config/local_agent/gates.json` gate is classified a match by an LLM call (not keyword substring matching — see "Local tool-calling agents" below). Also owns tool permission tiers (`classify_tool_tier`), schema validation/repair, and optional fallback-model escalation on repeated stalls.
 - **`backend/services/memory_index.py`** — semantic index for `arynwood_memory` (separate Qdrant collection from the knowledge base), so chat retrieves memories relevant to the current turn instead of loading all of them every time
 - **`backend/services/telemetry.py`** — Prometheus counters/histograms for LLM calls (`ollama_client`) and MCP tool calls (`mcp_tool_agent`), exposed at `/metrics` alongside the HTTP-level metrics `prometheus-fastapi-instrumentator` already provides
+- **`backend/services/machine.py`** — CPU mode: `auto` (on when `nvidia-smi` finds no NVIDIA GPU) / `on` / `off`, set in Tools (`PUT /api/system/cpu-mode`, stored in `settings.cpu_mode`, installer default `ARYNWOOD_CPU_MODE`). On: GPU tools/sidecars (`"gpu": True` in `tools.TOOLS` and `studio.SIDECARS`, plus LoRA training and Wan2.1) answer 409; chat on *local Ollama* gets `CPU_NUM_CTX`, `keep_alive` 60m, a warm-up at startup and stretched background timeouts (`chat._on_local_cpu` — never for a provider server, even one on 127.0.0.1). Features are marked, not hidden: see "One program for every machine" below
 - **`backend/services/auth.py`** — opt-in bearer-token gate for the whole `/api/*` surface (HTTP + the chat WebSocket); a no-op unless `ARYNWOOD_API_KEY` is set in the environment
 - **`backend/external_paths.py`** — where the tools that live *outside* the repo are found (kohya_ss, AnimateDiff, Whisper/SadTalker/Chatterbox venvs, A1111 model dirs, MusicStudio, Sycamore). Each resolves own `ARYNWOOD_*` env var > group root (`ARYNWOOD_TOOLS_DIR`/`_SERVICES_DIR`/`_PROJECTS_DIR`) > a default under `$HOME`; nothing checks existence, so a missing tool degrades that one feature. Standalone `scripts/run_*.py` can't import it (different interpreter) and repeat the lookup inline — keep the env var names in sync. Documented in `docs/supported-platforms.md`
 - **`backend/mcp_orchestrator.py`** — CLI persona picker + chat loop (not part of web app)
@@ -269,7 +270,8 @@ All mounted under `/api/<domain>` by `backend/api.py`.
 |---|---|---|---|
 | **Core** | `chat.py` | `/api/chat` | Multi-persona (5) LLM chat with WebSocket streaming (`/ws`) — token-budgeted system prompt (memory/history/project-tree trimmed to fit the model's real context window, not Ollama's silent 2048 default), native tool-calling + approval gating for `central`, relevance-ranked memory retrieval, web search / knowledge-base injection, per-conversation history summarization |
 | | `ollama.py` | `/api/ollama` | Ollama model management — list, pull (SSE stream), delete, show, ping |
-| | `servers.py` | `/api/servers` | Ollama server registry with live connectivity ping |
+| | `servers.py` | `/api/servers` | Model server registry (Ollama / OpenAI-compatible) with live ping. `GET/PUT /default` = the server chat uses, remembered (`settings.default_server_id`); `servers.model` = an endpoint's own chat model; `GET /{id}/models` lists any server's models. Rows go out through `public_row` — the token never reaches the page (`has_token` instead). `apply_preset` registers an installer's `ARYNWOOD_ENDPOINT_*` once at startup |
+| | `images.py` | `/api/images` | Image generation through an OpenAI-compatible endpoint (`/v1/images/generations`, `/edits`), chosen in Servers → Use for images (`settings.image_endpoint`). Design Center calls it instead of `/api/tools/sd/*` when set; a `url` result is fetched through `public_web` |
 | | `system.py` | `/api/system` | Health check, GPU info (nvidia-smi), backend restart, and `GET /gpu-queue` — a read-only view of `gpu_jobs.gpu_queue` (`running`, `depth`, `waiting`) so the UI's status drawer can explain *why* a generate is waiting rather than looking hung |
 | **Productivity** | `deploy.py` | `/api/deploy` | SFTP deployment targets, remote file browser, upload, publish-to-web |
 | | `fs.py` | `/api/fs` | Local filesystem tree/read for AI context injection, and Design Center's save dialog |
@@ -470,6 +472,19 @@ a request to unload immediately after - the hook a real fix would use, mirroring
 ### A1111 `/sdapi/v1/unload-checkpoint` can 500 with VRAM still held
 Seen 2026-08-08: the endpoint threw `AttributeError: 'NoneType' object has no attribute 'lowvram'` in `send_model_to_cpu` (A1111's own internal state got into `sd_model = None` while the checkpoint's VRAM was still allocated — `/sdapi/v1/memory` showed ~7GB still active). This isn't the same as the checkpoint-corruption bug `gpu_queue` was built for; it's a wedged A1111 process. Fix: `docker restart a1111` (check `/sdapi/v1/progress` first to confirm nothing is mid-render), wait for `/sdapi/v1/options` to return 200 again, then retry. Any script that frees A1111 VRAM before its own job (mirroring `_free_sd_vram_for_job`) will hard-fail with this exact traceback if it hits A1111 in this state.
 
+### One program for every machine: CPU mode and endpoints (2026-10-06)
+The same build runs on a GPU desktop and on a CPU-only rented desktop server. Nothing is
+hidden or removed per machine: GPU-only features are **marked** (`GpuMark`, `CpuModeNotice`,
+the NVIDIA GPU tag on Tools cards, `gpu: true` in `nav.ts`) and refused by the backend in CPU
+mode, and an **endpoint** (Servers page) bridges what a machine can't run — chat via any
+Ollama/OpenAI-compatible server, Design Center images via `images.py`. Guide:
+`docs/endpoints.md`; CPU mode: `docs/supported-platforms.md#cpu-mode`. Two traps found while
+building it: (1) `CPU_NUM_CTX` 4096 refused *every* central turn on a fresh install, because
+the uncalibrated estimate puts central's persona prompt + tool schemas at ~3,800 tokens —
+`test_central_fits_the_cpu_ceiling_on_a_fresh_install` guards the floor; (2) a temporary
+Ollama started with `CUDA_VISIBLE_DEVICES=-1` still loaded onto the GPU; pass
+`options.num_gpu: 0` when you need CPU-only inference.
+
 ### Ollama remote host
 Remote Ollama is at whatever host is configured for it (see the Servers page / `servers` table). The local instance is at `localhost:11434`. Both are seeded into `config/arynwood.db` on first `init_db()`. Chat's server picker sends `server_host`/`server_port` per request.
 
@@ -535,6 +550,15 @@ CSP fix, before it actually worked.
   via Vite's proxy — there's no such proxy once the frontend is served from Tauri's
   own origin, so a relative URL 404s inside Tauri's asset protocol and the iframe
   never loads at all.
+- **The backend exits with the app (fixed 2026-10-06).** A crash or kill of the Tauri
+  process skipped `RunEvent::Exit`, and `die_with_parent` only ties the backend to its
+  PyInstaller bootloader, whose parent is the app — so the backend lived on holding `:8010`
+  and the next launch failed (hosting docs told people to `pkill -f arynwood-backend`).
+  `start_backend_sidecar` now passes `ARYNWOOD_APP_PID`; `run_server.py` starts
+  `_frozen.exit_with_process`, which SIGTERMs the backend once that pid is gone (zombie or
+  reused pid counts as gone) and hard-exits 10 s later. A relaunch right after a crash waits
+  up to 3 s for the orphan to free the port (`wait_for_port_free`). Tested with real processes
+  in `tests/test_cpu_mode_and_endpoints.py`.
 - **A stale dev backend can "port-squat" `:8010`.** `start_backend_sidecar()`
   checks `port_open()` and skips spawning its own sidecar if something's already
   listening there — correct behavior for "don't double-launch," but it means a

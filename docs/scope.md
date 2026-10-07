@@ -36,7 +36,7 @@ proposes. The owner decides anything that can't be taken back.
   Published benchmark data is the only place other models appear.
 - **Not "nothing leaves your machine".** It's local by default, and the docs name every way
   data can leave: web search, URL learning, downloads, publishing, deploys, IRC, and remote
-  model servers. Enforced offline mode doesn't exist.
+  model and image servers. Enforced offline mode doesn't exist.
 
 ## How it stays this size
 
