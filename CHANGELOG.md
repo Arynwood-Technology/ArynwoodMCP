@@ -9,6 +9,8 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+## [0.4.7] — 2026-10-07
+
 One program for every computer: features that need an NVIDIA GPU are marked, and an endpoint
 on another computer can run what this one can't.
 
