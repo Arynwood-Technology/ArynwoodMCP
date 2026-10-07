@@ -27,7 +27,9 @@ import urllib.error
 import urllib.request
 
 PORT = int(os.environ.get("SMOKE_PORT", "18011"))
-SIDECAR_ID, SIDECAR_PORT = "voice", 8001          # from backend/routers/studio.py SIDECARS
+# A CPU sidecar from backend/routers/studio.py SIDECARS: CI runners have no NVIDIA GPU, so CPU mode
+# is on there and a GPU sidecar (voice, song-gen) is refused.
+SIDECAR_ID, SIDECAR_PORT = "audio-fx", 8002
 failures: list[str] = []
 
 
@@ -38,8 +40,10 @@ def check(name: str, ok: bool, detail: str = "") -> bool:
     return ok
 
 
-def api(path: str, method: str = "GET", timeout: float = 10.0):
-    req = urllib.request.Request(f"http://127.0.0.1:{PORT}{path}", method=method)
+def api(path: str, method: str = "GET", timeout: float = 10.0, body: dict | None = None):
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(f"http://127.0.0.1:{PORT}{path}", method=method, data=data,
+                                 headers={"Content-Type": "application/json"} if data else {})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status, json.loads(r.read() or b"null")
@@ -137,8 +141,11 @@ def main(binary: str) -> int:
         ids = [p["id"] for p in (api("/api/chat/personas")[1] or [])]
         check("user persona overlay is loaded", "smoke_persona" in ids, f"personas: {ids}")
 
-        check("CPU mode and the image endpoint answer",
-              api("/api/system/cpu-mode")[0] == 200 and api("/api/images/config")[0] == 200)
+        check("the image endpoint config answers", api("/api/images/config")[0] == 200)
+        st, body = api("/api/system/cpu-mode", "PUT", body={"setting": "on"})
+        check("CPU mode turns on", st == 200 and (body or {}).get("enabled") is True, f"{st} {body}")
+        st, body = api("/api/studio/sidecars/voice/start", "POST")
+        check("...and refuses a GPU sidecar with 409", st == 409, f"{st} {body}")
 
         st, body = api(f"/api/studio/sidecars/{SIDECAR_ID}/start", "POST", timeout=30)
         check("a sidecar starts under the AppImage environment", st == 200, f"{st} {body}")
