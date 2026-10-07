@@ -9,7 +9,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from backend.db import get_db
-from backend.services import knowledge, mcp_tool_agent, ollama_client, memory_index, memory_store, runtime_context, index_jobs, providers, run_store
+from backend.services import knowledge, machine, mcp_tool_agent, ollama_client, memory_index, memory_store, runtime_context, index_jobs, providers, run_store
 from backend._frozen import app_base_dir, xdg_data_dir
 from backend.services import context_budget
 from backend.services.context_budget import fit_request, request_tokens
@@ -58,9 +58,22 @@ MAX_NUM_CTX = 8192
 CODEBASE_REPLY_NUM_CTX = mcp_tool_agent.MAX_TOOL_NUM_CTX
 
 
-def _persona_num_ctx(persona: dict) -> int:
+def _on_local_cpu(host: str | None) -> bool:
+    """CPU mode applies to this turn: it's on, and the model is Ollama on this computer. A
+    provider server (OpenAI-compatible, even on 127.0.0.1) manages its own context and memory."""
+    provider = providers.active_provider.get()
+    return machine.local_cpu(host) and (not provider or provider.get("type") == "ollama")
+
+
+def _ctx_ceiling(host: str | None) -> int:
+    """MAX_NUM_CTX, or CPU mode's smaller ceiling when Ollama runs on this computer's CPU
+    (backend/services/machine.py)."""
+    return machine.CPU_NUM_CTX if _on_local_cpu(host) else MAX_NUM_CTX
+
+
+def _persona_num_ctx(persona: dict, ceiling: int = MAX_NUM_CTX) -> int:
     """A persona's own models.json entry can set llm.num_ctx to override
-    MAX_NUM_CTX — for a persona whose system prompt alone is a large fraction of
+    MAX_NUM_CTX (or the CPU-mode ceiling passed in) — for a persona whose system prompt alone is a large fraction of
     the global cap (a full character bible, say), the default ceiling can leave
     too little room for conversation history plus a real reply, truncating
     mid-generation even though nothing looks wrong at the request level. Still
@@ -68,7 +81,7 @@ def _persona_num_ctx(persona: dict) -> int:
     this only raises the ceiling below that, so it costs more VRAM (same KV-cache
     tradeoff as MAX_NUM_CTX itself) only for personas that opt in.
     """
-    return persona.get("llm", {}).get("num_ctx", MAX_NUM_CTX)
+    return persona.get("llm", {}).get("num_ctx", ceiling)
 RESPONSE_RESERVE_TOKENS = 1024   # headroom left in the budget for the model's own reply
 MIN_BUDGET_TOKENS = 512
 
@@ -594,7 +607,7 @@ async def _summarize_aged_out_history(conversation_id: int, model: str, host: st
                 return  # already summarized through this point
 
             native_ctx = await ollama_client.context_length(model, host, port)
-            summary_ctx = min(native_ctx, MAX_NUM_CTX)
+            summary_ctx = min(native_ctx, _ctx_ceiling(host))
             # Summarize bounded slices of the entire text, including long-message tails.
             # Advance coverage only after every slice succeeds.
             new_summary = prior_summary or ''
@@ -610,7 +623,7 @@ async def _summarize_aged_out_history(conversation_id: int, model: str, host: st
                 prior_block = f"Existing summary so far:\n{new_summary}\n\n" if new_summary else ''
                 prompt = HISTORY_SUMMARY_PROMPT.format(prior_summary_block=prior_block, excerpt=part)
                 result = await ollama_client.chat(
-                    model=model, host=host, port=port, timeout=60.0,
+                    model=model, host=host, port=port, timeout=machine.timeout(60.0, host),
                     messages=[{'role': 'user', 'content': prompt}],
                     options={'temperature': 0.2, 'num_ctx': summary_ctx, 'num_predict': 768})
                 new_summary = (result.get('output') or '').strip()
@@ -657,7 +670,7 @@ async def _detect_memory_conflict(content: str, db) -> dict | None:
         for existing in trusted:
             result = await ollama_client.chat(
                 model=mcp_tool_agent.DEFAULT_AGENT_MODEL, host=mcp_tool_agent.DEFAULT_AGENT_OLLAMA_URL,
-                timeout=30.0, options={"temperature": 0},
+                timeout=machine.timeout(30.0, mcp_tool_agent.DEFAULT_AGENT_OLLAMA_URL), options={"temperature": 0},
                 messages=[{
                     "role": "user",
                     "content": (
@@ -1353,7 +1366,7 @@ async def _execute_turn(websocket, data, db):
             pass
     calibration_before = context_budget.snapshot()
     native_ctx   = await ollama_client.context_length(model, server_host, server_port)
-    num_ctx      = min(native_ctx, _persona_num_ctx(persona))
+    num_ctx      = min(native_ctx, _persona_num_ctx(persona, _ctx_ceiling(server_host)))
     reply_tokens = _persona_reply_tokens(persona, num_ctx)
     reply_reserve = reply_tokens or RESPONSE_RESERVE_TOKENS
 
@@ -1540,6 +1553,13 @@ async def _execute_turn(websocket, data, db):
     # the client when it can, always returns whatever text was produced —
     # see roadmap 0.1) and, for native-tool-calling personas, runs the
     # tool-decision rounds before the final streamed answer (roadmap 2.1).
+    if _on_local_cpu(server_host) and not machine.nvidia_gpu_present():
+        # A CPU reads a long prompt for a minute or more before the first word, and a
+        # tool-enabled reply is held back until it's complete (see _stream_reply). Not said
+        # when CPU mode was forced on beside a GPU: Ollama still uses the GPU then.
+        await websocket.send_json({"type": "status", "label": (
+            "Writing on this computer's CPU. The reply appears when it's finished, which can take a few minutes…"
+            if has_tools else "Reading the conversation on this computer's CPU. The first words can take a minute…")})
     full_response = await _stream_reply(
         websocket, messages, model, server_host, server_port, num_ctx, db,
         tools=_NATIVE_TOOLS if has_tools else None, reply_tokens=reply_tokens,

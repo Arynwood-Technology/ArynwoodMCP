@@ -9,7 +9,7 @@ import { DesignCenter } from '../../pages/DesignCenter'
 import { DemoBanner } from '../demo/DemoBanner'
 import { DEMO } from '../../lib/demo/flag'
 import { useAppStore } from '../../store/useAppStore'
-import { getServers, getTools, getPersonas, getStatus } from '../../lib/api'
+import { getServers, getDefaultServer, getTools, getPersonas, getStatus } from '../../lib/api'
 
 /** Default TopBar titles by route. A page whose title depends on state calls
  *  usePageTitle() instead of appearing here (see Chat). */
@@ -35,7 +35,7 @@ const STATUS_POLL_MS = 10_000
  *  across navigation, which is what makes a command palette, status drawer or
  *  job center possible — none of which had a host before this existed. */
 export function AppShell() {
-  const { setServers, setTools, setActiveServer, setPersonas, setStatus } = useAppStore()
+  const { setServers, setTools, setActiveServer, setActiveModel, setPersonas, setStatus } = useAppStore()
   const pageTitle = useAppStore(s => s.pageTitle)
   const location = useLocation()
 
@@ -47,15 +47,18 @@ export function AppShell() {
   const title = pageTitle ?? ROUTE_TITLES[location.pathname] ?? 'Arynwood'
 
   useEffect(() => {
-    // Bootstrap global data; auto-select Local Ollama as default server.
-    getServers().then(list => {
+    // Bootstrap global data. Chat starts on the server the owner last chose (or an
+    // installer's preset endpoint), falling back to Local Ollama.
+    getServers().then(async list => {
       setServers(list)
-      const local = list.find(s => s.id === 1) ?? list[0]
-      if (local) setActiveServer(local)
+      const saved = await getDefaultServer().then(r => r.server).catch(() => null)
+      const server = saved ?? list.find(s => s.id === 1) ?? list[0]
+      if (server) setActiveServer(server)
+      if (server?.model) setActiveModel(server.model)
     }).catch(() => {})
     getTools().then(setTools).catch(() => {})
     getPersonas().then(setPersonas).catch(() => {})
-  }, [setServers, setTools, setActiveServer, setPersonas])
+  }, [setServers, setTools, setActiveServer, setActiveModel, setPersonas])
 
   // Owned by the shell rather than by Dashboard: the sidebar's connectivity dot
   // and the top bar's GPU chip are visible on every page, but used to update

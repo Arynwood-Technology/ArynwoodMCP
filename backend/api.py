@@ -25,9 +25,9 @@ import logging
 from backend.db import init_db, DB_PATH
 from backend.services.auth import ApiKeyMiddleware, TRUSTED_BROWSER_ORIGINS
 from backend.services.exposure import validate_bind_host
-from backend.services import memory_index, index_jobs
+from backend.services import machine, memory_index, index_jobs
 from backend.gateway import get_gateway, is_daemon, is_enabled as gateway_enabled, shutdown_gateway
-from backend.routers import chat, ollama, servers, tools, system, deploy, fs, memory, mcp_proxy, mcp_codebase, knowledge, studio, social, lora, video, models, music, dj, projects, community, gateway
+from backend.routers import chat, ollama, servers, tools, system, deploy, fs, memory, mcp_proxy, mcp_codebase, knowledge, studio, social, lora, video, models, music, dj, projects, community, gateway, images
 
 logger = logging.getLogger(__name__)
 
@@ -50,13 +50,70 @@ async def _backfill_memory_index():
         logger.exception("memory_index backfill failed (non-fatal)")
 
 
+async def _apply_machine_settings():
+    """CPU mode's stored choice, and an endpoint an installer preset in .env, before the
+    first request (see backend/services/machine.py and servers.apply_preset)."""
+    import aiosqlite
+    try:
+        db = await aiosqlite.connect(DB_PATH)
+        db.row_factory = aiosqlite.Row
+        try:
+            await machine.load_setting(db)
+            await servers.apply_preset(db)
+        finally:
+            await db.close()
+    except Exception:
+        logger.exception("machine settings / endpoint preset failed (non-fatal)")
+
+
+async def _warm_cpu_model():
+    """In CPU mode, load chat's model when the app opens, so the first message isn't also the
+    minute-long load from disk. Only when chat's default server is Ollama on this computer: a
+    remote endpoint needs no warming, and loading a local model would only take RAM."""
+    import aiosqlite
+    import httpx
+    if not machine.enabled():
+        return
+    try:
+        db = await aiosqlite.connect(DB_PATH)
+        db.row_factory = aiosqlite.Row
+        try:
+            server = (await servers.get_default_server(db))["server"]
+        finally:
+            await db.close()
+    except Exception:
+        logger.exception("CPU warm-up: couldn't read the default server")
+        return
+    if not server or server["type"] != "ollama" or not machine.is_local_host(server["host"]):
+        return
+    model = server.get("model") or chat.get_personas().get("central", {}).get("llm", {}).get("model", "hermes3:8b")
+    base = f"http://{server['host']}:{server['port']}" if "://" not in server["host"] else server["host"]
+    body = {"model": model, "keep_alive": machine.CPU_KEEP_ALIVE, "options": {"num_ctx": machine.CPU_NUM_CTX}}
+    for _ in range(12):  # Ollama may still be starting with the desktop session
+        try:
+            async with httpx.AsyncClient(timeout=600.0) as client:
+                r = await client.post(f"{base}/api/generate", json=body)
+            if r.status_code == 200:
+                logger.info("CPU warm-up: %s loaded", model)
+            else:
+                logger.info("CPU warm-up: %s not loaded (HTTP %s)", model, r.status_code)
+            return
+        except httpx.ConnectError:
+            await asyncio.sleep(5)
+        except Exception:
+            logger.exception("CPU warm-up failed (non-fatal)")
+            return
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     validate_bind_host(os.environ.get("ARYNWOOD_BIND_HOST", "127.0.0.1"))
     await init_db()
+    await _apply_machine_settings()
     tasks = []
     if not os.getenv("ARYNWOOD_DISABLE_BACKGROUND_INDEX"):
-        tasks = [asyncio.create_task(_backfill_memory_index()), asyncio.create_task(index_jobs.worker())]
+        tasks = [asyncio.create_task(_backfill_memory_index()), asyncio.create_task(index_jobs.worker()),
+                 asyncio.create_task(_warm_cpu_model())]
     if is_daemon():
         await get_gateway().start_adapters()  # chat networks: exactly one process may hold the nick
     try:
@@ -153,6 +210,7 @@ app.include_router(music.router,    prefix="/api/music",     tags=["music"])
 app.include_router(dj.router,       prefix="/api/dj",        tags=["dj"])
 app.include_router(projects.router, prefix="/api/projects",  tags=["projects"])
 app.include_router(community.router, prefix="/api/community", tags=["community"])
+app.include_router(images.router,  prefix="/api/images",    tags=["images"])
 # Experimental and parked (docs/scope.md): the daemon serves it; a desktop backend only with
 # ARYNWOOD_ENABLE_GATEWAY=1.
 if gateway_enabled():

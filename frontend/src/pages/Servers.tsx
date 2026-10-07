@@ -1,18 +1,35 @@
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Wifi, WifiOff } from 'lucide-react'
+import { Plus, Trash2, Wifi, WifiOff, KeyRound, MessageSquare, Image as ImageIcon } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
-import { getServers, createServer, deleteServer, pingServer } from '../lib/api'
+import {
+  getServers, createServer, updateServer, deleteServer, pingServer, getImageConfig, setImageConfig, serverAddress,
+  type ImageConfig, type Server,
+} from '../lib/api'
+import { useChooseServer } from '../lib/useChooseServer'
+import { Button, IconButton, PageShell, PageBar, PageBody, SectionCard } from '../components/ui'
+
+const GUIDE_URL = 'https://github.com/Arynwood-Technology/ArynwoodMCP/blob/main/docs/endpoints.md'
+const SERVER_TYPES = ['ollama', 'openai-compatible', 'custom']
+const EMPTY_FORM = { name: '', host: '', port: 11434, type: 'ollama', auth_token: '', model: '' }
+
+const inputClass = 'rounded-md border border-border bg-surface px-3 py-1.5 text-[13px] text-text'
 
 export function Servers() {
-  const { servers, setServers, activeServer, setActiveServer } = useAppStore()
+  const { servers, setServers, activeServer } = useAppStore()
+  const chooseServer = useChooseServer()
   const [pings, setPings] = useState<Record<number, boolean>>({})
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ name: '', host: '', port: 11434, type: 'ollama', auth_token: '' })
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [error, setError] = useState('')
+  const [images, setImages] = useState<ImageConfig | null>(null)
+  // Per-row draft of the model fields, so typing doesn't save on every keystroke.
+  const [modelDraft, setModelDraft] = useState<Record<number, string>>({})
+  const [imageDraft, setImageDraft] = useState<Record<number, string>>({})
 
   const load = async () => {
     const list = await getServers()
     setServers(list)
-    // Ping all
+    getImageConfig().then(setImages).catch(() => setImages(null))
     const results = await Promise.allSettled(list.map(s => pingServer(s.id)))
     const map: Record<number, boolean> = {}
     list.forEach((s, i) => {
@@ -29,10 +46,13 @@ export function Servers() {
 
   const add = async () => {
     if (!form.name || !form.host) return
-    await createServer({ ...form, port: Number(form.port), enabled: 1 })
-    setAdding(false)
-    setForm({ name: '', host: '', port: 11434, type: 'ollama', auth_token: '' })
-    load()
+    setError('')
+    try {
+      await createServer({ ...form, port: Number(form.port), enabled: 1, model: form.model || null })
+      setAdding(false)
+      setForm(EMPTY_FORM)
+      load()
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)) }
   }
 
   const del = async (id: number) => {
@@ -41,103 +61,115 @@ export function Servers() {
     load()
   }
 
-  const SERVER_TYPES = ['ollama', 'openai-compatible', 'custom']
+  const saveModel = async (s: Server) => {
+    const model = (modelDraft[s.id] ?? s.model ?? '').trim()
+    if (model === (s.model ?? '')) return
+    const updated = await updateServer(s.id, { model })
+    setServers(servers.map(x => (x.id === s.id ? updated : x)))
+    if (activeServer?.id === s.id) chooseServer(updated)
+  }
+
+  const pickForImages = async (s: Server) => {
+    setError('')
+    try {
+      setImages(await setImageConfig(s.id, (imageDraft[s.id] ?? '').trim()))
+    } catch (e) { setError(e instanceof Error ? e.message : String(e)) }
+  }
+
+  const imagesHere = (s: Server) => images?.source === 'endpoint' && images.server?.id === s.id
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
+    <PageShell>
+      <PageBar className="justify-between">
+        <Button variant="outline" onClick={() => setAdding(!adding)}><Plus size={14} /> Add server</Button>
+        <p className="m-0 text-[11px] text-muted">
+          A server elsewhere can run chat and images that this computer can't.{' '}
+          <a href={GUIDE_URL} target="_blank" rel="noopener noreferrer" className="text-accent no-underline">How to connect one</a>
+        </p>
+      </PageBar>
+      <PageBody>
+        {error && <p role="alert" className="m-0 mb-3 rounded-md border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</p>}
 
-        {/* Add button */}
-        <div style={{ marginBottom: 20 }}>
-          <button
-            onClick={() => setAdding(!adding)}
-            style={{
-              background: 'rgba(124,110,247,0.15)', border: '1px solid var(--accent)',
-              color: 'var(--accent)', borderRadius: 8, padding: '8px 16px',
-              cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6,
-            }}
-          >
-            <Plus size={14} /> Add Server
-          </button>
-        </div>
-
-        {/* Add form */}
         {adding && (
-          <div style={{
-            background: 'var(--surface2)', border: '1px solid var(--border)',
-            borderRadius: 12, padding: '16px 20px', marginBottom: 20,
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12,
-          }}>
-            <input placeholder="Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-              style={{ gridColumn: '1/-1', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 12px', fontSize: 13 }} />
-            <input placeholder="Host (e.g. 192.168.1.10)" value={form.host} onChange={e => setForm(f => ({ ...f, host: e.target.value }))}
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 12px', fontSize: 13 }} />
-            <input placeholder="Port" type="number" value={form.port} onChange={e => setForm(f => ({ ...f, port: Number(e.target.value) }))}
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 12px', fontSize: 13 }} />
-            <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 12px', fontSize: 13 }}>
+          <SectionCard title="New server" className="mb-4" bodyClassName="grid grid-cols-2 gap-3">
+            <input aria-label="Name" placeholder="Name" value={form.name}
+              onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={`${inputClass} col-span-2`} />
+            <input aria-label="Host or URL" placeholder="Host or URL (192.168.1.10, or https://api.example.com/v1)" value={form.host}
+              onChange={e => setForm(f => ({ ...f, host: e.target.value }))} className={inputClass} />
+            <input aria-label="Port" placeholder="Port" type="number" value={form.port}
+              onChange={e => setForm(f => ({ ...f, port: Number(e.target.value) }))} className={inputClass} />
+            <select aria-label="Type" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} className={inputClass}>
               {SERVER_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
-            <input placeholder="Auth token (optional)" value={form.auth_token} onChange={e => setForm(f => ({ ...f, auth_token: e.target.value }))}
-              style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 12px', fontSize: 13 }} />
-            <div style={{ gridColumn: '1/-1', display: 'flex', gap: 8 }}>
-              <button onClick={add} style={{ background: 'var(--accent)', border: 'none', color: '#fff', borderRadius: 6, padding: '7px 20px', cursor: 'pointer', fontSize: 13 }}>Save</button>
-              <button onClick={() => setAdding(false)} style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 6, padding: '7px 20px', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
+            <input aria-label="Auth token" placeholder="Auth token or API key (optional)" type="password" autoComplete="off"
+              value={form.auth_token} onChange={e => setForm(f => ({ ...f, auth_token: e.target.value }))} className={inputClass} />
+            <input aria-label="Chat model" placeholder="Chat model on this server (optional; blank = each persona's own)"
+              value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} className={`${inputClass} col-span-2`} />
+            <p className="col-span-2 m-0 text-[11px] text-muted">
+              The token stays in Arynwood's backend; this page never shows it again. With a full URL the port is ignored.
+            </p>
+            <div className="col-span-2 flex gap-2">
+              <Button variant="primary" onClick={add}>Save</Button>
+              <Button variant="outline" onClick={() => setAdding(false)}>Cancel</Button>
             </div>
-          </div>
+          </SectionCard>
         )}
 
-        {/* Server list */}
-        <div style={{ display: 'grid', gap: 10 }}>
-          {servers.map(s => (
-            <div key={s.id} style={{
-              background: 'var(--surface2)', border: `1px solid ${activeServer?.id === s.id ? 'var(--accent)' : 'var(--border)'}`,
-              borderRadius: 12, padding: '14px 18px',
-              display: 'flex', alignItems: 'center', gap: 14,
-              opacity: s.enabled ? 1 : 0.5,
-            }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: 8,
-                background: pings[s.id] ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {pings[s.id] ? <Wifi size={16} color="var(--success)" /> : <WifiOff size={16} color="var(--danger)" />}
-              </div>
-
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: 14 }}>{s.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
-                  {s.type} · {s.host}:{s.port}
+        <div className="grid gap-2.5">
+          {servers.map(s => {
+            const active = activeServer?.id === s.id
+            const online = pings[s.id]
+            return (
+              <div key={s.id} className={`rounded-xl border bg-surface2 px-4 py-3 ${active ? 'border-accent' : 'border-border'} ${s.enabled ? '' : 'opacity-50'}`}>
+                <div className="flex items-center gap-3.5">
+                  <div className={`flex size-9 items-center justify-center rounded-lg ${online ? 'bg-success/15' : 'bg-danger/15'}`}>
+                    {online ? <Wifi size={16} className="text-success" /> : <WifiOff size={16} className="text-danger" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold text-text">{s.name}</div>
+                    <div className="mt-0.5 flex items-center gap-1.5 truncate text-[11px] text-muted">
+                      {s.type} · {serverAddress(s)}
+                      {s.has_token && <span className="inline-flex items-center gap-0.5" title="Has a token"><KeyRound size={11} /> token</span>}
+                      {imagesHere(s) && <span className="inline-flex items-center gap-0.5 text-accent"><ImageIcon size={11} /> images: {images?.model}</span>}
+                    </div>
+                  </div>
+                  <Button size="sm" variant={active ? 'primary' : 'outline'} disabled={active || !s.enabled}
+                    onClick={() => chooseServer(s)} title="Chat uses this server, now and after a restart">
+                    <MessageSquare size={12} /> {active ? 'Chat uses this' : 'Use for chat'}
+                  </Button>
+                  <IconButton label={`Delete server ${s.name}`} variant="danger" size="sm" onClick={() => del(s.id)}>
+                    <Trash2 size={15} />
+                  </IconButton>
                 </div>
-              </div>
 
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                {/* Set active */}
-                <button
-                  onClick={() => setActiveServer(activeServer?.id === s.id ? null : s)}
-                  style={{
-                    background: activeServer?.id === s.id ? 'var(--accent)' : 'var(--surface)',
-                    border: '1px solid var(--border)',
-                    color: activeServer?.id === s.id ? '#fff' : 'var(--text-muted)',
-                    borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 11,
-                  }}
-                >
-                  {activeServer?.id === s.id ? 'Active' : 'Use'}
-                </button>
-                <button
-                  onClick={() => del(s.id)}
-                  aria-label={`Delete server ${s.name}`}
-                  title="Delete server"
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4 }}
-                >
-                  <Trash2 size={15} />
-                </button>
+                {s.type !== 'ollama' && (
+                  <div className="mt-3 grid grid-cols-1 gap-2 border-t border-border/60 pt-3 sm:grid-cols-2">
+                    <label className="flex items-center gap-2 text-[11px] text-muted">
+                      Chat model
+                      <input aria-label={`Chat model on ${s.name}`} className={`${inputClass} flex-1 py-1 text-xs`}
+                        value={modelDraft[s.id] ?? s.model ?? ''} placeholder="e.g. the provider's chat model"
+                        onChange={e => setModelDraft(d => ({ ...d, [s.id]: e.target.value }))}
+                        onBlur={() => saveModel(s)} />
+                    </label>
+                    {s.type === 'openai-compatible' && (
+                      <div className="flex items-center gap-2 text-[11px] text-muted">
+                        Image model
+                        <input aria-label={`Image model on ${s.name}`} className={`${inputClass} flex-1 py-1 text-xs`}
+                          value={imageDraft[s.id] ?? (imagesHere(s) ? images?.model ?? '' : '')}
+                          placeholder="e.g. the provider's image model"
+                          onChange={e => setImageDraft(d => ({ ...d, [s.id]: e.target.value }))} />
+                        {imagesHere(s)
+                          ? <Button size="sm" variant="ghost" onClick={async () => setImages(await setImageConfig(null))}>Stop</Button>
+                          : <Button size="sm" variant="outline" onClick={() => pickForImages(s)}><ImageIcon size={12} /> Use for images</Button>}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
-
-      </div>
-    </div>
+      </PageBody>
+    </PageShell>
   )
 }

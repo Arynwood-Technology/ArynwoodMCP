@@ -11,10 +11,64 @@ import {
   getTools, generateImage, generateTTS,
   removeBg, searchSearx, listQdrant,
   generateAlltalk, generateKokoro, scrapeFetch,
-  openTool, installToolStream, apiUrl,
-  type Tool,
+  openTool, installToolStream, apiUrl, setCpuMode,
+  type CpuMode, type Tool,
 } from '../lib/api'
 import { DownloadButton } from '../components/DownloadButton'
+import { Button, SectionCard } from '../components/ui'
+
+// ── CPU mode ──────────────────────────────────────────────────────────────────
+
+const CPU_MODE_CHOICES: { value: CpuMode['setting']; label: string }[] = [
+  { value: 'auto', label: 'Auto' }, { value: 'on', label: 'On' }, { value: 'off', label: 'Off' },
+]
+
+/** The switch for backend/services/machine.py. One program runs on every computer; CPU mode
+ *  switches off the tools marked NVIDIA GPU and tunes chat on this computer for a CPU. */
+function CpuModeCard() {
+  const status = useAppStore(s => s.status)
+  const setStatus = useAppStore(s => s.setStatus)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const mode = status?.cpu_mode
+  if (!status || !mode) return null
+
+  const choose = async (setting: CpuMode['setting']) => {
+    setBusy(true); setError('')
+    try { setStatus({ ...status, cpu_mode: await setCpuMode(setting) }) }
+    catch (e) { setError(e instanceof Error ? e.message : String(e)) }
+    finally { setBusy(false) }
+  }
+
+  return (
+    <SectionCard
+      className="mb-4"
+      title={<span className="inline-flex items-center gap-2"><Cpu size={14} /> CPU mode: {mode.enabled ? 'on' : 'off'}</span>}
+      actions={CPU_MODE_CHOICES.map(c => (
+        <Button key={c.value} size="sm" variant={mode.setting === c.value ? 'primary' : 'outline'}
+          disabled={busy} aria-pressed={mode.setting === c.value} onClick={() => choose(c.value)}>
+          {c.label}
+        </Button>
+      ))}
+    >
+      <p className="m-0 text-xs leading-relaxed text-muted">
+        {mode.enabled
+          ? 'Tools marked NVIDIA GPU are switched off, and chat on this computer uses CPU-friendly settings. '
+          : 'Every tool can be started. '}
+        {mode.nvidia_gpu ? 'This computer has an NVIDIA GPU.' : 'No NVIDIA GPU was found on this computer.'}
+        {' '}Auto turns CPU mode on when there's no NVIDIA GPU. Chat and image generation can also run on
+        an endpoint elsewhere: add one on the Servers page.
+      </p>
+      {error && <p role="alert" className="m-0 mt-2 text-xs text-danger">{error}</p>}
+    </SectionCard>
+  )
+}
+
+/** The note a GPU tool shows instead of its actions while CPU mode is on. */
+function gpuOffNote(tool: Tool): string {
+  return 'Switched off in CPU mode: this tool needs an NVIDIA GPU.' + (tool.category === 'image'
+    ? ' Design Center can generate images through an endpoint instead (Servers → Use for images).' : '')
+}
 
 // ── Category meta ─────────────────────────────────────────────────────────────
 
@@ -590,6 +644,7 @@ function ScraplingPanel() {
 // ── Action section — replaces copy-paste install panel ────────────────────────
 
 function ActionSection({ tool }: { tool: Tool & { local_html?: boolean } }) {
+  const cpuMode = useAppStore(s => s.status?.cpu_mode?.enabled ?? false)
   const [log, setLog] = useState('')
   const [running, setRunning] = useState(false)
   const [exitOk, setExitOk] = useState<boolean | null>(null)
@@ -642,6 +697,10 @@ function ActionSection({ tool }: { tool: Tool & { local_html?: boolean } }) {
     display: 'inline-flex', alignItems: 'center', gap: 7,
     border: 'none', borderRadius: 8, padding: '10px 18px',
     fontSize: 13, fontWeight: 600, cursor: 'pointer',
+  }
+
+  if (cpuMode && tool.gpu) {
+    return <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{gpuOffNote(tool)}</div>
   }
 
   return (
@@ -960,8 +1019,9 @@ function ToolCard({ tool, selected, onClick }: { tool: Tool & { vram_gb?: number
   const statusColor = STATUS_COLORS[tool.status] ?? '#6b7280'
   const statusLabel = STATUS_LABELS[tool.status] ?? tool.status
   const hasPanel = !!TOOL_PANELS[tool.id]
-  const canLaunch = tool.status === 'online' && tool.homepage
-  const canOpenFile = tool.status === 'available' && tool.local_html
+  const off = useAppStore(s => s.status?.cpu_mode?.enabled ?? false) && !!tool.gpu
+  const canLaunch = !off && tool.status === 'online' && tool.homepage
+  const canOpenFile = !off && tool.status === 'available' && tool.local_html
 
   const launch = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -975,7 +1035,7 @@ function ToolCard({ tool, selected, onClick }: { tool: Tool & { vram_gb?: number
       border: `1px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
       borderRadius: 12, padding: '14px 16px', cursor: 'pointer',
       transition: 'border-color 0.15s',
-      opacity: tool.status === 'unavailable' ? 0.55 : 1,
+      opacity: tool.status === 'unavailable' || off ? 0.55 : 1,
       position: 'relative',
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -993,14 +1053,15 @@ function ToolCard({ tool, selected, onClick }: { tool: Tool & { vram_gb?: number
             </button>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: statusColor }} />
-            <span style={{ fontSize: 9, color: statusColor, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{statusLabel}</span>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: off ? '#6b7280' : statusColor }} />
+            <span style={{ fontSize: 9, color: off ? '#6b7280' : statusColor, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{off ? 'Off · CPU mode' : statusLabel}</span>
           </div>
         </div>
       </div>
       <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)', marginBottom: 4 }}>{tool.name}</div>
       <div style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>{tool.description}</div>
       <div style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+        {tool.gpu && <span title="Needs an NVIDIA GPU" style={{ fontSize: 10, color: '#76b900', background: '#76b90018', borderRadius: 4, padding: '2px 6px', fontWeight: 600 }}>NVIDIA GPU</span>}
         {tool.port && <span style={{ fontSize: 10, color: 'var(--text-muted)', background: 'var(--surface)', borderRadius: 4, padding: '2px 6px' }}>:{tool.port}</span>}
         {(tool as any).vram_gb && <span style={{ fontSize: 10, color: '#a78bfa', background: '#a78bfa18', borderRadius: 4, padding: '2px 6px' }}>{(tool as any).vram_gb}GB VRAM</span>}
         {hasPanel && <span style={{ fontSize: 10, color: cat.color, background: `${cat.color}18`, borderRadius: 4, padding: '2px 6px' }}>interactive</span>}
@@ -1013,6 +1074,7 @@ function ToolCard({ tool, selected, onClick }: { tool: Tool & { vram_gb?: number
 
 export function ToolLibrary() {
   const { tools, setTools } = useAppStore()
+  const cpuMode = useAppStore(s => s.status?.cpu_mode?.enabled ?? false)
   const [selected, setSelected] = useState<string | null>(null)
   const [filterCat, setFilterCat] = useState<string>('all')
   const detailRef = useRef<HTMLDivElement>(null)
@@ -1053,6 +1115,7 @@ export function ToolLibrary() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ flex: 1, overflow: 'auto', padding: 24 }}>
 
+        <CpuModeCard />
         <HardwareCard />
         <GpuLoadsCard />
 
@@ -1112,12 +1175,12 @@ export function ToolLibrary() {
             </div>
 
             {/* Actions always shown at top */}
-            <div style={{ marginBottom: TOOL_PANELS[selectedTool.id] ? 20 : 0 }}>
+            <div style={{ marginBottom: TOOL_PANELS[selectedTool.id] && !(cpuMode && selectedTool.gpu) ? 20 : 0 }}>
               <ActionSection tool={selectedTool} />
             </div>
 
             {/* Interactive panel if this tool has one */}
-            {TOOL_PANELS[selectedTool.id] && (
+            {TOOL_PANELS[selectedTool.id] && !(cpuMode && selectedTool.gpu) && (
               <>
                 {(selectedTool.status === 'offline' || selectedTool.status === 'unavailable') && (
                   <div style={{ fontSize: 11, color: '#f59e0b', marginBottom: 12 }}>

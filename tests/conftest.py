@@ -27,6 +27,13 @@ os.environ["ARYNWOOD_GATEWAY_CONFIG"] = _tmp_gateway_overlay
 os.environ["ARYNWOOD_PERSONAS_FILE"] = os.path.join(_tmp_gateway_dir, "personas.local.json")
 # The gateway's API is parked behind an opt-in (backend.gateway.is_enabled); its tests need it.
 os.environ["ARYNWOOD_ENABLE_GATEWAY"] = "1"
+# CPU mode switches itself on where no NVIDIA GPU answers (CI), which changes chat's options and
+# status events. Pin it off so the suite behaves the same on every machine; CPU-mode tests set it.
+os.environ["ARYNWOOD_CPU_MODE"] = "off"
+# An installer's endpoint preset (backend .env or the developer's shell) mustn't register servers here.
+for _name in ("ARYNWOOD_ENDPOINT_URL", "ARYNWOOD_ENDPOINT_TYPE", "ARYNWOOD_ENDPOINT_TOKEN",
+              "ARYNWOOD_ENDPOINT_MODEL", "ARYNWOOD_ENDPOINT_IMAGE_MODEL", "ARYNWOOD_ENDPOINT_NAME"):
+    os.environ.pop(_name, None)
 
 
 @pytest.fixture()

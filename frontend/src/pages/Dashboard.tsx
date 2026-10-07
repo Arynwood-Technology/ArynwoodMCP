@@ -7,7 +7,8 @@ import {
 } from 'lucide-react'
 import { Button, IconButton, StatusBadge, SectionLabel, PageShell, PageBar, EmptyState } from '../components/ui'
 import { useAppStore } from '../store/useAppStore'
-import { getServers, uploadFile } from '../lib/api'
+import { getServers, serverAddress, uploadFile } from '../lib/api'
+import { useChooseServer } from '../lib/useChooseServer'
 import { ChatSocket } from '../lib/ws'
 
 // ── Quick links ───────────────────────────────────────────────────────────────
@@ -50,7 +51,7 @@ function stripInternalBlocks(t: string) {
 }
 
 function ArynwoodChat() {
-  const { activeServer, setActiveServer, activeModel, setActiveModel, servers, setServers,
+  const { activeServer, activeModel, setActiveModel, servers, setServers,
           dashMsgs, setDashMsgs, dashConvId, setDashConvId } = useAppStore()
   const msgs    = dashMsgs
   const setMsgs = setDashMsgs
@@ -70,17 +71,11 @@ function ArynwoodChat() {
   const fileRef   = useRef<HTMLInputElement>(null)
   const navigate  = useNavigate()
 
+  const chooseServer = useChooseServer()
+  // AppShell picks the starting server (the owner's saved choice); this only fills the list.
   useEffect(() => {
-    if (servers.length === 0) {
-      getServers().then(list => {
-        setServers(list)
-        if (!activeServer && list.length > 0) {
-          const local = list.find(s => s.host === 'localhost' || s.host === '127.0.0.1' || s.host === '0.0.0.0') ?? list[0]
-          setActiveServer(local)
-        }
-      }).catch(() => {})
-    }
-  }, [servers, activeServer, setServers, setActiveServer])
+    if (servers.length === 0) getServers().then(setServers).catch(() => {})
+  }, [servers, setServers])
 
   useEffect(() => { streamingRef.current = streaming }, [streaming])
 
@@ -138,7 +133,7 @@ function ArynwoodChat() {
     wsRef.current?.send({ message: fullMessage, persona: 'central', model: activeModel, server_id: activeServer?.id, server_host: activeServer?.host ?? 'localhost', server_port: activeServer?.port ?? 11434, conversation_id: convRef.current ?? undefined })
   }, [input, attachment, streaming, wsReady, activeServer, activeModel, setMsgs])
 
-  const ollamaServers = servers.filter(s => s.type === 'ollama' && s.enabled)
+  const modelServers = servers.filter(s => s.enabled)
   const canSend = wsReady && !streaming && (!!input.trim() || !!attachment)
 
   return (
@@ -178,14 +173,14 @@ function ArynwoodChat() {
             ⬡ {activeModel}
           </Button>
         )}
-        {ollamaServers.length > 0 ? (
-          <select value={activeServer?.id ?? ''} aria-label="Ollama server"
-            onChange={e => { const s = ollamaServers.find(x => x.id === Number(e.target.value)); if (s) setActiveServer(s) }}
+        {modelServers.length > 0 ? (
+          <select value={activeServer?.id ?? ''} aria-label="Model server"
+            onChange={e => { const s = modelServers.find(x => x.id === Number(e.target.value)); if (s) chooseServer(s) }}
             className="flex-1 cursor-pointer rounded-md border border-border bg-surface px-1.5 py-0.5 text-[10px] text-text">
-            {ollamaServers.map(s => <option key={s.id} value={s.id}>{s.name} ({s.host}:{s.port})</option>)}
+            {modelServers.map(s => <option key={s.id} value={s.id}>{s.name} ({serverAddress(s)})</option>)}
           </select>
         ) : (
-          <span className="text-[10px] italic text-muted">{activeServer ? `${activeServer.host}:${activeServer.port}` : 'localhost:11434'}</span>
+          <span className="text-[10px] italic text-muted">{activeServer ? serverAddress(activeServer) : 'localhost:11434'}</span>
         )}
       </div>
 

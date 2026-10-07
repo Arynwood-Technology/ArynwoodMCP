@@ -15,6 +15,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from backend import external_paths
+from backend.services import machine
 from backend._frozen import app_base_dir
 from backend.db import DB_PATH, get_db
 from backend.routers.tools import (
@@ -550,6 +551,9 @@ async def _remove_lora_from_a1111(filename: str) -> None:
 @router.post("/projects/{project_id}/train")
 async def start_training(project_id: int, body: TrainRequest, db=Depends(get_db)):
     """POST /projects/{id}/train — launch SDXL LoRA training with live progress tracking."""
+    refusal = machine.gpu_feature_refusal("LoRA training")
+    if refusal:
+        raise HTTPException(409, refusal)
     project = await _get_project_or_404(db, project_id)
     if not project.get("dataset_dir") or not os.path.isdir(project["dataset_dir"]):
         raise HTTPException(400, "Dataset not prepared yet — run prep first")

@@ -32,6 +32,11 @@ export async function request<T>(path: string, opts?: RequestInit): Promise<T> {
 
 // System
 export const getStatus = () => request<SystemStatus>('/system/status')
+
+/** CPU mode (backend/services/machine.py): `setting` is the owner's choice; `enabled` is the result. */
+export interface CpuMode { enabled: boolean; setting: 'auto' | 'on' | 'off'; nvidia_gpu: boolean }
+export const setCpuMode = (setting: CpuMode['setting']) =>
+  request<CpuMode>('/system/cpu-mode', { method: 'PUT', body: JSON.stringify({ setting }) })
 export const restartBackend = () => request<{ status: string }>('/system/restart', { method: 'POST' })
 
 export interface GpuQueue { running: string | null; depth: number; waiting: string[] }
@@ -46,7 +51,7 @@ export const getMcpServers = () => request<McpServerInfo[]>('/mcp/servers')
 
 // MusicStudio sidecars (stem separation, RVC, effects, song-gen)
 /** `failed` = it started and died; `error` is the tail of its log, so the UI can say why. */
-export interface Sidecar { id: string; label: string; port: number; status: 'running' | 'starting' | 'failed' | 'stopped'; error?: string }
+export interface Sidecar { id: string; label: string; port: number; status: 'running' | 'starting' | 'failed' | 'stopped'; error?: string; gpu?: boolean }
 export const getSidecars = () => request<Record<string, Sidecar>>('/studio/sidecars')
 export const startSidecar = (id: string) =>
   request<{ status: string }>(`/studio/sidecars/${id}/start`, { method: 'POST' })
@@ -95,6 +100,32 @@ export const deleteServer = (id: number) =>
   request<any>(`/servers/${id}`, { method: 'DELETE' })
 export const pingServer = (id: number) =>
   request<{ online: boolean }>(`/servers/${id}/ping`)
+/** The server chat uses until the owner picks another, remembered across launches. */
+export const getDefaultServer = () => request<{ server: Server | null }>('/servers/default')
+export const setDefaultServer = (server_id: number) =>
+  request<{ server: Server }>('/servers/default', { method: 'PUT', body: JSON.stringify({ server_id }) })
+/** Models on any registered server: Ollama's list, or an OpenAI-compatible /v1/models. */
+export const getServerModels = (id: number) => request<{ models: { name: string }[] }>(`/servers/${id}/models`)
+/** Models on the active server, or on local Ollama when none is chosen. */
+export const getModelsFor = (server: Server | null) =>
+  server ? getServerModels(server.id) : getModels()
+
+/** Where a server is, as the owner typed it: a full URL stands alone, a bare host gets its port. */
+export const serverAddress = (s: Pick<Server, 'host' | 'port'>) => (s.host.includes('://') ? s.host : `${s.host}:${s.port}`)
+
+/** The model to use on a server: its own (an endpoint's) when set, else the persona's. */
+export const modelFor = (server: Server | null, personaModel: string) => server?.model || personaModel
+
+// Image endpoint (backend/routers/images.py): Design Center's other image source.
+export interface ImageConfig {
+  source: 'endpoint' | 'local'
+  server: { id: number; name: string; host: string } | null
+  model: string | null
+  cpu_mode: boolean
+}
+export const getImageConfig = () => request<ImageConfig>('/images/config')
+export const setImageConfig = (server_id: number | null, model?: string) =>
+  request<ImageConfig>('/images/config', { method: 'PUT', body: JSON.stringify({ server_id, model }) })
 
 // Chat
 export const getPersonas = () => request<Persona[]>('/chat/personas')
@@ -133,6 +164,7 @@ export interface SystemStatus {
   platform: string
   /** false in a packaged build, which can't respawn its own backend (absent on older backends). */
   can_restart?: boolean
+  cpu_mode?: CpuMode
 }
 
 export interface OllamaModel {
@@ -149,7 +181,11 @@ export interface Server {
   host: string
   port: number
   type: string
+  /** Sent only when saving; the backend never returns a token, just whether one is set. */
   auth_token?: string
+  has_token?: boolean
+  /** The model to use on this server (an endpoint's); empty = each persona's own model. */
+  model?: string | null
   enabled: number
   created_at: string
 }
@@ -211,6 +247,8 @@ export interface Tool {
   homepage?: string
   install?: string
   local_html?: boolean
+  /** Needs an NVIDIA GPU to be usable; switched off while CPU mode is on. */
+  gpu?: boolean
   status: 'online' | 'offline' | 'available' | 'unavailable' | 'error'
 }
 

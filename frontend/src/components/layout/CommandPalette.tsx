@@ -9,8 +9,8 @@ import { cn } from '../../lib/cn'
 import { useAppStore } from '../../store/useAppStore'
 import { NAV_DESTINATIONS } from './nav'
 import {
-  getModels, getConversations, restartBackend,
-  type OllamaModel, type Conversation,
+  getModelsFor, modelFor, serverAddress, getConversations, restartBackend,
+  type Conversation,
 } from '../../lib/api'
 
 interface Command {
@@ -53,7 +53,7 @@ function PaletteBody() {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [cursor, setCursor] = useState(0)
-  const [models, setModels] = useState<OllamaModel[]>([])
+  const [models, setModels] = useState<{ name: string }[]>([])
   // Seeded from the store so there's something to search before the fetch lands.
   const [convs, setConvs] = useState<Conversation[]>(storeConvs)
   const listRef = useRef<HTMLDivElement>(null)
@@ -62,7 +62,7 @@ function PaletteBody() {
   // until it's used and never shows a stale model list.
   useEffect(() => {
     getConversations().then(setConvs).catch(() => {})
-    getModels(activeServer?.host ?? 'localhost', activeServer?.port ?? 11434)
+    getModelsFor(activeServer)
       .then(r => setModels(r.models ?? []))
       .catch(() => setModels([]))
   }, [activeServer])
@@ -106,7 +106,7 @@ function PaletteBody() {
         hint: p.role, icon: User, keywords: p.model,
         run: close(() => {
           setActivePersona(p.id)
-          if (p.model) setActiveModel(p.model)
+          if (p.model) setActiveModel(modelFor(activeServer, p.model))
           navigate('/chat')
         }),
       })),
@@ -114,7 +114,7 @@ function PaletteBody() {
       // Models
       ...models.map(m => ({
         id: `model:${m.name}`, group: 'Models', label: m.name, icon: Cpu,
-        hint: activeServer ? `${activeServer.host}:${activeServer.port}` : undefined,
+        hint: activeServer ? serverAddress(activeServer) : undefined,
         run: close(() => setActiveModel(m.name)),
       })),
 

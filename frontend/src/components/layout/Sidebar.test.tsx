@@ -30,6 +30,20 @@ describe('Sidebar', () => {
     expect(screen.getByRole('link', { name: /^Music/ })).toHaveAttribute('href', '/studio')
   })
 
+  it('marks pages with GPU-only features while CPU mode is on, and only then', () => {
+    renderSidebar()
+    expect(screen.getByRole('link', { name: /^Music/ })).not.toHaveAccessibleName(/NVIDIA GPU/)
+    act(() => useAppStore.setState({ status: {
+      ollama: true, tortoise_tts: false, stable_diffusion: false, prometheus: false,
+      gpu: { available: false }, platform: 'Linux',
+      cpu_mode: { enabled: true, setting: 'auto', nvidia_gpu: false },
+    } }))
+    expect(screen.getByRole('link', { name: /^Music.*some features need an NVIDIA GPU/ })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /^Video Studio.*NVIDIA GPU/ })).toBeInTheDocument()
+    // Still there, still links: one program everywhere, features marked rather than hidden.
+    expect(screen.getByRole('link', { name: /^Chat/ })).not.toHaveAccessibleName(/NVIDIA GPU/)
+  })
+
   it('keeps Music highlighted while you are in the DJ Toolkit it launched', () => {
     renderSidebar('/dj')
     expect(screen.getByRole('link', { name: /Music \(current page\)/ })).toBeInTheDocument()

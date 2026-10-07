@@ -25,6 +25,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Background
 from fastapi.responses import Response, StreamingResponse
 
 from backend import external_paths
+from backend.services import machine
 from backend._frozen import die_with_parent, sanitize_environ_for_children, xdg_data_dir
 
 router = APIRouter()
@@ -37,6 +38,7 @@ SIDECARS: dict[str, dict] = {
         "script": "sidecars/voice/main.py",
         "venv": "sidecars/voice/venv/bin/python",
         "label": "Voice Conversion (RVC)",
+        "gpu": True,
     },
     "audio-fx": {
         "port": 8002,
@@ -49,6 +51,7 @@ SIDECARS: dict[str, dict] = {
         "script": "sidecars/song-gen/main.py",
         "venv": "sidecars/song-gen/venv/bin/python",
         "label": "Song Generation (ACE-Step/MusicGen)",
+        "gpu": True,
     },
     "stem-sep": {
         "port": 8004,
@@ -129,7 +132,8 @@ async def get_sidecars():
     results = {}
     for sid, cfg in SIDECARS.items():
         status = await _ping(sid)
-        info = {"id": sid, "label": cfg["label"], "port": cfg["port"], "status": status}
+        info = {"id": sid, "label": cfg["label"], "port": cfg["port"], "status": status,
+                "gpu": bool(cfg.get("gpu"))}
         if status == "failed":
             info["error"] = _failures[sid]["error"] or f"exited with code {_failures[sid]['code']}"
         results[sid] = info
@@ -141,6 +145,10 @@ async def start_sidecar(sidecar_id: str):
     """POST /sidecars/{id}/start — launch a sidecar subprocess from its MusicStudio venv."""
     if sidecar_id not in SIDECARS:
         raise HTTPException(404, "Unknown sidecar")
+    if SIDECARS[sidecar_id].get("gpu"):
+        refusal = machine.gpu_feature_refusal(SIDECARS[sidecar_id]["label"])
+        if refusal:
+            raise HTTPException(409, refusal)
 
     # Already running
     if await _ping(sidecar_id) == "running":

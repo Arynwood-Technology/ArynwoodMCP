@@ -11,12 +11,13 @@ import tempfile
 import time
 import uuid
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Query, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 from fastapi.responses import JSONResponse, FileResponse
 import httpx
 from pydantic import BaseModel
 
 from backend import external_paths
+from backend.services import machine
 from backend.services.gpu_jobs import (
     APP_DIR, DATA_DIR, _jobs, gpu_queue, _new_job, _newest_file,
     _sd_unload_checkpoint, _sd_reload_checkpoint,
@@ -225,6 +226,7 @@ TOOLS = {
         "description": "Text-to-image and image-to-image through the AUTOMATIC1111 WebUI (SDXL and "
                        "SD 1.5). Styles: realistic, general, stylized.",
         "type": "image", "category": "image",
+        "gpu": True,
         "port": 7860, "endpoint": "http://localhost:7860",
         "homepage": "http://localhost:7860",
         # Runs in A1111's own compose project. The app dir is the wrong place: in a packaged
@@ -237,6 +239,7 @@ TOOLS = {
         "name": "Fooocus",
         "description": "Simplified SDXL image generator with sensible defaults.",
         "type": "image", "category": "image",
+        "gpu": True,
         "port": 7865, "endpoint": "http://localhost:7865",
         "homepage": "http://localhost:7865",
         "install": "# Install from github.com/lllyasviel/Fooocus. It serves on port 7865.",
@@ -253,6 +256,7 @@ TOOLS = {
         "name": "Tortoise TTS",
         "description": "Multi-voice text-to-speech. Slow, very natural.",
         "type": "audio", "category": "audio",
+        "gpu": True,
         "port": 5003, "endpoint": "http://localhost:5003",
         "install": "# Arynwood doesn't include a Tortoise server. It uses one on port 5003 (POST /generate).",
     },
@@ -260,6 +264,7 @@ TOOLS = {
         "name": "AllTalk TTS",
         "description": "Text-to-speech web UI (XTTSv2 and others) with voice cloning from a short clip.",
         "type": "audio", "category": "audio",
+        "gpu": True,
         "port": 7851, "endpoint": "http://localhost:7851",
         "homepage": "http://localhost:7851",
         "install": "# Install from github.com/erew123/alltalk_tts. It serves on port 7851.",
@@ -284,6 +289,7 @@ TOOLS = {
         "name": "SadTalker",
         "description": "Talking-head video from a portrait and an audio clip.",
         "type": "video", "category": "video",
+        "gpu": True,
         "port": None,
         "script": os.path.join(APP_DIR, "scripts", "run_sadtalker.py"),
         "install": f"# Needs a SadTalker checkout with its checkpoints in "
@@ -295,6 +301,7 @@ TOOLS = {
         "description": "Text-to-video (Wan2.1 T2V-1.3B) for Video Studio. Weights download from "
                        "Hugging Face on first run. Fits a 12 GB GPU.",
         "type": "video", "category": "video",
+        "gpu": True,
         "port": None,
         "script": os.path.join(APP_DIR, "scripts", "run_wan2.py"),
         "install": _VIDEO_DIFFUSERS_INSTALL,
@@ -303,6 +310,7 @@ TOOLS = {
         "name": "AnimateDiff",
         "description": "Looping animations from a text prompt, using an SD 1.5 model.",
         "type": "video", "category": "video",
+        "gpu": True,
         "port": None,
         "script": os.path.join(APP_DIR, "scripts", "run_anim.py"),
         # Python 3.11, not 3.12: tokenizers==0.13.3 has no cp312 wheel and fails to build from
@@ -316,6 +324,7 @@ TOOLS = {
         "description": "Lightricks' 2B-parameter video model (Apache 2.0): image-to-video and "
                        "text-to-video. Weights (about 5 GB) download on first run. Fits a 12 GB GPU.",
         "type": "video", "category": "video",
+        "gpu": True,
         "port": None,
         "script": os.path.join(APP_DIR, "scripts", "run_ltxvideo.py"),
         "install": _VIDEO_DIFFUSERS_INSTALL,
@@ -365,6 +374,7 @@ TOOLS = {
         "name": "RVC (Voice Conversion)",
         "description": "Retrieval-based voice conversion from a short voice sample.",
         "type": "audio", "category": "audio",
+        "gpu": True,
         # 7866, not RVC's default 7865, which Fooocus also uses.
         "port": 7866,
         "endpoint": "http://localhost:7866",
@@ -377,6 +387,7 @@ TOOLS = {
         "name": "Chatterbox TTS",
         "description": "Resemble AI's zero-shot text-to-speech (MIT). Clones a voice from 5–10 seconds of audio.",
         "type": "audio", "category": "audio",
+        "gpu": True,
         "port": None,
         "script": os.path.join(APP_DIR, "scripts", "run_chatterbox.py"),
         # Its own venv: chatterbox-tts pins torch==2.6.0 and transformers==5.2.0, which would
@@ -512,6 +523,21 @@ async def check_tool_status(tool_key: str, info: dict) -> str:
     return "unavailable"
 
 
+def _refuse_in_cpu_mode(tool_id: str) -> None:
+    """GPU-only tools stay listed, marked, but don't start or run while CPU mode is on
+    (backend/services/machine.py)."""
+    info = TOOLS.get(tool_id, {})
+    if info.get("gpu"):
+        detail = machine.gpu_feature_refusal(info["name"])
+        if detail:
+            raise HTTPException(409, detail)
+
+
+def _gpu_tool(tool_id: str):
+    """Route dependency: refuse this GPU tool's endpoint in CPU mode."""
+    return Depends(lambda: _refuse_in_cpu_mode(tool_id))
+
+
 # ── List / get tools ───────────────────────────────────────────────────────────
 
 @router.get("")
@@ -532,6 +558,7 @@ async def list_tools():
             "homepage": info.get("homepage"),
             "install": info.get("install"),
             "vram_gb": info.get("vram_gb"),
+            "gpu": bool(info.get("gpu")),
             "local_html": str(info.get("script", "")).endswith(".html"),
             "status": status if isinstance(status, str) else "error",
         }
@@ -574,6 +601,7 @@ async def _container_exists(name: str) -> bool:
 @router.post("/{tool_id}/install/stream")
 async def install_tool_stream(tool_id: str):
     """Run a tool's install command and stream stdout+stderr as plain text."""
+    _refuse_in_cpu_mode(tool_id)
     if os.name == "nt":
         raise HTTPException(501, "Automatic tool installation currently requires Linux. Install the tool using its Windows instructions.")
     if tool_id not in TOOLS:
@@ -667,7 +695,7 @@ class SDRequest(BaseModel):
     style: str = DEFAULT_STYLE
 
 
-@router.post("/stable_diffusion/generate")
+@router.post("/stable_diffusion/generate", dependencies=[_gpu_tool("stable_diffusion")])
 async def sd_generate(req: SDRequest):
     """POST /stable_diffusion/generate — run txt2img on the local A1111 instance.
 
@@ -718,7 +746,7 @@ class TTSRequest(BaseModel):
     voice: str = "random"
 
 
-@router.post("/tortoise_tts/generate")
+@router.post("/tortoise_tts/generate", dependencies=[_gpu_tool("tortoise_tts")])
 async def tts_generate(req: TTSRequest):
     """POST /tortoise_tts/generate — synthesize speech via the Tortoise TTS Docker container."""
     async with httpx.AsyncClient(timeout=120.0) as client:
@@ -738,7 +766,7 @@ class AllTalkRequest(BaseModel):
     language: str = "en"
 
 
-@router.post("/alltalk_tts/generate")
+@router.post("/alltalk_tts/generate", dependencies=[_gpu_tool("alltalk_tts")])
 async def alltalk_generate(req: AllTalkRequest):
     """POST /alltalk_tts/generate — synthesize speech via the AllTalk TTS API."""
     async with httpx.AsyncClient(timeout=120.0) as client:
@@ -1060,7 +1088,7 @@ async def sd_proxy_unload_checkpoint():
         raise HTTPException(500, f"Could not unload SD checkpoint: {e}")
 
 
-@router.post("/sd/checkpoint/reload")
+@router.post("/sd/checkpoint/reload", dependencies=[_gpu_tool("stable_diffusion")])
 async def sd_proxy_reload_checkpoint():
     """Reload the checkpoint back into VRAM after an unload."""
     try:
@@ -1072,7 +1100,7 @@ async def sd_proxy_reload_checkpoint():
         raise HTTPException(500, f"Could not reload SD checkpoint: {e}")
 
 
-@router.post("/sd/restart")
+@router.post("/sd/restart", dependencies=[_gpu_tool("stable_diffusion")])
 async def sd_proxy_restart():
     """Restart the A1111 container and wait for it to come back up.
 
@@ -1101,7 +1129,7 @@ async def sd_proxy_restart():
     raise HTTPException(504, "A1111 didn't come back within 90s — check `docker logs a1111`.")
 
 
-@router.post("/sd/generate")
+@router.post("/sd/generate", dependencies=[_gpu_tool("stable_diffusion")])
 async def sd_proxy_generate(payload: dict):
     """Proxy text-to-image request to Stable Diffusion.
 
@@ -1146,7 +1174,7 @@ async def sd_proxy_generate(payload: dict):
     except Exception as e:
         raise HTTPException(500, f"SD error: {e}")
 
-@router.post("/sd/img2img")
+@router.post("/sd/img2img", dependencies=[_gpu_tool("stable_diffusion")])
 async def sd_proxy_img2img(payload: dict):
     """Proxy image-to-image request to Stable Diffusion.
 
@@ -1252,7 +1280,7 @@ async def download_spreadsheet(filename: str):
 
 # ── SadTalker ──────────────────────────────────────────────────────────────────
 
-@router.post("/sadtalker/jobs")
+@router.post("/sadtalker/jobs", dependencies=[_gpu_tool("sadtalker")])
 async def sadtalker_start_job(
     image: UploadFile = File(...),
     audio: UploadFile = File(...),
@@ -1334,7 +1362,7 @@ _ANIMATEDIFF_DIR = external_paths.ANIMATEDIFF_DIR
 _ANIMATEDIFF_PYTHON = os.path.join(_ANIMATEDIFF_DIR, "venv", "bin", "python")
 
 
-@router.post("/animatediff/jobs")
+@router.post("/animatediff/jobs", dependencies=[_gpu_tool("animatediff")])
 async def animatediff_start_job(
     prompt: str = Form(...),
     negative_prompt: str = Form(""),
@@ -1458,7 +1486,7 @@ async def whisper_start_job(
 
 # ── LTX-2 (image/text → video) ──────────────────────────────────────────────────
 
-@router.post("/ltx_video/jobs")
+@router.post("/ltx_video/jobs", dependencies=[_gpu_tool("ltx_video")])
 async def ltx_video_start_job(
     prompt: str = Form(...),
     negative_prompt: str = Form(""),
@@ -1601,7 +1629,7 @@ async def delete_chatterbox_voice(name: str):
     return {"status": "deleted"}
 
 
-@router.post("/chatterbox/jobs")
+@router.post("/chatterbox/jobs", dependencies=[_gpu_tool("chatterbox")])
 async def chatterbox_start_job(
     text: str = Form(...),
     reference_audio: Optional[UploadFile] = File(None),

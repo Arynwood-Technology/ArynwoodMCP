@@ -9,20 +9,25 @@ import { VocalBooth } from '../components/studio/VocalBooth'
 import { InstrumentGenerator } from '../components/studio/InstrumentGenerator'
 import { JamWithAI } from '../components/studio/JamWithAI'
 import { request } from '../lib/api'
+import { useCpuMode } from '../lib/useCpuMode'
+import { GpuMark, CpuModeNotice } from '../components/GpuMark'
 
 type Tab = 'booth' | 'record' | 'generate' | 'jam' | 'stems' | 'voice' | 'effects'
 
 interface SidecarInfo {
   id: string; label: string; port: number; status: 'running' | 'starting' | 'failed' | 'stopped'; error?: string
+  /** Needs an NVIDIA GPU: switched off while CPU mode is on. */
+  gpu?: boolean
 }
 
-const TABS: { id: Tab; label: string; icon: React.FC<{ size?: number }> }[] = [
+/** `gpu`: the tab's sidecar needs an NVIDIA GPU, so it's marked while CPU mode is on. */
+const TABS: { id: Tab; label: string; icon: React.FC<{ size?: number }>; gpu?: boolean }[] = [
   { id: 'booth',    label: 'Vocal Booth',      icon: Radio },
   { id: 'record',   label: 'Record',           icon: Mic },
-  { id: 'generate', label: 'Generate',         icon: Sparkles },
-  { id: 'jam',      label: 'Jam with AI',      icon: Guitar },
+  { id: 'generate', label: 'Generate',         icon: Sparkles, gpu: true },
+  { id: 'jam',      label: 'Jam with AI',      icon: Guitar, gpu: true },
   { id: 'stems',    label: 'Stem Separation',  icon: Scissors },
-  { id: 'voice',    label: 'Voice Conversion', icon: Mic2 },
+  { id: 'voice',    label: 'Voice Conversion', icon: Mic2, gpu: true },
   { id: 'effects',  label: 'Effects Rack',     icon: Sliders },
 ]
 
@@ -36,6 +41,7 @@ const STATUS_COLOR: Record<string, string> = {
 export function Studio() {
   const [tab, setTab] = useState<Tab>('booth')
   const navigate = useNavigate()
+  const cpuMode = useCpuMode()
   const [sidecars, setSidecars] = useState<Record<string, SidecarInfo>>({})
   const [loadingSidecar, setLoadingSidecar] = useState<string | null>(null)
   const [sidecarError, setSidecarError] = useState<string | null>(null)
@@ -101,7 +107,9 @@ export function Studio() {
           <div key={sc.id} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--surface2)', borderRadius: 6, padding: '4px 10px' }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: STATUS_COLOR[sc.status] ?? '#6b7280', display: 'inline-block', flexShrink: 0 }} />
             <span title={sc.error} style={{ fontSize: 11, color: sc.status === 'failed' ? '#fca5a5' : 'var(--text-muted)' }}>{sc.label}</span>
-            {loadingSidecar === sc.id ? (
+            {cpuMode && sc.gpu && sc.status !== 'running' ? (
+              <GpuMark />
+            ) : loadingSidecar === sc.id ? (
               <Loader2 size={12} style={{ color: 'var(--text-muted)', animation: 'spin 1s linear infinite' }} />
             ) : sc.status === 'running' ? (
               <button onClick={() => stopSidecar(sc.id)} title="Stop" style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, lineHeight: 1 }}>
@@ -142,13 +150,14 @@ export function Studio() {
             }}>
               <Icon size={14} />
               {t.label}
+              {cpuMode && t.gpu && <GpuMark />}
             </button>
           )
         })}
       </div>
 
       {/* Sidecar offline banner */}
-      {activeSidecar && activeSidecar.status !== 'running' && (
+      {activeSidecar && activeSidecar.status !== 'running' && !(cpuMode && activeSidecar.gpu) && (
         <div style={{ padding: '8px 20px', background: 'rgba(245,158,11,0.08)', borderBottom: '1px solid rgba(245,158,11,0.2)', display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--warning)' }}>
           <span>{activeSidecar.label} sidecar is {activeSidecar.status}.</span>
           <button onClick={() => startSidecar(activeSidecar.id)} style={{ padding: '3px 10px', border: '1px solid var(--warning)', borderRadius: 4, background: 'transparent', color: 'var(--warning)', cursor: 'pointer', fontSize: 11 }}>
@@ -169,6 +178,11 @@ export function Studio() {
 
       {/* Panel content */}
       <div style={{ flex: 1, overflow: 'auto', padding: 24, maxWidth: 860 }}>
+        {cpuMode && TABS.find(t => t.id === tab)?.gpu && (
+          <CpuModeNotice feature={TABS.find(t => t.id === tab)!.label}>
+            Recording, stem separation, effects and the DJ Toolkit work on this computer.
+          </CpuModeNotice>
+        )}
         {tab === 'booth' && (
           <VocalBooth
             onSendToEffects={blob => { setPendingEffectsFile(blob); setTab('effects') }}

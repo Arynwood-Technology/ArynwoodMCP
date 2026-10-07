@@ -156,7 +156,7 @@ async def _execute(sink, db, session, msg, trust: str, policy: dict, approve,
     await _load_calibration(db)
     calibration_before = context_budget.snapshot()
     native_ctx = await ollama_client.context_length(model, server_host, server_port)
-    num_ctx = min(native_ctx, chat._persona_num_ctx(persona))
+    num_ctx = min(native_ctx, chat._persona_num_ctx(persona, chat._ctx_ceiling(server_host)))
     reply_tokens = chat._persona_reply_tokens(persona, num_ctx)
     reply_reserve = reply_tokens or chat.RESPONSE_RESERVE_TOKENS
 

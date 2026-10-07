@@ -307,6 +307,9 @@ _MIGRATIONS = [
 
     "ALTER TABLE servers ADD COLUMN context_window INTEGER NOT NULL DEFAULT 8192",
     "ALTER TABLE servers ADD COLUMN tools_mode TEXT NOT NULL DEFAULT 'native'",
+    # The model to use on this server (an endpoint's model, e.g. one an OpenAI-compatible
+    # provider serves). NULL = each persona's own model, which is right for Ollama.
+    "ALTER TABLE servers ADD COLUMN model TEXT",
     # Headless gateway (backend/gateway/sessions.py): one row per outside conversation
     # key (an API client, an IRC nick or channel, a scheduled job) -> the conversation
     # it continues, so a session picks up where it left off after a restart.

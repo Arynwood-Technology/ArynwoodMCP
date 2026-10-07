@@ -11,7 +11,7 @@ import { DEMO } from '../lib/demo/flag'
 import { PERSONA_SCENARIOS } from '../lib/demo/prompts'
 
 const ARYNWOOD = { name: 'Arynwood', color: '#7c6ef7' }
-import { getConversations, getConversationRuns, getMessages, deleteConversation, uploadFile } from '../lib/api'
+import { getConversations, getConversationRuns, getMessages, deleteConversation, uploadFile, modelFor } from '../lib/api'
 import type { Message } from '../lib/api'
 import { ChatSocket } from '../lib/ws'
 import { EvidenceSummary } from '../components/chat/EvidenceSummary'
@@ -440,7 +440,7 @@ export function Chat() {
   const selectPersona = (id: string) => {
     setActivePersonaId(id)
     const persona = personas.find(p => p.id === id)
-    if (persona) setActiveModel(persona.model)
+    if (persona) setActiveModel(modelFor(activeServer, persona.model))
   }
 
   const [messages, setMessages] = useState<Message[]>([])

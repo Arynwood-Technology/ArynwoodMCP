@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { apiUrl, BACKEND_ORIGIN } from './api'
+import { apiUrl, BACKEND_ORIGIN, modelFor, type Server } from './api'
 
 describe('apiUrl', () => {
   afterEach(() => vi.unstubAllEnvs())
@@ -20,5 +20,19 @@ describe('apiUrl', () => {
     for (const u of ['blob:tauri://localhost/abc', 'data:audio/wav;base64,AAAA', 'http://localhost:7851/out.wav', 'https://example.com/api/x']) {
       expect(apiUrl(u)).toBe(u)
     }
+  })
+})
+
+describe('modelFor', () => {
+  const server = (model?: string | null): Server =>
+    ({ id: 2, name: 'Remote', host: 'https://api.example.com/v1', port: 443, type: 'openai-compatible', enabled: 1, created_at: '', model })
+
+  it("uses an endpoint's own model: a persona's Ollama model name means nothing to it", () => {
+    expect(modelFor(server('chat-model'), 'hermes3:8b')).toBe('chat-model')
+  })
+
+  it("keeps the persona's model on a server without one (Ollama, or no server chosen yet)", () => {
+    expect(modelFor(server(null), 'hermes3:8b')).toBe('hermes3:8b')
+    expect(modelFor(null, 'hermes3:8b')).toBe('hermes3:8b')
   })
 })

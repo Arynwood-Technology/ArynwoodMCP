@@ -11,7 +11,7 @@ from typing import Optional
 from urllib.parse import urlparse
 
 import httpx
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field, model_validator
 
@@ -20,6 +20,7 @@ from backend.services.gpu_jobs import (
     _free_sd_vram_for_job, _restore_sd_vram_after_job,
 )
 from backend.routers.tools import _WHISPER_PYTHON
+from backend.services import machine
 
 # Video Studio: new capabilities layered on top of the existing GPU-tool job
 # system in tools.py (SadTalker/AnimateDiff/LTX-Video already have working job
@@ -127,7 +128,13 @@ async def _resolve_canvas(canvas: str, first_source: str) -> tuple[int, int]:
 
 # ── Wan2.1 (text → video) ────────────────────────────────────────────────────
 
-@router.post("/wan2/jobs")
+def _refuse_wan2_in_cpu_mode() -> None:
+    refusal = machine.gpu_feature_refusal("Wan2.1 video generation")
+    if refusal:
+        raise HTTPException(409, refusal)
+
+
+@router.post("/wan2/jobs", dependencies=[Depends(_refuse_wan2_in_cpu_mode)])
 async def wan2_start_job(
     prompt: str = Form(...),
     negative_prompt: str = Form(""),

@@ -4,6 +4,8 @@ import { GeneratePanel } from '../components/video/GeneratePanel'
 import { TimelineEditor } from '../components/video/TimelineEditor'
 import { CaptionsPanel, type CaptionSegment } from '../components/video/CaptionsPanel'
 import { getVideoLibrary, type VideoLibraryItem } from '../lib/api'
+import { useCpuMode } from '../lib/useCpuMode'
+import { GpuMark, CpuModeNotice } from '../components/GpuMark'
 
 type Tab = 'generate' | 'editor' | 'captions'
 
@@ -17,6 +19,7 @@ const LAST_SEEN_KEY = 'video-editor-last-seen-at'
 
 export function Video() {
   const [tab, setTab] = useState<Tab>('editor')
+  const cpuMode = useCpuMode()
   const [library, setLibrary] = useState<VideoLibraryItem[]>([])
   const [pendingCaptions, setPendingCaptions] = useState<CaptionSegment[] | null>(null)
   const [lastSeenAt, setLastSeenAt] = useState<number>(() => {
@@ -59,13 +62,16 @@ export function Video() {
             const Icon = item.icon
             const active = tab === item.id
             const badge = item.id === 'editor' ? newClipCount : 0
-            return <button key={item.id} onClick={() => openTab(item.id)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '11px 15px', border: 'none', borderBottom: active ? '2px solid var(--accent)' : '2px solid transparent', background: active ? 'rgba(124,110,247,.08)' : 'transparent', color: active ? 'var(--text)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 13, fontWeight: active ? 700 : 500, whiteSpace: 'nowrap' }}><Icon size={15} color={active ? 'var(--accent)' : undefined} />{item.label}{badge > 0 && <span title={`${badge} new clip${badge === 1 ? '' : 's'} ready`} style={{ minWidth: 17, height: 17, padding: '0 5px', display: 'inline-grid', placeItems: 'center', borderRadius: 10, background: 'var(--accent)', color: '#fff', fontSize: 10 }}>{badge}</span>}</button>
+            return <button key={item.id} onClick={() => openTab(item.id)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '11px 15px', border: 'none', borderBottom: active ? '2px solid var(--accent)' : '2px solid transparent', background: active ? 'rgba(124,110,247,.08)' : 'transparent', color: active ? 'var(--text)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 13, fontWeight: active ? 700 : 500, whiteSpace: 'nowrap' }}><Icon size={15} color={active ? 'var(--accent)' : undefined} />{item.label}{cpuMode && item.id === 'generate' && <GpuMark />}{badge > 0 && <span title={`${badge} new clip${badge === 1 ? '' : 's'} ready`} style={{ minWidth: 17, height: 17, padding: '0 5px', display: 'inline-grid', placeItems: 'center', borderRadius: 10, background: 'var(--accent)', color: '#fff', fontSize: 10 }}>{badge}</span>}</button>
           })}
         </nav>
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: 20, maxWidth: 1320, width: '100%', margin: '0 auto' }}>
-        <div style={{ display: tab === 'generate' ? 'block' : 'none', minHeight: '100%' }}><GeneratePanel onOpenEditor={() => openTab('editor')} /></div>
+        <div style={{ display: tab === 'generate' ? 'block' : 'none', minHeight: '100%' }}>
+          {cpuMode && <CpuModeNotice feature="Generating video">Assembling, trimming and captioning clips work on this computer.</CpuModeNotice>}
+          <GeneratePanel onOpenEditor={() => openTab('editor')} />
+        </div>
         <div style={{ display: tab === 'editor' ? 'flex' : 'none', flexDirection: 'column', minHeight: '100%' }}><TimelineEditor active={tab === 'editor'} pendingCaptions={pendingCaptions} onCaptionsImported={() => setPendingCaptions(null)} onOpenCaptions={() => openTab('captions')} onOpenGenerate={() => openTab('generate')} /></div>
         <div style={{ display: tab === 'captions' ? 'block' : 'none', minHeight: '100%' }}><CaptionsPanel onSendToEditor={segments => { setPendingCaptions(segments); openTab('editor') }} /></div>
       </div>

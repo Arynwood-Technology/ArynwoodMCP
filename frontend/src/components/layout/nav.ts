@@ -4,8 +4,9 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 
-/** `also`: other routes that belong to this destination, so it stays highlighted while you're on them. */
-export type NavLeaf = { to: string; icon: LucideIcon; label: string; also?: string[] }
+/** `also`: other routes that belong to this destination, so it stays highlighted while you're on them.
+ *  `gpu`: some of its features need an NVIDIA GPU, so it's marked while CPU mode is on. */
+export type NavLeaf = { to: string; icon: LucideIcon; label: string; also?: string[]; gpu?: boolean }
 export type NavItem =
   | ({ kind?: 'link' } & NavLeaf)
   | { kind: 'group'; icon: LucideIcon; label: string; children: NavLeaf[] }
@@ -25,8 +26,8 @@ export const NAV: NavItem[] = [
   { to: '/tools',   icon: Wrench,       label: 'Tools'         },
   { to: '/design',  icon: Palette,      label: 'Design Center' },
   // /dj (the DJ Toolkit) is a tool reached from this page, deliberately not a sidebar entry of its own.
-  { to: '/studio',  icon: Music2,       label: 'Music', also: ['/dj'] },
-  { to: '/video',   icon: Clapperboard, label: 'Video Studio'  },
+  { to: '/studio',  icon: Music2,       label: 'Music', also: ['/dj'], gpu: true },
+  { to: '/video',   icon: Clapperboard, label: 'Video Studio', gpu: true },
   { to: '/social',  icon: Share2,       label: 'Social Media'  },
   { to: '/community', icon: Users,      label: 'Community'     },
 ]

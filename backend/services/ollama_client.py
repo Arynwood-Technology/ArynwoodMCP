@@ -16,7 +16,7 @@ from typing import Any, AsyncIterator, Optional, Sequence
 import httpx
 from ollama import AsyncClient, Client
 
-from backend.services import telemetry, providers
+from backend.services import machine, telemetry, providers
 from backend.services import context_budget
 from backend.services.context_budget import fit_request
 
@@ -100,6 +100,12 @@ async def _ollama_options(model: str, host: Optional[str], port: Optional[int], 
     return merged
 
 
+def _keep_alive(host: Optional[str], port: Optional[int]) -> Optional[str]:
+    """In CPU mode, keep a local model loaded for an hour instead of Ollama's five minutes:
+    loading it again from disk is a minute or more on a CPU-only server. None = Ollama's default."""
+    return machine.CPU_KEEP_ALIVE if machine.local_cpu(resolve_host(host, port)) else None
+
+
 def _normalize_host(url: str) -> str:
     return url.rstrip("/").replace("://localhost", "://127.0.0.1")
 
@@ -149,6 +155,7 @@ async def chat(
         response = await client.chat(
             model=model, messages=messages, tools=tools,
             options=await _ollama_options(model, host, port, options),
+            keep_alive=_keep_alive(host, port),
         )
     except httpx.TimeoutException as e:
         telemetry.record_llm_call(model, "error")
@@ -204,6 +211,7 @@ async def chat_stream(
         stream = await client.chat(
             model=model, messages=messages, stream=True, tools=tools,
             options=await _ollama_options(model, host, port, options),
+            keep_alive=_keep_alive(host, port),
         )
         async for chunk in stream:
             message = chunk.get("message") or {}

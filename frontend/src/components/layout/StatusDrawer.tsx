@@ -5,17 +5,20 @@ import { cn } from '../../lib/cn'
 import { Button, IconButton } from '../ui'
 import { useAppStore } from '../../store/useAppStore'
 import {
-  getStatus, getServers, getModels, getGpuQueue, getKnowledgeStatus,
+  getStatus, getServers, getModelsFor, serverAddress, getGpuQueue, getKnowledgeStatus,
   getMcpServers, getSidecars, startSidecar, pingServer, restartBackend,
   getCommunityStatus, startCommunity, type CommunityStatus,
   type GpuQueue, type KnowledgeStatus, type McpServerInfo, type Sidecar, type Server,
 } from '../../lib/api'
 
-type State = 'ok' | 'warn' | 'down' | 'unknown'
+/** `off`: switched off on purpose (CPU mode), not broken. */
+type State = 'ok' | 'warn' | 'down' | 'unknown' | 'off'
 
 const DOT: Record<State, string> = {
-  ok: 'bg-success', warn: 'bg-warning', down: 'bg-danger', unknown: 'bg-muted',
+  ok: 'bg-success', warn: 'bg-warning', down: 'bg-danger', unknown: 'bg-muted', off: 'bg-muted',
 }
+
+const GPU_OFF = 'Needs an NVIDIA GPU · off in CPU mode'
 
 function StatusRow({
   label, state, detail, fix, action,
@@ -104,7 +107,7 @@ function DrawerBody() {
       settle(getMcpServers(), setMcp),
       settle(getSidecars(), setSidecars),
       settle(getCommunityStatus(), setCommunity),
-      getModels(activeServer?.host ?? 'localhost', activeServer?.port ?? 11434)
+      getModelsFor(activeServer)
         .then(r => setModels((r.models ?? []).map(m => m.name)))
         .catch(() => setModels(null)),
     ])
@@ -127,6 +130,7 @@ function DrawerBody() {
   }
 
   const gpu = status?.gpu
+  const cpuMode = status?.cpu_mode?.enabled ?? false
   const modelKnown: State =
     modelNames === null ? 'unknown' : modelNames.includes(activeModel) ? 'ok' : 'warn'
 
@@ -176,7 +180,7 @@ function DrawerBody() {
                 key={s.id}
                 label={s.name}
                 state={!s.enabled || up === undefined ? 'unknown' : up ? 'ok' : 'down'}
-                detail={`${s.host}:${s.port}${s.id === activeServer?.id ? ' · active' : ''}${s.enabled ? '' : ' · disabled'}`}
+                detail={`${serverAddress(s)}${s.id === activeServer?.id ? ' · active' : ''}${s.enabled ? '' : ' · disabled'}`}
                 fix="Unreachable — check the host is up and the port is open."
                 action={
                   <Button size="sm" variant="outline" disabled={pinging === s.id} onClick={() => ping(s.id)}>
@@ -191,17 +195,21 @@ function DrawerBody() {
             detail={activeModel}
             fix={modelNames === null
               ? 'Could not list models on this server, so the name is unverified.'
-              : `Not installed on this server. Pull it: ollama pull ${activeModel}`}
+              : activeServer && activeServer.type !== 'ollama'
+                ? 'This endpoint doesn\'t list that model. Set the model on the Servers page.'
+                : `Not installed on this server. Pull it: ollama pull ${activeModel}`}
           />
         </Section>
 
         <Section title="GPU">
           <StatusRow
-            label="Device" state={gpu?.available ? 'ok' : 'down'}
+            label="Device" state={gpu?.available ? 'ok' : cpuMode ? 'off' : 'down'}
             detail={gpu?.available
-              ? `${gpu.name ?? 'GPU'} · ${gpu.utilization}% · ${gpu.memory_used}/${gpu.memory_total}MB · ${gpu.temp}°C`
-              : 'nvidia-smi reported no device'}
-            fix="nvidia-smi not returning a device — check the driver."
+              ? `${gpu.name ?? 'GPU'} · ${gpu.utilization}% · ${gpu.memory_used}/${gpu.memory_total}MB · ${gpu.temp}°C${cpuMode ? ' · CPU mode is on' : ''}`
+              : cpuMode ? 'No NVIDIA GPU · CPU mode is on' : 'nvidia-smi reported no device'}
+            fix={cpuMode
+              ? 'Chat and knowledge run on the CPU. An endpoint on the Servers page can run models and images elsewhere.'
+              : 'nvidia-smi not returning a device — check the driver.'}
           />
           <StatusRow
             label="Job queue"
@@ -251,6 +259,9 @@ function DrawerBody() {
             ? <StatusRow label="Sidecars" state="unknown" detail="Could not read /api/studio/sidecars" />
             : Object.values(sidecars).map(sc => {
                 const running = sc.status === 'running'
+                if (cpuMode && sc.gpu && !running) {
+                  return <StatusRow key={sc.id} label={sc.label} state="off" detail={GPU_OFF} />
+                }
                 return (
                   <StatusRow
                     key={sc.id} label={sc.label}
@@ -272,14 +283,16 @@ function DrawerBody() {
 
         <Section title="Other services">
           <StatusRow
-            label="Stable Diffusion" state={status?.stable_diffusion ? 'ok' : 'down'}
-            detail="A1111 · localhost:7860"
-            fix="Start it from Tools → Stable Diffusion. A1111 must run with --api."
+            label="Stable Diffusion" state={status?.stable_diffusion ? 'ok' : cpuMode ? 'off' : 'down'}
+            detail={cpuMode && !status?.stable_diffusion ? GPU_OFF : 'A1111 · localhost:7860'}
+            fix={cpuMode
+              ? 'Design Center can generate through an image endpoint instead: Servers → Use for images.'
+              : 'Start it from Tools → Stable Diffusion. A1111 must run with --api.'}
           />
           <StatusRow
-            label="TortoiseTTS" state={status?.tortoise_tts ? 'ok' : 'down'}
-            detail="localhost:5003"
-            fix="Optional. Arynwood doesn't include a Tortoise server — see Tools → Tortoise TTS."
+            label="TortoiseTTS" state={status?.tortoise_tts ? 'ok' : cpuMode ? 'off' : 'down'}
+            detail={cpuMode && !status?.tortoise_tts ? GPU_OFF : 'localhost:5003'}
+            fix={cpuMode ? undefined : "Optional. Arynwood doesn't include a Tortoise server — see Tools → Tortoise TTS."}
           />
           <StatusRow
             label="Prometheus" state={status?.prometheus ? 'ok' : 'down'}

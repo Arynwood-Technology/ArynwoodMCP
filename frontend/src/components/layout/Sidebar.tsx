@@ -6,6 +6,8 @@ import { cn } from '../../lib/cn'
 import { useMediaQuery } from '../../lib/useMediaQuery'
 import { useAppStore } from '../../store/useAppStore'
 import { NAV } from './nav'
+import { useCpuMode } from '../../lib/useCpuMode'
+import { GpuMark } from '../GpuMark'
 
 const ITEM = 'flex items-center rounded-[10px] transition-colors no-underline'
 const ACTIVE = 'bg-accent/12 text-accent'
@@ -21,18 +23,20 @@ function Label({ children, show }: { children: React.ReactNode; show: boolean })
   return <span className={show ? 'truncate text-xs font-medium' : 'sr-only'}>{children}</span>
 }
 
-function NavBtn({ to, icon: Icon, label, expanded, nested = false, also }: {
-  to: string; icon: LucideIcon; label: string; expanded: boolean; nested?: boolean; also?: string[]
+function NavBtn({ to, icon: Icon, label, expanded, nested = false, also, gpu = false }: {
+  to: string; icon: LucideIcon; label: string; expanded: boolean; nested?: boolean; also?: string[]; gpu?: boolean
 }) {
   const { pathname } = useLocation()
+  const marked = useCpuMode() && gpu
+  const note = marked ? ' (some features need an NVIDIA GPU)' : ''
   const inAlso = !!also?.some(p => pathname === p || pathname.startsWith(p + '/'))
   return (
     <NavLink
       to={to}
       end={to === '/'}
-      title={expanded ? undefined : label}
+      title={expanded ? (marked ? 'Some features here need an NVIDIA GPU' : undefined) : label + note}
       className={({ isActive }) => cn(
-        ITEM,
+        ITEM, marked && !expanded && 'relative',
         expanded ? 'h-9 w-full gap-2.5 px-2.5' : 'size-11 justify-center',
         nested && expanded && 'pl-7',
         nested && !expanded && 'size-9 border border-border',
@@ -42,7 +46,10 @@ function NavBtn({ to, icon: Icon, label, expanded, nested = false, also }: {
       {({ isActive }) => (
         <>
           <Icon size={nested && !expanded ? 16 : 20} aria-hidden="true" className="shrink-0" />
-          <Label show={expanded}>{label}{isActive || inAlso ? ' (current page)' : ''}</Label>
+          <Label show={expanded}>{label}{isActive || inAlso ? ' (current page)' : ''}<span className="sr-only">{note}</span></Label>
+          {marked && (expanded
+            ? <GpuMark className="ml-auto" />
+            : <span aria-hidden="true" className="absolute right-1 top-1 size-1.5 rounded-full bg-[#76b900]" />)}
         </>
       )}
     </NavLink>
@@ -107,7 +114,7 @@ export function Sidebar() {
 
       {NAV.map(item => {
         if (item.kind !== 'group') {
-          return <NavBtn key={item.to} to={item.to} icon={item.icon} label={item.label} expanded={expanded} also={item.also} />
+          return <NavBtn key={item.to} to={item.to} icon={item.icon} label={item.label} expanded={expanded} also={item.also} gpu={item.gpu} />
         }
 
         const childActive = item.children.some(c => location.pathname === c.to)

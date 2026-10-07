@@ -9,6 +9,11 @@
 <title>Design Center — Arynwood</title>
 <link href="fonts/fonts.css" rel="stylesheet">
 <style>
+/* Image source: an endpoint has no checkpoints, LoRAs, negative prompt, steps or CFG. */
+#pnl-gen.endpoint-mode .sd-only{display:none!important}
+/* Marked, not hidden: tools that need an NVIDIA GPU while CPU mode is on. */
+.gpu-tag{margin-left:auto;font-size:8.5px;font-weight:700;letter-spacing:.06em;color:#76b900;background:#76b9001a;border-radius:3px;padding:1px 4px}
+.vbtn.gpu-off{opacity:.5;cursor:not-allowed}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#0d0d14;--surface:#13131f;--s2:#1a1a2e;--s3:#21213a;
@@ -839,7 +844,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
         <button class="i2i-clear" onclick="event.stopPropagation();App.clearI2I()">✕ Clear</button>
       </div>
       <input type="file" id="i2i-inp" accept="image/*" style="display:none" onchange="App.loadI2IFile(this.files[0])">
-      <div class="i2i-strength" id="i2i-strength-row" style="display:none">
+      <div class="i2i-strength sd-only" id="i2i-strength-row" style="display:none">
         <div class="pr">
           <span class="pl">Strength</span>
           <input type="range" class="pi" id="i2i-strength" min="0.1" max="1" step="0.05" value="0.6"
@@ -849,13 +854,15 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
         <div style="font-size:9px;color:var(--muted);padding:0 2px 4px">Low = subtle tweak · High = major change</div>
       </div>
       <textarea class="gen-area" id="gen-prompt" placeholder="Describe your image… (or describe changes to the base image)"></textarea>
+      <div class="sd-only">
       <div class="gen-lbl" style="margin-bottom:5px">Checkpoint / Model</div>
       <select class="psel" id="gen-checkpoint" style="margin-bottom:8px" onchange="App.onCheckpointChange()"></select>
       <div id="gen-checkpoint-desc" style="font-size:9px;color:var(--muted);margin:-4px 0 4px"></div>
       <div style="font-size:9px;color:var(--muted);margin:0 0 10px">Independent from Style/LoRA below — switch this and regenerate with the same prompt to compare checkpoints.</div>
+      </div>
       <div class="gen-lbl" style="margin-bottom:5px">Style</div>
       <div class="style-grid" id="style-chips"></div>
-      <div id="lora-chips-section" style="display:none">
+      <div id="lora-chips-section" class="sd-only" style="display:none">
         <div class="gen-lbl" style="margin:10px 0 3px">Your Trained LoRAs</div>
         <div style="font-size:9px;color:var(--muted);margin-bottom:5px">Applies on top of whichever checkpoint is selected above.</div>
         <div class="style-grid" id="lora-chips"></div>
@@ -869,12 +876,12 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
           <div style="font-size:9px;color:var(--muted);padding:0 2px 4px">Low = subtle influence · High = strong stylization</div>
         </div>
       </div>
-      <div class="pr"><span class="pl">Negative</span><input type="text" class="pi" id="gen-neg" value="ugly, blurry, watermark, low quality"></div>
+      <div class="pr sd-only"><span class="pl">Negative</span><input type="text" class="pi" id="gen-neg" value="ugly, blurry, watermark, low quality"></div>
       <div class="gen-grid">
         <div><div class="gen-lbl">Width</div><input type="number" class="pi" id="gen-w" value="512" step="64"></div>
         <div><div class="gen-lbl">Height</div><input type="number" class="pi" id="gen-h" value="512" step="64"></div>
-        <div><div class="gen-lbl">Steps</div><input type="number" class="pi" id="gen-steps" value="20" min="1" max="150"></div>
-        <div><div class="gen-lbl">CFG</div><input type="number" class="pi" id="gen-cfg" value="7" min="1" max="30" step=".5"></div>
+        <div class="sd-only"><div class="gen-lbl">Steps</div><input type="number" class="pi" id="gen-steps" value="20" min="1" max="150"></div>
+        <div class="sd-only"><div class="gen-lbl">CFG</div><input type="number" class="pi" id="gen-cfg" value="7" min="1" max="30" step=".5"></div>
       </div>
       <button class="gen-btn" id="gen-btn" onclick="App.generate()">✦ Generate</button>
     </div>
@@ -882,22 +889,22 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
     <!-- Video -->
     <div class="ps" id="pnl-video" style="display:none">
       <div class="pt">▶ Video & Tools</div>
-      <button class="vbtn" onclick="window.open('http://localhost:7860','_blank')">
+      <button class="vbtn" data-gpu onclick="window.open('http://localhost:7860','_blank')">
         <span class="vi">🎨</span><div><div class="vt">Stable Diffusion</div><div class="vs">A1111 WebUI · :7860</div></div>
       </button>
-      <button class="vbtn" onclick="App.openVideoTool('sadtalker')">
+      <button class="vbtn" data-gpu onclick="App.openVideoTool('sadtalker')">
         <span class="vi">🎭</span><div><div class="vt">SadTalker</div><div class="vs">Talking-head from image + audio</div></div>
       </button>
-      <button class="vbtn" onclick="App.openVideoTool('animatediff')">
+      <button class="vbtn" data-gpu onclick="App.openVideoTool('animatediff')">
         <span class="vi">🎬</span><div><div class="vt">AnimateDiff</div><div class="vs">Text prompt → looping animation</div></div>
       </button>
-      <button class="vbtn" onclick="App.openVideoTool('ltx_video')">
+      <button class="vbtn" data-gpu onclick="App.openVideoTool('ltx_video')">
         <span class="vi">🌀</span><div><div class="vt">LTX-2</div><div class="vs">Prompt / image → short video clip</div></div>
       </button>
       <button class="vbtn" onclick="App.openVideoTool('whisper')">
         <span class="vi">🎙</span><div><div class="vt">Whisper</div><div class="vs">Speech-to-text transcription</div></div>
       </button>
-      <button class="vbtn" onclick="window.open('http://localhost:5003','_blank')">
+      <button class="vbtn" data-gpu onclick="window.open('http://localhost:5003','_blank')">
         <span class="vi">🔊</span><div><div class="vt">TortoiseTTS</div><div class="vs">Text-to-speech · :5003</div></div>
       </button>
     </div>
@@ -1144,12 +1151,50 @@ const App = {
     this.buildStyleChips();
     this.loadCustomStyles();
     this.loadCheckpointOptions();
-    this.checkSD();
+    this.loadImageSource();
     this.toast(restored ? 'Design Center — session restored ✦' : 'Design Center ready ✦  V T I R E S A — tools');
+  },
+
+  // ── Image source ─────────────────────────────────────────────
+  // Local Stable Diffusion, or an OpenAI-compatible image endpoint chosen on Arynwood's
+  // Servers page (/api/images/config). Re-read whenever the panel opens: this page stays
+  // mounted while the owner changes it there. In CPU mode, GPU-only tools are marked.
+  imageSource: { source: 'local', server: null, model: null, cpu_mode: false },
+
+  async loadImageSource() {
+    try {
+      const r = await fetch('/api/images/config');
+      if (r.ok) this.imageSource = await r.json();
+    } catch { /* backend not available */ }
+    const endpoint = this.imageSource.source === 'endpoint';
+    document.getElementById('pnl-gen').classList.toggle('endpoint-mode', endpoint);
+    document.querySelectorAll('.vbtn[data-gpu]').forEach(btn => {
+      const off = this.imageSource.cpu_mode;
+      btn.classList.toggle('gpu-off', off);
+      btn.disabled = off;
+      btn.title = off ? 'Needs an NVIDIA GPU. CPU mode is on (Arynwood → Tools).' : '';
+      let tag = btn.querySelector('.gpu-tag');
+      if (off && !tag) { tag = document.createElement('span'); tag.className = 'gpu-tag'; tag.textContent = 'GPU'; btn.appendChild(tag); }
+      if (!off && tag) tag.remove();
+    });
+    await this.checkSD();
   },
 
   // ── SD status ────────────────────────────────────────────────
   async checkSD() {
+    const src = this.imageSource;
+    const statusEl = document.getElementById('sd-status');
+    if (src.source === 'endpoint' || src.cpu_mode) {
+      document.getElementById('sd-vram-row').style.display = 'none';
+      if (src.source === 'endpoint') {
+        statusEl.className = 'ok';
+        statusEl.textContent = `✓ Images from ${src.server?.name || 'your endpoint'} · ${src.model}`;
+      } else {
+        statusEl.className = 'err';
+        statusEl.textContent = 'Image generation needs an NVIDIA GPU, and CPU mode is on. To use an image endpoint instead, open Servers in Arynwood and choose “Use for images”.';
+      }
+      return;
+    }
     try {
       const r = await fetch('/api/tools/sd/status');
       const d = await r.json();
@@ -1341,7 +1386,7 @@ const App = {
     // disable paint overlay for every tool except draw — must run before the early returns
     if(t!=='draw'){const pc=document.getElementById('paint-canvas');if(pc)pc.style.pointerEvents='none';}
     if (t==='image'){document.getElementById('file-inp').click();return;}
-    if (t==='generate'){this.showPnl('generate');this.checkSD();return;}
+    if (t==='generate'){this.showPnl('generate');this.loadImageSource();return;}
     if (t==='video'){this.showPnl('video');return;}
     if (t==='train'){this.openLoraTrain();return;}
     if (t==='draw'){this.showPnl('draw');this.initPaintCanvas();return;}
@@ -2734,6 +2779,24 @@ const App = {
         steps: +document.getElementById('gen-steps').value,
         cfg_scale:+document.getElementById('gen-cfg').value,
       };
+      if (this.imageSource.source === 'endpoint') {
+        // An endpoint takes a plain prompt: trained LoRAs are local Stable Diffusion only.
+        const prompt2 = style.custom ? prompt : styledPrompt;
+        const body = { prompt: prompt2, width: base.width, height: base.height };
+        if (this.i2iBase64) body.image = this.i2iBase64;
+        const res = await fetch(this.i2iBase64 ? '/api/images/edit' : '/api/images/generate',
+          { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+        if (!res.ok) {
+          let msg = 'Image endpoint error ' + res.status;
+          try { const err = await res.json(); msg = err.detail || msg; } catch {}
+          throw new Error(msg);
+        }
+        const data = await res.json();
+        const el = this.makeImage('data:image/png;base64,' + data.images[0], (this.design.w-base.width)/2, (this.design.h-base.height)/2, base.width, base.height);
+        this.els.push(el); this.renderEl(el); this.selectEl(el.id); this.renderLayers(); this.snap();
+        this.toast(style.custom ? 'Image generated ✦ (trained LoRAs apply to local Stable Diffusion only)' : 'Image generated ✦');
+        return;
+      }
       let endpoint = '/api/tools/sd/generate';
       let payload = base;
       if (this.i2iBase64) {

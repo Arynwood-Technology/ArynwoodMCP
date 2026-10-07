@@ -28,6 +28,16 @@ export function TopBar({ title }: { title: string }) {
           <kbd className="rounded border border-border px-1 py-px font-sans text-[10px]">⌘K</kbd>
         </button>
 
+        {status?.cpu_mode?.enabled && (
+          <button
+            type="button"
+            onClick={() => setStatusDrawerOpen(true)}
+            title="CPU mode is on: tools that need an NVIDIA GPU are switched off (Tools). Open system status."
+            className="cursor-pointer rounded border border-border bg-surface2 px-2 py-0.5 text-[11px] text-muted transition-colors hover:border-accent"
+          >
+            CPU mode
+          </button>
+        )}
         {gpu?.available && (
           // Doubles as the entry point to the full GPU/queue breakdown, so the
           // number here is a summary of the drawer rather than a rival to it.

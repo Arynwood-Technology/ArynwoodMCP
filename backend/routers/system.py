@@ -5,9 +5,12 @@ import signal
 import subprocess
 import sys
 import re
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 import httpx
+from pydantic import BaseModel
 
+from backend.db import get_db
+from backend.services import machine
 from backend.services.gpu_jobs import gpu_queue
 
 router = APIRouter()
@@ -93,7 +96,29 @@ async def get_status():
         "gpu": get_gpu_info(),
         "platform": platform.system(),
         "can_restart": can_restart(),
+        "cpu_mode": machine.state(),
     }
+
+
+class CpuModeUpdate(BaseModel):
+    setting: str
+
+
+@router.get("/cpu-mode")
+async def get_cpu_mode(db=Depends(get_db)):
+    """GET /cpu-mode — {enabled, setting: auto|on|off, nvidia_gpu}. See backend/services/machine.py."""
+    await machine.load_setting(db)
+    return machine.state()
+
+
+@router.put("/cpu-mode")
+async def put_cpu_mode(body: CpuModeUpdate, db=Depends(get_db)):
+    """PUT /cpu-mode — the owner's choice from Tools: auto (on without an NVIDIA GPU), on or off."""
+    try:
+        await machine.set_setting(db, body.setting)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return machine.state()
 
 
 @router.post("/restart")
