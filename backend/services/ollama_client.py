@@ -10,6 +10,7 @@ sycamore/transforms/embed.py OllamaEmbedder.
 
 import logging
 import os
+import re
 from datetime import datetime
 from typing import Any, AsyncIterator, Optional, Sequence
 
@@ -100,6 +101,54 @@ async def _ollama_options(model: str, host: Optional[str], port: Optional[int], 
     return merged
 
 
+# Some Ollama chat templates render the system prompt only when no tools are attached. hermes3's
+# is `{{ if .Tools }} <its own tool instructions> {{ else if .System }} {{ .System }} {{ end }}`, and
+# its message loop skips system-role messages, so with tools the model never saw central's persona,
+# memories, Agent Config notes or the untrusted-data rule (found 2026-10-06: told to answer in French
+# and sign as "Lumen", it answered in English as a generic assistant once a tool was attached).
+# For such a template, the system content goes to the model as a leading user message instead,
+# which hermes3 follows (tested: same instructions, tools still called).
+_TOOLS_ELSE_SYSTEM = re.compile(r"if\s+\.Tools\b(.*?)else\s+if\s+\.System\b", re.S)
+_drops_system: dict[tuple[str, str], bool] = {}
+SYSTEM_AS_USER_LEAD = ("Instructions for this conversation, set by the app you are running in. "
+                       "Follow them in every reply:\n<instructions>\n")
+
+
+def template_drops_system_with_tools(template: str) -> bool:
+    """Whether an Ollama chat template leaves out .System whenever .Tools is set."""
+    m = _TOOLS_ELSE_SYSTEM.search(template or "")
+    return bool(m) and ".System" not in m.group(1)
+
+
+async def _drops_system_with_tools(model: str, host: Optional[str], port: Optional[int]) -> bool:
+    key = (_normalize_host(resolve_host(host, port)), model)
+    if key not in _drops_system:
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                r = await client.post(f"{resolve_host(host, port)}/api/show", json={"model": model})
+            r.raise_for_status()
+            _drops_system[key] = template_drops_system_with_tools(r.json().get("template", ""))
+        except Exception:
+            return False   # unknown: leave the request as it is, and ask again next time
+    return _drops_system[key]
+
+
+def system_as_leading_user_message(messages: list[dict]) -> list[dict]:
+    """The system messages' content as one leading user message, for a template that would
+    drop it. Everything else stays in order."""
+    system = "\n\n".join(m["content"] for m in messages if m.get("role") == "system" and m.get("content"))
+    if not system:
+        return messages
+    rest = [m for m in messages if m.get("role") != "system"]
+    return [{"role": "user", "content": SYSTEM_AS_USER_LEAD + system + "\n</instructions>"}, *rest]
+
+
+async def _ollama_messages(model: str, messages: list[dict], tools, host, port) -> list[dict]:
+    if tools and await _drops_system_with_tools(model, host, port):
+        return system_as_leading_user_message(messages)
+    return messages
+
+
 def _keep_alive(host: Optional[str], port: Optional[int]) -> Optional[str]:
     """In CPU mode, keep a local model loaded for an hour instead of Ollama's five minutes:
     loading it again from disk is a minute or more on a CPU-only server. None = Ollama's default."""
@@ -151,9 +200,10 @@ async def chat(
             raise
     client = get_async_client(host, port, timeout)
     start = datetime.now()
+    sent = await _ollama_messages(model, messages, tools, host, port)
     try:
         response = await client.chat(
-            model=model, messages=messages, tools=tools,
+            model=model, messages=sent, tools=tools,
             options=await _ollama_options(model, host, port, options),
             keep_alive=_keep_alive(host, port),
         )
@@ -207,9 +257,10 @@ async def chat_stream(
             raise
     client = get_async_client(host, port, timeout)
     start = datetime.now()
+    sent = await _ollama_messages(model, messages, tools, host, port)
     try:
         stream = await client.chat(
-            model=model, messages=messages, stream=True, tools=tools,
+            model=model, messages=sent, stream=True, tools=tools,
             options=await _ollama_options(model, host, port, options),
             keep_alive=_keep_alive(host, port),
         )

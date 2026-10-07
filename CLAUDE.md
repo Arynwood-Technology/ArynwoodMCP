@@ -485,6 +485,21 @@ the uncalibrated estimate puts central's persona prompt + tool schemas at ~3,800
 Ollama started with `CUDA_VISIBLE_DEVICES=-1` still loaded onto the GPU; pass
 `options.num_gpu: 0` when you need CPU-only inference.
 
+### hermes3's template drops the system prompt when tools are attached (fixed 2026-10-06)
+Ollama's hermes3 template is `{{ if .Tools }} <its tool instructions> {{ else if .System }}
+{{ .System }} {{ end }}`, and its message loop skips system-role messages. So from 0.4.6 (Hermes 3
+the default) every tool-enabled round — central's first round, which is usually the reply,
+glyph's, the MCP tool loop and the agent loop — ran with no system prompt: no persona,
+memories, Agent Config notes, untrusted-data rule or AGENT.md. Found by prompt token counts
+(751 vs 2,415 for the same request on llama3.2) and confirmed live (told to answer in French
+as "Lumen", it answered in English as a generic assistant once a tool was attached).
+`ollama_client` now reads each model's template once (`/api/show`) and, when
+`template_drops_system_with_tools` is true, sends the system content as a leading user
+message (`system_as_leading_user_message`). Other installed models (llama3.2, granite3.3,
+phi4-mini, gemma4, nemotron) render both and are left alone. Any eval score from before this
+fix was measured without the system prompt on tool rounds. Tests:
+`tests/test_template_system_prompt.py`.
+
 ### Ollama remote host
 Remote Ollama is at whatever host is configured for it (see the Servers page / `servers` table). The local instance is at `localhost:11434`. Both are seeded into `config/arynwood.db` on first `init_db()`. Chat's server picker sends `server_host`/`server_port` per request.
 

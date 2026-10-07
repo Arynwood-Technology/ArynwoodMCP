@@ -30,6 +30,12 @@ on another computer can run what this one can't.
 
 ### Fixed
 
+- **Arynwood (central) kept its instructions only on rounds without tools.** Ollama's
+  hermes3 template leaves the system prompt out whenever tools are attached, so on most
+  replies, since 0.4.6 made Hermes 3 the default, the model saw neither the persona, nor
+  memories, Agent Config notes or the rule to treat web and tool content as data. The same
+  held for the Kdenlive tool loop's instructions. For a template like that, Arynwood now
+  sends the instructions as the first user message.
 - The backend no longer outlives a crashed or killed app. It used to keep port 8010, so the
   next launch failed until it was killed by hand. It now exits within a couple of seconds of
   the app, and a relaunch waits for it.
