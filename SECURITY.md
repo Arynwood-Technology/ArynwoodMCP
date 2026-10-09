@@ -70,6 +70,9 @@ triaged quickly.
   `?token=` query parameter.
 - **No enforced offline mode.** Web search, URL learning, downloads, social APIs, publishing,
   deploys, IRC and configured remote model, image or MCP servers all send data out when used.
+  Automatic update checks contact GitHub at startup and every six hours while open, using
+  public release metadata without credentials or workspace content; GitHub sees normal
+  connection metadata, including the user's IP address.
   A chat endpoint receives each turn's prompt, including memories and knowledge excerpts; an
   image endpoint receives prompts and base images ([docs/endpoints.md](docs/endpoints.md)).
 - **The Linux desktop build grants microphone and camera requests automatically**

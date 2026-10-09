@@ -9,6 +9,20 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+## [0.4.8] — 2026-10-09
+
+### Added
+
+- **Automatic update notices.** Arynwood checks GitHub's latest stable release at startup
+  and every six hours while open, and displays a dismissible banner across the workspace.
+  **View update** opens the official release page in the system browser; installation is
+  manual. Dismissal is remembered for that version; later versions show a new notice.
+- Checks use public release metadata only, without credentials or workspace content, with
+  a ten-second timeout and a bounded response. Offline and rate-limited checks stay quiet
+  and retry at the next interval. The public demo does not check for updates.
+
+Users on 0.4.7 or earlier must install 0.4.8 manually once to receive future notices.
+
 ## [0.4.7] — 2026-10-09
 
 One program for every computer: features that need an NVIDIA GPU are marked, and an endpoint
