@@ -189,3 +189,17 @@ def test_open_repo_target_opens_the_source_repo(client, monkeypatch):
     assert client.post("/api/community/open", params={"target": "repo"}).json() == {"url": external_paths.COMMUNITY_REPO_URL}
     assert launched == [["xdg-open", external_paths.COMMUNITY_REPO_URL]]
     assert client.post("/api/community/open", params={"target": "file:///etc"}).status_code == 400
+
+
+@pytest.mark.parametrize("name, ok", [("Arynwood Grove", True), ("Arynwood Community", True), ("Something Else", False)])
+def test_health_recognises_community_and_its_grove_successor(monkeypatch, name, ok):
+    """Community 0.4 reports itself as Arynwood Grove; both count as running, nothing else does."""
+    import asyncio
+    import httpx
+
+    def answer(request):
+        return httpx.Response(200, json={"status": "ok", "name": name, "version": "0.4.0"})
+    real = httpx.AsyncClient
+    monkeypatch.setattr(community.httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(answer), **kw))
+    info = asyncio.run(community.health("http://127.0.0.1:8018"))
+    assert (info == {"version": "0.4.0", "name": name}) if ok else info is None

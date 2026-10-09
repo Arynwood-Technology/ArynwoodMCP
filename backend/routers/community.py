@@ -34,6 +34,8 @@ from backend._frozen import sanitize_environ_for_children, xdg_data_dir
 router = APIRouter()
 
 LABEL = "Arynwood Community"
+# Community 0.4 is Arynwood Grove; its health check reports that name.
+NAMES = ("Arynwood Grove", LABEL)
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
 STARTUP_GRACE_SECONDS = 1.5
 # Mirrors the checks in Community's own start.sh — report them instead of letting it exit.
@@ -96,7 +98,7 @@ def managed_pid() -> int | None:
 
 
 async def health(url: str | None = None) -> dict | None:
-    """{"version": ...} when Community answers at url, else None."""
+    """{"version": ..., "name": ...} when Community (or Grove) answers at url, else None."""
     url = url or community_url()
     try:
         async with httpx.AsyncClient(timeout=2.0 if is_local(url) else 6.0, follow_redirects=True) as client:
@@ -111,8 +113,8 @@ async def health(url: str | None = None) -> dict | None:
         body = r.json()
     except ValueError:
         return None
-    if r.status_code == 200 and body.get("name") == LABEL:
-        return {"version": body.get("version")}
+    if r.status_code == 200 and body.get("name") in NAMES:
+        return {"version": body.get("version"), "name": body["name"]}
     return None
 
 
@@ -138,7 +140,7 @@ async def status():
         state = "stopped"
 
     return {
-        "label": LABEL,
+        "label": (info or {}).get("name") or LABEL,
         "mode": "local" if local else "remote",
         "url": url,
         "status": state,
