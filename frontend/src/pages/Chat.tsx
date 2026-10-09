@@ -655,7 +655,7 @@ export function Chat() {
   }
 
   const doSend = (text: string, withAttachment: { name: string; text: string } | null) => {
-    if ((!text.trim() && !withAttachment) || streaming || !wsReady || pendingApproval) return
+    if ((!text.trim() && !withAttachment) || streaming || !wsReady || !activeServer || pendingApproval) return
     lastSentRef.current = { text, attachment: withAttachment }
     const fullMessage = withAttachment
       ? `[File: ${withAttachment.name}]\n\`\`\`\n${withAttachment.text}\n\`\`\`\n\n${text}`
@@ -702,7 +702,7 @@ export function Chat() {
     setAttachment(null)
   }
 
-  const canSend = (!!input.trim() || !!attachment) && !streaming && wsReady && !pendingApproval
+  const canSend = (!!input.trim() || !!attachment) && !streaming && wsReady && !!activeServer && !pendingApproval
 
   return (
     <div className="flex h-full overflow-hidden">

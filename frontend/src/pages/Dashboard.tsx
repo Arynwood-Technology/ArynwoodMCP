@@ -126,7 +126,7 @@ function ArynwoodChat() {
 
   const send = useCallback(() => {
     const text = input.trim()
-    if ((!text && !attachment) || streaming || !wsReady) return
+    if ((!text && !attachment) || streaming || !wsReady || !activeServer) return
     const fullMessage = attachment ? `[File: ${attachment.name}]\n\`\`\`\n${attachment.text}\n\`\`\`\n\n${text}` : text
     setInput(''); setAttachment(null); setStreaming(true)
     setMsgs(p => [...p, { id: Date.now(), role: 'user', text: attachment ? `📎 ${attachment.name}${text ? ` — ${text}` : ''}` : text }])
@@ -134,7 +134,7 @@ function ArynwoodChat() {
   }, [input, attachment, streaming, wsReady, activeServer, activeModel, setMsgs])
 
   const modelServers = servers.filter(s => s.enabled)
-  const canSend = wsReady && !streaming && (!!input.trim() || !!attachment)
+  const canSend = wsReady && !!activeServer && !streaming && (!!input.trim() || !!attachment)
 
   return (
     <div className="flex h-full flex-col">
