@@ -1,0 +1,133 @@
+name: Verify release artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing draft release tag
+        required: true
+        type: string
+      linux_run_id:
+        description: Successful tagged Linux release workflow run
+        required: true
+        type: string
+      windows_run_id:
+        description: Successful tagged Windows desktop workflow run
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ inputs.tag }}
+      LINUX_RUN_ID: ${{ inputs.linux_run_id }}
+      WINDOWS_RUN_ID: ${{ inputs.windows_run_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify artifact provenance and draft status
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$LINUX_RUN_ID" =~ ^[0-9]+$ && "$WINDOWS_RUN_ID" =~ ^[0-9]+$ ]]
+          tag_sha=$(gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_TAG" --jq .sha)
+          for entry in "$LINUX_RUN_ID:Release (Linux)" "$WINDOWS_RUN_ID:Windows desktop"; do
+            run_id=${entry%%:*}
+            run_name=${entry#*:}
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id" > "$RUNNER_TEMP/run.json"
+            jq -e --arg tag "$RELEASE_TAG" --arg sha "$tag_sha" --arg name "$run_name" \
+              '.conclusion == "success" and .event == "push" and .head_branch == $tag and .head_sha == $sha and .name == $name' \
+              "$RUNNER_TEMP/run.json"
+          done
+          gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft | grep -x true
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-desktop
+          run-id: ${{ inputs.linux_run_id }}
+          github-token: ${{ github.token }}
+          path: artifacts/linux
+      - uses: actions/download-artifact@v4
+        with:
+          name: arynwood-windows-x64
+          run-id: ${{ inputs.windows_run_id }}
+          github-token: ${{ github.token }}
+          path: artifacts/windows
+      - name: Verify checksums and package versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=${RELEASE_TAG#v}
+          # upload-artifact preserves the Linux appimage/deb subdirectories.
+          find artifacts/linux -mindepth 2 -type f \( -name '*.AppImage' -o -name '*.deb' \) -exec mv -t artifacts/linux {} +
+          (cd artifacts/linux && sha256sum -c SHA256SUMS.txt)
+          (cd artifacts/windows && sha256sum -c SHA256SUMS-windows.txt)
+          test "$(dpkg-deb -f "artifacts/linux/arynwood-mcp_${version}_amd64.deb" Version)" = "$version"
+          test -f "artifacts/windows/arynwood-mcp_${version}_x64-setup.exe"
+          cat artifacts/linux/SHA256SUMS.txt artifacts/windows/SHA256SUMS-windows.txt > artifacts/SHA256SUMS-all.txt
+      - name: Install isolated verification dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb python3-gi gir1.2-webkit2-4.1 ffmpeg pulseaudio \
+            gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-ugly gstreamer1.0-libav
+          python3 -m pip install pyinstaller
+      - name: Extract and inspect the official AppImage
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=${RELEASE_TAG#v}
+          chmod +x "artifacts/linux/arynwood-mcp_${version}_amd64.AppImage"
+          mkdir extracted
+          (cd extracted && "$GITHUB_WORKSPACE/artifacts/linux/arynwood-mcp_${version}_amd64.AppImage" --appimage-extract > extract.log)
+          test -x extracted/squashfs-root/AppRun
+          test -x extracted/squashfs-root/AppRun.wrapped
+          test "$(find extracted/squashfs-root/usr/lib/gstreamer-1.0 -name 'libgst*.so' | wc -l)" -eq 42
+          python3 - <<'PY'
+          import re
+          from PyInstaller.archive.readers import CArchiveReader
+          archive = CArchiveReader('extracted/squashfs-root/usr/bin/arynwood-backend')
+          forbidden = [name for name in archive.toc if re.search(
+              r'(^|/)(\.env|mcp_servers\.json|personas\.local\.json|MEMORY\.md)$|\.db(?:-(?:wal|shm))?$', name)]
+          assert not forbidden, forbidden
+          print('PASS no private configuration, databases or memory files in frozen archive')
+          PY
+      - name: Smoke-test the extracted frozen backend
+        run: python3 scripts/smoke_packaged_backend.py extracted/squashfs-root/usr/bin/arynwood-backend
+      - name: Verify bundled WebKitGTK playback and recording
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir media
+          ffmpeg -v error -f lavfi -i sine=frequency=440:duration=2 media/a.wav
+          ffmpeg -v error -i media/a.wav media/a.mp3
+          ffmpeg -v error -f lavfi -i color=c=blue:s=160x120:d=2 -f lavfi -i sine=frequency=440:duration=2 \
+            -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest media/a.mp4
+          pulseaudio --start
+          pactl load-module module-null-sink sink_name=release_test
+          pactl set-default-sink release_test
+          bundle="$GITHUB_WORKSPACE/extracted/squashfs-root"
+          cd "$bundle/usr"
+          xvfb-run -a env LD_LIBRARY_PATH="$bundle/usr/lib" \
+            GST_PLUGIN_SYSTEM_PATH_1_0="$bundle/usr/lib/gstreamer-1.0" \
+            GST_PLUGIN_PATH_1_0="$bundle/usr/lib/gstreamer-1.0" \
+            GST_PLUGIN_SCANNER_1_0="$bundle/usr/lib/gstreamer1.0/gstreamer-1.0/gst-plugin-scanner" \
+            GST_REGISTRY="$RUNNER_TEMP/media-registry.bin" GST_REGISTRY_REUSE_PLUGIN_SCANNER=no \
+            WEBKIT_DISABLE_DMABUF_RENDERER=1 python3 "$GITHUB_WORKSPACE/scripts/check_webkit_media.py" \
+            "$GITHUB_WORKSPACE/media" audio:a.wav audio:a.mp3 video:a.mp4 recorder
+      - name: Attach verified Windows installer to the draft release
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft | grep -x true
+          gh release upload "$RELEASE_TAG" artifacts/windows/*-setup.exe artifacts/windows/SHA256SUMS-windows.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-release-checksums
+          path: artifacts/SHA256SUMS-all.txt
