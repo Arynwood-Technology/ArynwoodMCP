@@ -132,13 +132,13 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
   color:var(--muted);margin-bottom:9px;font-family:'JetBrains Mono',monospace}
 .pr{display:flex;align-items:center;gap:5px;margin-bottom:7px}
 .pl{font-size:11px;color:var(--muted);min-width:54px;flex-shrink:0}
-.pi{flex:1;background:var(--s2);border:1px solid var(--border);color:var(--text);
+.pi{flex:1;min-width:0;background:var(--s2);border:1px solid var(--border);color:var(--text);
   font-family:'Inter',sans-serif;font-size:12px;padding:4px 6px;border-radius:5px;outline:none}
 .pi:focus{border-color:var(--accent)}
 .pi[type=color]{padding:2px;cursor:pointer;height:28px;min-width:28px;flex:0 0 28px}
 .pi[type=range]{padding:0;cursor:pointer;accent-color:var(--accent)}
 .pi[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex:0}
-.psel{flex:1;background:var(--s2);border:1px solid var(--border);color:var(--text);
+.psel{flex:1;min-width:0;max-width:100%;background:var(--s2);border:1px solid var(--border);color:var(--text);
   font-family:'Inter',sans-serif;font-size:12px;padding:4px 6px;border-radius:5px}
 .font-preview{background:var(--s2);border:1px solid var(--border);border-radius:5px;
   color:var(--text);font-size:20px;line-height:1.2;padding:8px 10px;margin-bottom:9px;
@@ -176,7 +176,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;
   font-size:12px;padding:6px 8px;border-radius:6px;resize:vertical;min-height:64px;outline:none;
   margin-bottom:7px;font-family:'Inter',sans-serif}
 .gen-area:focus{border-color:var(--accent)}
-.gen-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:6px}
+.gen-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-bottom:6px}
+.gen-grid .pi{width:100%}
+#gen-checkpoint{width:100%}
 .gen-lbl{font-size:9.5px;color:var(--muted);margin-bottom:2px}
 .gen-btn{width:100%;padding:8px;background:linear-gradient(135deg,var(--accent),#a855f7);
   border:none;border-radius:6px;color:#fff;font-weight:600;font-size:12px;cursor:pointer;transition:opacity .15s}
