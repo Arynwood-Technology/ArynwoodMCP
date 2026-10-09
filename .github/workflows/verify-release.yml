@@ -91,7 +91,8 @@ jobs:
           (cd extracted && "$GITHUB_WORKSPACE/artifacts/linux/arynwood-mcp_${version}_amd64.AppImage" --appimage-extract > extract.log)
           test -x extracted/squashfs-root/AppRun
           test -x extracted/squashfs-root/AppRun.wrapped
-          test "$(find extracted/squashfs-root/usr/lib/gstreamer-1.0 -name 'libgst*.so' | wc -l)" -eq 42
+          GSTREAMER_PLUGINS_DIR="$GITHUB_WORKSPACE/extracted/squashfs-root/usr/lib/gstreamer-1.0" \
+            scripts/stage_gstreamer_plugins.sh "$RUNNER_TEMP/verified-plugins" > /dev/null
           python3 - <<'PY'
           import re
           from PyInstaller.archive.readers import CArchiveReader
