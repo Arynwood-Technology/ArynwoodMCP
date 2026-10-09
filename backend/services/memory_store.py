@@ -38,6 +38,9 @@ async def retrieve(db, query: str, limit=8, include_pinned=True) -> list[dict]:
     ) as cur:
         rows = [dict(r) for r in await cur.fetchall()]
     rows = [r for r in rows if not stale(r)]
+    if not rows:
+        runtime_context.record_evidence('memory', ids=[], project_id=scope)
+        return []
     pinned = [r for r in rows if r['pinned']] if include_pinned else []
     pinned_ids = {r['id'] for r in pinned}
     ids = await memory_index.search_relevant_memory_ids(query, top_k=max(32, limit * 4))

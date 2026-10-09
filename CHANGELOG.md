@@ -32,6 +32,7 @@ on another computer can run what this one can't.
 
 ### Fixed
 
+- Empty in-scope memory skips embedding and vector requests instead of delaying a new chat.
 - **Arynwood (central) kept its instructions only on rounds without tools.** Ollama's
   hermes3 template leaves the system prompt out whenever tools are attached, so on most
   replies, since 0.4.6 made Hermes 3 the default, the model saw neither the persona, nor
