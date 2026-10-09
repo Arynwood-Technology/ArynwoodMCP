@@ -74,7 +74,8 @@ jobs:
       - name: Install isolated verification dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends xvfb python3-gi gir1.2-gtk-3.0 pulseaudio
+          sudo apt-get install -y --no-install-recommends xvfb python3-gi gir1.2-gtk-3.0 pulseaudio \
+            libegl1 libgl1 libgles2 libasound2
           # The AppImage already contains WebKitGTK and GStreamer. Fetch only GI
           # metadata instead of installing another media stack and ffmpeg.
           mkdir -p typelib-packages typelibs
