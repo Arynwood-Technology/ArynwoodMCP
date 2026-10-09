@@ -67,10 +67,10 @@ jobs:
           # upload-artifact preserves the Linux appimage/deb subdirectories.
           find artifacts/linux -mindepth 2 -type f \( -name '*.AppImage' -o -name '*.deb' \) -exec mv -t artifacts/linux {} +
           (cd artifacts/linux && sha256sum -c SHA256SUMS.txt)
-          (cd artifacts/windows && sha256sum -c SHA256SUMS-windows.txt)
+          (cd artifacts/windows && tr -d '\r' < SHA256SUMS-windows.txt | sha256sum -c -)
           test "$(dpkg-deb -f "artifacts/linux/arynwood-mcp_${version}_amd64.deb" Version)" = "$version"
           test -f "artifacts/windows/arynwood-mcp_${version}_x64-setup.exe"
-          cat artifacts/linux/SHA256SUMS.txt artifacts/windows/SHA256SUMS-windows.txt > artifacts/SHA256SUMS-all.txt
+          cat artifacts/linux/SHA256SUMS.txt artifacts/windows/SHA256SUMS-windows.txt | tr -d '\r' > artifacts/SHA256SUMS-all.txt
       - name: Install isolated verification dependencies
         run: |
           sudo apt-get update
