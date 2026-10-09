@@ -47,8 +47,8 @@ def test_unknown_property_is_ignored():
     assert _validate_tool_arguments({"track_id": 1, "mystery_field": "x"}, SCHEMA) == []
 
 
-def test_non_dict_schema_returns_no_problems():
-    assert _validate_tool_arguments({"anything": 1}, None) == []
+def test_non_dict_schema_is_rejected():
+    assert _validate_tool_arguments({"anything": 1}, None)
 
 
 def _decision(tool_name: str, arguments: dict):

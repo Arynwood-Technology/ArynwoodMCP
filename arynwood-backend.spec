@@ -47,7 +47,7 @@ hiddenimports = [
     "uvicorn.lifespan.on",
 ]
 
-for pkg in ("uvicorn", "fastapi", "pydantic", "pydantic_core", "starlette", "paramiko", "lxml"):
+for pkg in ("uvicorn", "fastapi", "pydantic", "pydantic_core", "starlette", "paramiko", "lxml", "jsonschema", "jsonschema_specifications", "referencing", "rpds"):
     d, b, h = collect_all(pkg)
     datas += d
     binaries += b

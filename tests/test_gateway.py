@@ -4,6 +4,7 @@ so this runs without Ollama; everything else (chat._run_turn, SQLite, the routes
 
 import asyncio
 import json
+from backend.routers import mcp_proxy
 import time
 import uuid
 
@@ -326,6 +327,7 @@ def kdenlive(monkeypatch):
         return ["kdenlive"]
 
     monkeypatch.setattr(mcp_tool_agent, "_load_servers", lambda: {"kdenlive": {"url": "http://x"}})
+    monkeypatch.setattr(mcp_proxy, "_load_servers", lambda: {"kdenlive": {"url": "http://x"}})
     monkeypatch.setattr(mcp_tool_agent, "_mcp_post", post)
     monkeypatch.setattr(mcp_tool_agent, "select_servers", select)
     return calls

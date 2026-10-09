@@ -1,5 +1,6 @@
 """Request-scoped context shared by retrieval and tools; never global user state."""
 from contextvars import ContextVar
+from backend.services.secret_redaction import redact
 
 project_id: ContextVar[int | None] = ContextVar('project_id', default=None)
 conversation_id: ContextVar[int | None] = ContextVar('conversation_id', default=None)
@@ -11,4 +12,4 @@ evidence: ContextVar[list | None] = ContextVar('evidence', default=None)
 def record_evidence(kind: str, **details):
     events = evidence.get()
     if events is not None:
-        events.append({'kind': kind, **details})
+        events.append({'kind': kind, **redact(details)})

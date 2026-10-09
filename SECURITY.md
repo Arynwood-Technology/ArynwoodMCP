@@ -35,6 +35,14 @@ with no practical exploit) can go in a regular GitHub issue.
   after the owner's explicit yes, bound to that exact call, single-use and expiring. With
   nobody to approve, it's denied. Unreviewed MCP servers need approval for every call, and
   manifests can't grant themselves permission.
+- **MCP definitions are checked again before dispatch.** Agent turns snapshot server tool
+  definitions and refuse changed or removed definitions, duplicate tool names, and changed
+  server configuration. Direct proxy calls also recheck their discovered definition.
+  Arguments use JSON Schema validation with external schema retrieval disabled. This detects
+  advertised changes; it cannot prove server behavior or trust a malicious first catalog.
+- **Credential minimization.** Tool context and stored execution evidence redact common
+  credential keys and token patterns. This is best-effort, not an egress policy or a guarantee
+  that arbitrary secrets cannot reach a model.
 - **Untrusted text is marked as untrusted.** Web results, knowledge excerpts, tool output, and
   messages from anyone but the owner reach the model inside `<untrusted-data>`. They are
   never quoted as the owner's own words.

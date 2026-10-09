@@ -60,6 +60,7 @@ def servers(monkeypatch):
                      _tool("delete_clip", "delete a clip", ["clip_id"], {"clip_id": {"type": "integer"}})],
         "codebase": [_tool("read_file", "read a file", ["path"], {"path": {"type": "string"}})],
     })
+    monkeypatch.setattr(mcp_proxy, "_load_servers", fake.registry)
     monkeypatch.setattr(mcp_tool_agent, "_load_servers", fake.registry)
     monkeypatch.setattr(mcp_tool_agent, "_mcp_post", fake.post)
     monkeypatch.setenv("ARYNWOOD_ENABLE_CODEBASE_TOOLS", "1")
@@ -159,6 +160,7 @@ async def test_native_tool_tier_is_declared_not_guessed(servers, monkeypatch):
 async def test_tool_not_sent_but_in_the_catalog_is_still_callable(monkeypatch):
     catalog = [_tool(f"get_thing_{i}", "unrelated") for i in range(40)] + [_tool("get_project_info", "project")]
     fake = FakeServers({"kdenlive": catalog})
+    monkeypatch.setattr(mcp_proxy, "_load_servers", fake.registry)
     monkeypatch.setattr(mcp_tool_agent, "_load_servers", fake.registry)
     monkeypatch.setattr(mcp_tool_agent, "_mcp_post", fake.post)
     toolset = await prepare_toolset(["kdenlive"], focus="nothing in common")
@@ -173,6 +175,7 @@ async def test_schema_cap_counts_native_tools_and_shares_between_servers(monkeyp
         "kdenlive": [_tool(f"kd_{i}") for i in range(100)],
         "codebase": [_tool(f"cb_{i}") for i in range(5)],
     })
+    monkeypatch.setattr(mcp_proxy, "_load_servers", fake.registry)
     monkeypatch.setattr(mcp_tool_agent, "_load_servers", fake.registry)
     monkeypatch.setattr(mcp_tool_agent, "_mcp_post", fake.post)
     monkeypatch.setenv("ARYNWOOD_ENABLE_CODEBASE_TOOLS", "1")
@@ -286,3 +289,22 @@ async def test_find_symbol_fallback_finds_module_constants_and_points_onward():
     assert "backend/gateway/sessions.py" in found
     missing = (await mcp_codebase._find_symbol_fallback("NO_SUCH_SYMBOL_XYZZY", "test"))["content"][0]["text"]
     assert "(no matches)" in missing and "search_code" in missing
+
+
+async def test_duplicate_manifest_is_excluded(monkeypatch):
+    fake = FakeServers({'kdenlive': [_tool('get_clip'), _tool('get_clip', 'shadow')]})
+    monkeypatch.setattr(mcp_tool_agent, '_load_servers', fake.registry)
+    monkeypatch.setattr(mcp_tool_agent, '_mcp_post', fake.post)
+    toolset = await prepare_toolset(['kdenlive'])
+    assert not toolset and not toolset.callable
+
+
+async def test_catalog_swap_during_approval_blocks_execution(servers, monkeypatch):
+    toolset = await prepare_toolset(['kdenlive'])
+    async def approve(*args):
+        servers.catalogs['kdenlive'][1]['description'] = 'changed after discovery'
+        return True
+    _model(monkeypatch, [call('delete_clip', clip_id=1), 'Stopped.'])
+    result = await run_agent_loop(CONVERSATION, toolset, num_ctx=8192, approve=approve)
+    assert not servers.calls
+    assert result.calls[0]['outcome'] == 'error'

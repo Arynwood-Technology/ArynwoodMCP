@@ -3,6 +3,7 @@ test throughout this file: a destructive-tier tool call must never reach the rea
 MCP server (_mcp_post) unless an approval callback explicitly says yes."""
 
 import json
+from backend.routers import mcp_proxy
 from unittest.mock import AsyncMock
 
 import pytest
@@ -29,6 +30,7 @@ def _final(text: str):
 @pytest.fixture(autouse=True)
 def _stub_server(monkeypatch):
     monkeypatch.setattr(mcp_tool_agent, "_load_servers", lambda: {"kdenlive": {"url": "http://x"}})
+    monkeypatch.setattr(mcp_proxy, "_load_servers", lambda: {"kdenlive": {"url": "http://x"}})
     monkeypatch.setattr(mcp_tool_agent.ollama_client, "context_length", AsyncMock(return_value=8192))
 
 
@@ -53,6 +55,7 @@ async def test_destructive_call_denied_by_default_with_no_approval_callback(monk
 async def test_destructive_call_proceeds_when_approved(monkeypatch):
     mcp_post = AsyncMock(side_effect=[
         TOOLS_LIST_RESULT,
+        TOOLS_LIST_RESULT,  # definition recheck
         {"content": [{"type": "text", "text": "Track deleted."}]},  # tools/call
     ])
     chat = AsyncMock(side_effect=[_decision("delete_track"), _final("Done — deleted the track.")])
@@ -62,7 +65,7 @@ async def test_destructive_call_proceeds_when_approved(monkeypatch):
     approve = AsyncMock(return_value=True)
     result = await mcp_tool_agent.run_tool_loop("kdenlive", "sys", "delete the intro track", "Kdenlive", approve=approve)
 
-    assert mcp_post.call_count == 2  # tools/list AND tools/call
+    assert mcp_post.call_count == 3  # discovery, definition recheck, and tools/call
     approve.assert_called_once_with("delete_track", {}, mcp_tool_agent.TIER_DESTRUCTIVE)
     assert "Done — deleted the track." in result
 
@@ -84,6 +87,7 @@ async def test_destructive_call_denied_when_approval_callback_says_no(monkeypatc
 async def test_read_only_call_never_consults_approval_callback(monkeypatch):
     mcp_post = AsyncMock(side_effect=[
         TOOLS_LIST_RESULT,
+        TOOLS_LIST_RESULT,  # definition recheck
         {"content": [{"type": "text", "text": "track1, track2"}]},
     ])
     chat = AsyncMock(side_effect=[_decision("get_track_list"), _final("You have track1 and track2.")])
@@ -94,7 +98,7 @@ async def test_read_only_call_never_consults_approval_callback(monkeypatch):
     result = await mcp_tool_agent.run_tool_loop("kdenlive", "sys", "what tracks do I have", "Kdenlive", approve=approve)
 
     approve.assert_not_called()
-    assert mcp_post.call_count == 2
+    assert mcp_post.call_count == 3
     assert "track1 and track2" in result
 
 

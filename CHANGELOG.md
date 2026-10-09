@@ -9,7 +9,7 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
-## [0.4.7] — 2026-10-07
+## [0.4.7] — 2026-10-09
 
 One program for every computer: features that need an NVIDIA GPU are marked, and an endpoint
 on another computer can run what this one can't.
@@ -44,6 +44,12 @@ on another computer can run what this one can't.
 
 ### Security
 
+- MCP agent and proxy calls bind discovered tool metadata to the reviewed operation and
+  re-fetch definitions before dispatch. Changed or removed tools, duplicate catalog names,
+  and changed server configuration fail closed. Manifests still cannot grant permission.
+- Tool arguments use JSON Schema validation with external reference retrieval disabled.
+- Common credentials are redacted from tool context, stored steps and runtime evidence;
+  shared dispatch logs use intent digests instead of arguments. Redaction is best-effort.
 - The Servers API no longer returns stored tokens to the page; it reports only whether one
   is set.
 

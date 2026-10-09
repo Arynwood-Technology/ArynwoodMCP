@@ -36,6 +36,7 @@ escalation, schema validation, tiers and approval, evidence):
 
 from __future__ import annotations
 from backend.services import runtime_context, run_store
+from backend.services.secret_redaction import redact
 
 import json
 import asyncio
@@ -355,6 +356,7 @@ def _parse_call_objects(content: str) -> list[tuple[str, dict]]:
 
 
 def _result_to_text(result: dict) -> str:
+    result = redact(result)
     parts = [c.get("text", "") for c in result.get("content", []) if c.get("type") == "text"]
     if result.get('structuredContent') is not None:
         parts.append(json.dumps(result['structuredContent'], ensure_ascii=False))
@@ -407,8 +409,9 @@ class _CallRunner:
     """
 
     def __init__(self, *, schemas: dict, servers: dict, native: Optional[dict] = None,
-                 approve: Optional[ApprovalCallback] = None, model: str, ollama_url: str,
+                 approve: Optional[ApprovalCallback] = None, definitions: Optional[dict] = None, model: str, ollama_url: str,
                  num_ctx: int, ctx_ceiling: int):
+        self.definitions = definitions or {}
         self.schemas = schemas          # tool name -> inputSchema, for every tool that may be called
         self.servers = servers          # MCP tool name -> (server name, server config)
         self.native = native or {}      # tool name -> NativeTool
@@ -474,7 +477,7 @@ class _CallRunner:
         try:
             reviewed_arguments = json.loads(tool_policy.canonical(arguments))
             intent = (tool_policy.make_intent(source, self.servers[name][1], name,
-                      reviewed_arguments, self.schemas[name], self._policy_caller)
+                      reviewed_arguments, self.schemas[name], self._policy_caller, self.definitions.get(name))
                       if name not in self.native else None)
         except tool_policy.InvalidToolCall as exc:
             self._note(name, tier, "invalid")
@@ -500,7 +503,7 @@ class _CallRunner:
                 if current_config is None:
                     raise tool_policy.PolicyDenied("Tool server is no longer registered")
                 current = tool_policy.make_intent(source, current_config, name, reviewed_arguments,
-                                                  self.schemas[name], self._policy_caller)
+                                                  self.schemas[name], self._policy_caller, self.definitions.get(name))
                 if current.binding != intent.binding:
                     raise tool_policy.PolicyDenied("Reviewed tool call or configuration changed")
                 grant = tool_policy.authority.issue(intent)
@@ -546,7 +549,7 @@ class _CallRunner:
         step_id = await run_store.start_step(f'{source}.{name}', arguments)
         try:
             if name in self.native:
-                text = await self.native[name].handler(arguments)
+                text = redact(await self.native[name].handler(arguments))
                 outcome = 'success'
             else:
                 result = await tool_policy.dispatch(intent, _mcp_post, grant)
@@ -561,7 +564,7 @@ class _CallRunner:
                 self.seen_calls.difference_update(self.read_calls)
                 self.read_calls.clear()
         except Exception as exc:
-            text = f"ERROR: {exc}"
+            text = redact(f"ERROR: {exc}")
             outcome = 'error'
             telemetry.record_tool_call(source, name, "error")
             await run_store.finish_step(step_id, 'failed', text)
@@ -573,7 +576,7 @@ class _CallRunner:
 def _action_line(name: str, arguments: dict, text: str, ok: bool) -> tuple[str, str]:
     """One line of the factual call record run_tool_loop hands the persona, and its outcome:
     done, denied, rejected or failed."""
-    args = json.dumps(arguments, ensure_ascii=False, sort_keys=True)
+    args = json.dumps(redact(arguments), ensure_ascii=False, sort_keys=True)
     args = args if len(args) <= 160 else args[:159] + "…"
     first = (text or "").strip().splitlines()[0][:160] if (text or "").strip() else ""
     if first.startswith("DENIED"):
@@ -643,7 +646,11 @@ async def run_tool_loop(
     except Exception as exc:
         runtime_context.record_evidence("tool_service", server=server_name, outcome="unavailable", error=str(exc))
         return f"[{label} — unavailable] {exc}"
-    tools = [_as_function(t) for t in (tools_result or {}).get("tools", [])]
+    try:
+        definitions = tool_policy.tool_catalog(tools_result)
+    except tool_policy.InvalidToolCall:
+        return f"[{label} — invalid tool catalog]"
+    tools = [_as_function(t) for t in definitions.values()]
     if not tools:
         return ""
     tools = _filter_relevant_tools(tools, message)
@@ -652,7 +659,7 @@ async def run_tool_loop(
     native_ctx = await ollama_client.context_length(model, ollama_url)
     runner = _CallRunner(
         schemas=tool_schemas, servers={name: (server_name, server_cfg) for name in tool_schemas},
-        approve=approve, model=model, ollama_url=ollama_url,
+        definitions=definitions, approve=approve, model=model, ollama_url=ollama_url,
         num_ctx=min(native_ctx, MAX_TOOL_NUM_CTX), ctx_ceiling=MAX_TOOL_NUM_CTX,
     )
 
@@ -751,6 +758,7 @@ class Toolset:
     """Everything one agent turn may call, prepared before the turn's prompt is sized (the
     schemas take real context space)."""
     schemas: list[dict] = field(default_factory=list)    # sent to the model: at most MAX_TOOLS_PER_CALL
+    definitions: dict = field(default_factory=dict)
     callable: dict = field(default_factory=dict)         # tool name -> inputSchema, whole catalogs
     servers: dict = field(default_factory=dict)          # MCP tool name -> (server name, server config)
     native: dict = field(default_factory=dict)           # tool name -> NativeTool
@@ -785,17 +793,19 @@ async def prepare_toolset(server_names: Iterable[str], native_tools: Iterable[Na
         label = gates.get(name, {}).get("label", name)
         try:
             listed = await _mcp_post(registered[name], "tools/list", {})
+            definitions = tool_policy.tool_catalog(listed)
         except Exception as exc:
             runtime_context.record_evidence("tool_service", server=name, outcome="unavailable", error=str(exc))
             unavailable.append(f"{label}: {exc}")
             continue
         # First registration wins a name clash, so a call always has exactly one target.
-        tools = [t for t in map(_as_function, (listed or {}).get("tools", []))
+        tools = [t for t in map(_as_function, definitions.values())
                  if t["function"]["name"] not in toolset.callable]
         if not tools:
             continue
         for tool in tools:
             tool_name = tool["function"]["name"]
+            toolset.definitions[tool_name] = definitions[tool_name]
             toolset.callable[tool_name] = tool["function"]["parameters"]
             toolset.servers[tool_name] = (name, registered[name])
         ranked.append(_rank_tools(tools, focus))
@@ -886,7 +896,7 @@ async def run_agent_loop(
     """
     messages = list(messages)
     runner = _CallRunner(
-        schemas=toolset.callable, servers=toolset.servers, native=toolset.native,
+        schemas=toolset.callable, servers=toolset.servers, native=toolset.native, definitions=toolset.definitions,
         approve=approve, model=model, ollama_url=ollama_url, num_ctx=num_ctx, ctx_ceiling=num_ctx,
     )
     rounds = 0

@@ -8,10 +8,18 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import secrets
 import time
 from contextvars import ContextVar
 from dataclasses import dataclass
+
+from jsonschema import validators
+from jsonschema.exceptions import SchemaError, ValidationError
+from referencing import Registry
+from referencing.exceptions import NoSuchResource
+
+log = logging.getLogger('mcp.security')
 
 TIER_READ_ONLY = "read_only"
 TIER_REVERSIBLE = "reversible_write"
@@ -60,44 +68,36 @@ def classify_tool_tier(tool_name: str) -> str:
     return TIER_DESTRUCTIVE  # unrecognized name — fail toward requiring approval
 
 
-_JSON_TYPE_CHECKS = {
-    "integer": lambda v: isinstance(v, int) and not isinstance(v, bool),
-    "number": lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
-    "boolean": lambda v: isinstance(v, bool),
-    "string": lambda v: isinstance(v, str),
-    "array": lambda v: isinstance(v, list),
-    "object": lambda v: isinstance(v, dict),
-}
+def _deny_schema_fetch(uri):
+    # Untrusted schemas must never initiate filesystem or network retrieval.
+    raise NoSuchResource(ref=uri)
 
 
 def _validate_tool_arguments(arguments: dict, schema: dict) -> list[str]:
-    """Lightweight validation against a tool's inputSchema (roadmap 2.4) — checks
-    required-argument presence and basic type matching for the property types JSON
-    Schema actually uses. Not a full JSON Schema implementation (no oneOf/anyOf/
-    $ref/pattern/etc.): these ~180 tool schemas are generated from plain Python
-    function signatures, not hand-authored complex schemas, so this covers what
-    actually goes wrong — a missing required arg or a value of the wrong basic
-    type — without pulling in a dependency for the cases that don't occur here.
-    Returns a list of human-readable problems; empty if nothing's wrong.
-    """
+    """Validate full JSON Schema without including argument values in errors."""
     if not isinstance(arguments, dict):
-        return ["tool arguments must be an object"]
+        return ['tool arguments must be an object']
     if not isinstance(schema, dict):
-        return []
-    problems = []
-    props = schema.get("properties", {}) or {}
-    for field in schema.get("required", []) or []:
-        if field not in (arguments or {}):
-            problems.append(f'missing required argument "{field}"')
-    for name, value in (arguments or {}).items():
-        prop_schema = props.get(name)
-        if not isinstance(prop_schema, dict):
-            continue
-        expected = prop_schema.get("type")
-        check = _JSON_TYPE_CHECKS.get(expected) if isinstance(expected, str) else None
-        if check is not None and not check(value):
-            problems.append(f'argument "{name}" should be {expected}, got {type(value).__name__}')
-    return problems
+        return ['tool input schema must be an object']
+    try:
+        canonical(arguments)
+        canonical(schema)
+        validator_class = validators.validator_for(schema)
+        validator_class.check_schema(schema)
+        validator_class(schema, registry=Registry(retrieve=_deny_schema_fetch)).validate(arguments)
+    except ValidationError as exc:
+        # Preserve useful locations/keywords, but never interpolate secret values.
+        if exc.validator == 'required':
+            missing = [field for field in exc.validator_value if field not in exc.instance]
+            return [f'missing required argument {field!r}' for field in missing]
+        expected = f', expected {exc.validator_value}' if exc.validator == 'type' else ''
+        return [f'argument validation failed at {list(exc.absolute_path)} ({exc.validator}{expected})']
+    except (SchemaError, ValueError, TypeError, RecursionError):
+        return ['invalid or unsupported tool input schema']
+    except Exception:
+        # Includes unresolved references. Fail closed rather than fetch a remote schema.
+        return ['tool input schema could not be resolved or validated']
+    return []
 
 
 APPROVAL_TTL_SECONDS = 120.0
@@ -149,11 +149,12 @@ class CallIntent:
     tier: str
     caller: str
     created_at: float
+    definition_json: str | None = None
 
     @property
     def binding(self) -> str:
         data = [self.server, self.tool, self.config_json, self.arguments_json,
-                self.schema_json, self.tier, self.caller]
+                self.schema_json, self.tier, self.caller, self.definition_json]
         return hashlib.sha256(canonical(data).encode('utf-8')).hexdigest()
 
     @property
@@ -166,16 +167,21 @@ class CallIntent:
 
 
 def make_intent(server: str, config: dict, tool: str, arguments: dict,
-                schema: dict, caller: str) -> CallIntent:
+                schema: dict, caller: str, definition: dict | None = None) -> CallIntent:
     if not isinstance(arguments, dict):
         raise InvalidToolCall('Tool arguments must be an object')
     if not isinstance(schema, dict):
         raise InvalidToolCall('Tool input schema must be an object')
+    if definition is not None:
+        entry = tool_catalog({'tools': [definition]}).get(tool)
+        if entry is None or canonical(entry['inputSchema']) != canonical(schema):
+            raise InvalidToolCall('Tool definition does not match the call schema')
     problems = _validate_tool_arguments(arguments, schema)
     if problems:
         raise InvalidToolCall('; '.join(problems))
     return CallIntent(server, tool, canonical(config), canonical(arguments), canonical(schema),
-                      classify_mcp_tool(server, config, tool), caller, time.monotonic())
+                      classify_mcp_tool(server, config, tool), caller, time.monotonic(),
+                      canonical(definition) if definition is not None else None)
 
 
 class ApprovalAuthority:
@@ -220,17 +226,33 @@ def approval_metadata() -> dict:
 
 async def dispatch(intent: CallIntent, transport, grant: str | None = None):
     """The same authorization gate precedes model and direct-API MCP execution."""
+    # Digests correlate attempts without logging arguments, endpoints or credentials.
+    log.info('MCP dispatch attempt', extra={'intent_digest': intent.binding})
     # Rebuild from immutable JSON to validate again and prevent handcrafted intents
     # from downgrading server policy or skipping argument validation.
     checked = make_intent(intent.server, intent.config, intent.tool, intent.arguments,
-                          json.loads(intent.schema_json), intent.caller)
+                          json.loads(intent.schema_json), intent.caller,
+                          json.loads(intent.definition_json) if intent.definition_json is not None else None)
     if checked.binding != intent.binding:
         raise PolicyDenied('Tool policy or intent changed')
     if requires_approval(intent.tier):
         authority.consume(grant, intent)
+    if intent.definition_json is not None:
+        # A fresh remote observation, not a comparison of the snapshot with itself.
+        from backend.routers.mcp_proxy import _load_servers
+        if canonical(_load_servers().get(intent.server)) != intent.config_json:
+            raise PolicyDenied('Tool server configuration changed or was removed')
+        listed = await transport(intent.config, 'tools/list', {})
+        catalog = tool_catalog(listed)
+        if canonical(_load_servers().get(intent.server)) != intent.config_json:
+            raise PolicyDenied('Tool server configuration changed during definition recheck')
+        if intent.tool not in catalog or canonical(catalog[intent.tool]) != intent.definition_json:
+            raise PolicyDenied('Tool definition changed or was removed; start a new review')
     token = execution_intent.set(intent)
     try:
-        return await transport(intent.config, 'tools/call', {'name': intent.tool, 'arguments': intent.arguments})
+        result = await transport(intent.config, 'tools/call', {'name': intent.tool, 'arguments': intent.arguments})
+        log.info('MCP dispatch returned', extra={'intent_digest': intent.binding})
+        return result
     finally:
         execution_intent.reset(token)
 
@@ -245,3 +267,22 @@ def authorize_codebase_rpc(name: str, arguments: dict, schema: dict) -> None:
     intent = make_intent('codebase', {'in_process': 'codebase'}, name, arguments, schema, 'direct-rpc')
     if requires_approval(intent.tier):
         raise PolicyDenied('This tool requires chat or gateway approval; direct RPC execution is refused')
+
+
+def tool_catalog(listed: dict) -> dict[str, dict]:
+    """Reject ambiguous/malformed catalogs before exposing any of their tools."""
+    if not isinstance(listed, dict) or not isinstance(listed.get('tools'), list):
+        raise InvalidToolCall('Invalid tool catalog')
+    catalog = {}
+    for tool in listed['tools']:
+        if (not isinstance(tool, dict) or not isinstance(tool.get('name'), str)
+                or not tool['name'] or not isinstance(tool.get('inputSchema'), dict)
+                or not isinstance(tool.get('description', ''), str)):
+            raise InvalidToolCall('Invalid tool definition')
+        name = tool['name']
+        if name in catalog:
+            raise InvalidToolCall('Duplicate tool name in server catalog')
+        # Include annotations and all other metadata, even though they grant no authority.
+        canonical(tool)
+        catalog[name] = json.loads(canonical(tool))
+    return catalog

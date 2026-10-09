@@ -7,6 +7,7 @@ delete the clip by hand. The loop now hands over a factual record of every call,
 chat_ws prefixes it with a note that those calls really ran."""
 
 import json
+from backend.routers import mcp_proxy
 from unittest.mock import AsyncMock
 
 import pytest
@@ -32,13 +33,16 @@ def _say(text):
 @pytest.fixture(autouse=True)
 def _stub(monkeypatch):
     monkeypatch.setattr(mcp_tool_agent, "_load_servers", lambda: {"kdenlive": {"url": "http://x"}})
+    monkeypatch.setattr(mcp_proxy, "_load_servers", lambda: {"kdenlive": {"url": "http://x"}})
     monkeypatch.setattr(mcp_tool_agent.ollama_client, "context_length", AsyncMock(return_value=8192))
 
 
 async def test_an_approved_action_is_recorded_even_when_the_model_writes_no_summary(monkeypatch):
     monkeypatch.setattr(mcp_tool_agent, "_mcp_post", AsyncMock(side_effect=[
         TOOLS,
+        TOOLS,  # definition recheck
         {"content": [{"type": "text", "text": "red.mp4: clip_id 5"}]},
+        TOOLS,  # definition recheck
         {"content": [{"type": "text", "text": "Deleted clip 5"}]},
     ]))
     monkeypatch.setattr(mcp_tool_agent.ollama_client, "chat", AsyncMock(side_effect=[
@@ -79,7 +83,7 @@ async def test_an_error_returned_as_a_successful_result_counts_as_failed(monkeyp
     """mcp-kdenlive returns errors as successful MCP results; the reply must not call them done."""
     from backend.services import runtime_context
     monkeypatch.setattr(mcp_tool_agent, "_mcp_post", AsyncMock(side_effect=[
-        TOOLS, {"content": [{"type": "text", "text": "ERROR: Cutroom (Kdenlive) isn't running"}]}]))
+        TOOLS, TOOLS, {"content": [{"type": "text", "text": "ERROR: Cutroom (Kdenlive) isn't running"}]}]))
     monkeypatch.setattr(mcp_tool_agent.ollama_client, "chat", AsyncMock(side_effect=[
         _call("delete_clip", clip_id=4), _say("The red clip has been deleted.")]))
     token = runtime_context.evidence.set([])

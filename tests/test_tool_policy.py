@@ -11,6 +11,15 @@ from backend.services import tool_policy as policy, mcp_tool_agent as agent
 from backend.routers import mcp_proxy, mcp_codebase
 
 
+@pytest.fixture()
+async def client():
+    # Exercise proxy routes without starting unrelated application services.
+    app = FastAPI()
+    app.include_router(mcp_proxy.router, prefix='/api/mcp')
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app), base_url='http://localhost') as test_client:
+        yield test_client
+
+
 SCHEMA = {'type': 'object', 'properties': {'id': {'type': 'integer'}}, 'required': ['id']}
 CONFIG = {'url': 'http://test/mcp'}
 
@@ -105,16 +114,16 @@ async def test_direct_proxy_cannot_claim_approval(client, monkeypatch, tool):
     monkeypatch.setattr(mcp_proxy, '_load_servers', lambda: {'unreviewed': CONFIG})
     post = AsyncMock(return_value={'tools': [{'name': tool, 'inputSchema': SCHEMA}]})
     monkeypatch.setattr(mcp_proxy, '_mcp_post', post)
-    response = client.post('/api/mcp/call', json={'server': 'unreviewed', 'tool': tool, 'arguments': {'id': 1}, 'approved': True})
+    response = await client.post('/api/mcp/call', json={'server': 'unreviewed', 'tool': tool, 'arguments': {'id': 1}, 'approved': True})
     assert response.status_code == 403
     assert all(call.args[1] == 'tools/list' for call in post.call_args_list)
 
 
 async def test_direct_read_uses_the_same_tier_and_schema(client, monkeypatch):
     monkeypatch.setattr(mcp_proxy, '_load_servers', lambda: {'kdenlive': CONFIG})
-    post = AsyncMock(side_effect=[{'tools': [{'name': 'get_clip', 'inputSchema': SCHEMA}]}, {'content': [{'type': 'text', 'text': 'clip'}]}])
+    post = AsyncMock(side_effect=[{'tools': [{'name': 'get_clip', 'inputSchema': SCHEMA}]}, {'tools': [{'name': 'get_clip', 'inputSchema': SCHEMA}]}, {'content': [{'type': 'text', 'text': 'clip'}]}])
     monkeypatch.setattr(mcp_proxy, '_mcp_post', post)
-    response = client.post('/api/mcp/call', json={'server': 'kdenlive', 'tool': 'get_clip', 'arguments': {'id': 1}})
+    response = await client.post('/api/mcp/call', json={'server': 'kdenlive', 'tool': 'get_clip', 'arguments': {'id': 1}})
     assert response.status_code == 200
     assert post.call_args_list[-1].args[1] == 'tools/call'
 
@@ -123,7 +132,7 @@ async def test_direct_invalid_arguments_never_execute(client, monkeypatch):
     monkeypatch.setattr(mcp_proxy, '_load_servers', lambda: {'kdenlive': CONFIG})
     post = AsyncMock(return_value={'tools': [{'name': 'get_clip', 'inputSchema': SCHEMA}]})
     monkeypatch.setattr(mcp_proxy, '_mcp_post', post)
-    response = client.post('/api/mcp/call', json={'server': 'kdenlive', 'tool': 'get_clip', 'arguments': {'id': 'wrong'}})
+    response = await client.post('/api/mcp/call', json={'server': 'kdenlive', 'tool': 'get_clip', 'arguments': {'id': 'wrong'}})
     assert response.status_code == 422
     assert post.await_count == 1
 
@@ -214,3 +223,70 @@ async def test_packaged_build_has_no_codebase_execution(monkeypatch):
     assert not agent._server_enabled('codebase')
     result = await mcp_codebase.handle_rpc({'jsonrpc': '2.0', 'method': 'tools/list'})
     assert 'error' in result
+
+
+@pytest.mark.parametrize('change', ['description', 'schema', 'removed', 'duplicate'])
+async def test_changed_live_manifest_never_executes(monkeypatch, change):
+    definition = {'name': 'delete_clip', 'description': 'original', 'inputSchema': SCHEMA}
+    call = intent(definition=definition)
+    grant = policy.authority.issue(call)
+    monkeypatch.setattr(mcp_proxy, '_load_servers', lambda: {'kdenlive': CONFIG})
+    live = dict(definition)
+    if change == 'description':
+        live['description'] = 'changed'
+    if change == 'schema':
+        live['inputSchema'] = {'type': 'object'}
+    tools = [] if change == 'removed' else [live, live] if change == 'duplicate' else [live]
+    post = AsyncMock(return_value={'tools': tools})
+    with pytest.raises((policy.PolicyDenied, policy.InvalidToolCall)):
+        await policy.dispatch(call, post, grant)
+    assert all(c.args[1] == 'tools/list' for c in post.call_args_list)
+    with pytest.raises(policy.PolicyDenied):
+        await policy.dispatch(call, post, grant)
+
+
+async def test_pinned_read_checks_configuration_and_definition(monkeypatch):
+    definition = {'name': 'get_clip', 'inputSchema': SCHEMA}
+    call = intent(tool='get_clip', definition=definition)
+    monkeypatch.setattr(mcp_proxy, '_load_servers', lambda: {'kdenlive': CONFIG})
+    post = AsyncMock(side_effect=[{'tools': [definition]}, {'content': []}])
+    await policy.dispatch(call, post)
+    assert [c.args[1] for c in post.call_args_list] == ['tools/list', 'tools/call']
+    monkeypatch.setattr(mcp_proxy, '_load_servers', lambda: {})
+    post.reset_mock()
+    with pytest.raises(policy.PolicyDenied):
+        await policy.dispatch(call, post)
+    post.assert_not_awaited()
+
+
+def test_redaction_minimizes_nested_evidence_without_mutation():
+    from backend.services.secret_redaction import redact
+    from backend.services import runtime_context
+    original = {'nested': [{'api_key': 'private', 'text': 'Bearer secret-value'}], 'id': 2}
+    assert redact(original) == {'nested': [{'api_key': '[REDACTED]', 'text': '[REDACTED]'}], 'id': 2}
+    token = runtime_context.evidence.set([])
+    try:
+        runtime_context.record_evidence('tool', result=original)
+        assert runtime_context.evidence.get()[0]['result'] == redact(original)
+        assert original['nested'][0]['api_key'] == 'private'
+    finally:
+        runtime_context.evidence.reset(token)
+
+
+@pytest.mark.parametrize('schema,arguments', [
+    ({'type': 'object', 'additionalProperties': False}, {'unexpected': 1}),
+    ({'properties': {'id': {'minimum': 2}}}, {'id': 1}),
+    ({'properties': {'nested': {'type': 'array', 'items': {'type': 'integer'}}}}, {'nested': ['secret']}),
+    ({'properties': {'id': {'enum': [2, 3]}}}, {'id': 1}),
+    ({'properties': {'id': {'type': 'invalid'}}}, {'id': 1}),
+    ({'$ref': 'https://invalid.example/schema'}, {'id': 1}),
+])
+def test_strict_schema_failures_are_closed_and_do_not_echo_values(schema, arguments):
+    with pytest.raises(policy.InvalidToolCall) as error:
+        intent(schema=schema, arguments=arguments)
+    assert 'secret' not in str(error.value)
+
+
+def test_local_schema_reference_is_supported():
+    schema = {'$defs': {'id': {'type': 'integer'}}, 'properties': {'id': {'$ref': '#/$defs/id'}}}
+    assert intent(schema=schema).arguments == {'id': 1}

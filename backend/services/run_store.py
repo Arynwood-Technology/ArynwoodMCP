@@ -1,5 +1,6 @@
 """Persist execution evidence and side-effect attempts, independent of the socket."""
 import json
+from backend.services.secret_redaction import redact
 import aiosqlite
 from backend.services import runtime_context
 
@@ -11,7 +12,7 @@ async def start_step(tool, arguments):
     from backend.db import DB_PATH
     async with aiosqlite.connect(DB_PATH) as db:
         cur = await db.execute('INSERT INTO run_steps(run_id,tool,arguments,status) VALUES (?,?,?,?)',
-                               (run, tool, json.dumps(arguments), 'running'))
+                               (run, tool, json.dumps(redact(arguments)), 'running'))
         await db.commit()
         return cur.lastrowid
 
@@ -21,5 +22,5 @@ async def finish_step(step_id, status, result):
         return
     from backend.db import DB_PATH
     async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute('UPDATE run_steps SET status=?,result=? WHERE id=?', (status, result, step_id))
+        await db.execute('UPDATE run_steps SET status=?,result=? WHERE id=?', (status, redact(result), step_id))
         await db.commit()

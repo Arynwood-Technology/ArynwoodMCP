@@ -133,12 +133,15 @@ async def call_tool(body: ToolCallRequest):
     # Use the current manifest for membership and schema checks; clients cannot
     # invent tools, tiers, schemas, or an "approved" flag to relax owner policy.
     listed = await _mcp_post(config, "tools/list", {})
-    manifest = next((tool for tool in (listed or {}).get("tools", []) if tool.get("name") == body.tool), None)
+    try:
+        manifest = tool_policy.tool_catalog(listed).get(body.tool)
+    except tool_policy.InvalidToolCall as exc:
+        raise HTTPException(502, 'Invalid server tool catalog') from exc
     if manifest is None:
         raise HTTPException(404, "Tool not found in server manifest")
     try:
         intent = tool_policy.make_intent(body.server, config, body.tool, body.arguments,
-                                        manifest.get("inputSchema", {}), "direct-api")
+                                        manifest["inputSchema"], "direct-api", manifest)
         return await tool_policy.dispatch(intent, _mcp_post)
     except tool_policy.InvalidToolCall as exc:
         raise HTTPException(422, str(exc)) from exc
