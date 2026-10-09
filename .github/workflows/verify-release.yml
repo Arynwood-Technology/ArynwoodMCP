@@ -74,9 +74,12 @@ jobs:
       - name: Install isolated verification dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb python3-gi gir1.2-webkit2-4.1 ffmpeg pulseaudio \
-            gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
-            gstreamer1.0-plugins-ugly gstreamer1.0-libav
+          sudo apt-get install -y --no-install-recommends xvfb python3-gi gir1.2-gtk-3.0 pulseaudio
+          # The AppImage already contains WebKitGTK and GStreamer. Fetch only GI
+          # metadata instead of installing another media stack and ffmpeg.
+          mkdir -p typelib-packages typelibs
+          (cd typelib-packages && apt-get download gir1.2-webkit2-4.1 gir1.2-javascriptcoregtk-4.1 gir1.2-soup-3.0)
+          for package in typelib-packages/*.deb; do dpkg-deb -x "$package" typelibs; done
           python3 -m pip install pyinstaller
       - name: Extract and inspect the official AppImage
         shell: bash
@@ -105,16 +108,20 @@ jobs:
         run: |
           set -euo pipefail
           mkdir media
-          ffmpeg -v error -f lavfi -i sine=frequency=440:duration=2 media/a.wav
-          ffmpeg -v error -i media/a.wav media/a.mp3
-          ffmpeg -v error -f lavfi -i color=c=blue:s=160x120:d=2 -f lavfi -i sine=frequency=440:duration=2 \
-            -c:v libx264 -pix_fmt yuv420p -c:a aac -shortest media/a.mp4
+          cp tests/fixtures/release-media/a.mp3 tests/fixtures/release-media/a.mp4 media/
+          python3 - <<'PY'
+          import math, struct, wave
+          with wave.open('media/a.wav', 'wb') as audio:
+              audio.setparams((1, 2, 44100, 0, 'NONE', 'not compressed'))
+              audio.writeframes(b''.join(struct.pack('<h', int(8000 * math.sin(2 * math.pi * 440 * i / 44100))) for i in range(88200)))
+          PY
           pulseaudio --start
           pactl load-module module-null-sink sink_name=release_test
           pactl set-default-sink release_test
           bundle="$GITHUB_WORKSPACE/extracted/squashfs-root"
           cd "$bundle/usr"
           xvfb-run -a env LD_LIBRARY_PATH="$bundle/usr/lib" \
+            GI_TYPELIB_PATH="$GITHUB_WORKSPACE/typelibs/usr/lib/girepository-1.0:$GITHUB_WORKSPACE/typelibs/usr/lib/x86_64-linux-gnu/girepository-1.0" \
             GST_PLUGIN_SYSTEM_PATH_1_0="$bundle/usr/lib/gstreamer-1.0" \
             GST_PLUGIN_PATH_1_0="$bundle/usr/lib/gstreamer-1.0" \
             GST_PLUGIN_SCANNER_1_0="$bundle/usr/lib/gstreamer1.0/gstreamer-1.0/gst-plugin-scanner" \
