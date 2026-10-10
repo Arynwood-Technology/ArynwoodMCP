@@ -1,5 +1,13 @@
 # Customizing Personas
 
+For local CPU chat with an effective context of 4,096 tokens or less, a persona can
+opt in to the compact, tool-free profile by adding a `cpu_system` string alongside
+its full `system` instructions. The short variant replaces only those persona
+instructions for that profile; Agent Config notes, pinned memories and the current
+request remain intact. Larger-context models, GPU mode and remote endpoints keep
+the full profile. Without `cpu_system`, personal instructions are never shortened
+automatically. A status message discloses when the compact profile is active.
+
 Arynwood ships five personas (Arynwood, Doc, Kona, Glyph, Estra) in `mcp/config/models.json`.
 You can add your own, or replace a bundled one, without touching that file or the app's source:
 put them in a **personas file** in your per-user data directory.

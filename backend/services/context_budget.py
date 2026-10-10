@@ -97,9 +97,14 @@ def fit_request(messages: list[dict], tools, num_ctx: int, reserve: int = 1024,
                 if len(content) - boundary > 256:
                     candidates.append((len(content) - boundary, i, boundary))
         if not candidates:
+            required = request_tokens(out, tools, model)
+            model_label = f" for {model}" if model else ""
             raise ContextBudgetError(
-                'The required instructions, current message, and tool definitions exceed this model’s '
-                'context budget. Shorten the attachment/Agent Config or choose a larger context profile.'
+                f'The required instructions, current message, and tool definitions need approximately '
+                f'{required:,} input tokens{model_label}, but this request allows {limit:,} '
+                f'({num_ctx:,} context tokens with {num_ctx - limit:,} reserved for the reply). '
+                'Shorten instructions, Agent Config notes or attachments, or select a model with '
+                'a larger supported context. Reducing conversation history alone cannot fit this required input.'
             )
         _, index, boundary = max(candidates)
         content = out[index]['content']
