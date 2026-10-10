@@ -40,7 +40,7 @@ export function drawWaveform(
   peaks: Float32Array,
   opts: { startFrac: number; endFrac: number; color?: string; bg?: string },
 ) {
-  const { startFrac, endFrac, color = '#7c6ef7', bg } = opts
+  const { startFrac, endFrac, color = '#4fd1ab', bg } = opts
   const w = canvas.width, h = canvas.height
   const ctx = canvas.getContext('2d')
   if (!ctx || w <= 0 || h <= 0) return

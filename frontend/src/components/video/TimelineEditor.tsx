@@ -1847,7 +1847,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
             style={{
               display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600,
               cursor: rendering || micRequesting ? 'not-allowed' : 'pointer', border: 'none',
-              background: recording ? 'var(--danger)' : 'var(--accent-solid)', color: '#fff', opacity: rendering || micRequesting ? 0.5 : 1,
+              background: recording ? 'var(--danger-solid)' : 'var(--accent-solid)', color: '#fff', opacity: rendering || micRequesting ? 0.5 : 1,
             }}
           >
             {recording ? <Square size={12} /> : <Mic size={12} />}

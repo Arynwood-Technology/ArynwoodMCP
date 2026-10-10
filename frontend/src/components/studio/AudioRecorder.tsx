@@ -178,7 +178,7 @@ export function AudioRecorder({ onSendToEffects, onSendToVoice, onSendToJam }: A
 
     const data = buffer.getChannelData(0)
     const step = Math.max(1, Math.ceil(data.length / w))
-    c2d.strokeStyle = '#7c6ef7'
+    c2d.strokeStyle = '#4fd1ab'
     c2d.lineWidth = 1
     c2d.beginPath()
     for (let x = 0; x < w; x++) {
@@ -203,7 +203,7 @@ export function AudioRecorder({ onSendToEffects, onSendToVoice, onSendToJam }: A
     c2d.fillStyle = 'rgba(0,0,0,0.45)'
     c2d.fillRect(0, 0, startX, h)
     c2d.fillRect(endX, 0, w - endX, h)
-    c2d.fillStyle = '#7c6ef7'
+    c2d.fillStyle = '#4fd1ab'
     c2d.fillRect(startX - 2, 0, 3, h)
     c2d.fillRect(endX - 1, 0, 3, h)
   }, [buffer, trimStart, trimEnd])

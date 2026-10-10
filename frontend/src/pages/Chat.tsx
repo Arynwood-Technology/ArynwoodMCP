@@ -10,7 +10,7 @@ import { usePageTitle } from '../components/layout/usePageTitle'
 import { DEMO } from '../lib/demo/flag'
 import { PERSONA_SCENARIOS } from '../lib/demo/prompts'
 
-const ARYNWOOD = { name: 'Arynwood', color: '#7c6ef7' }
+const ARYNWOOD = { name: 'Arynwood', color: 'var(--accent-solid)' }
 import { getConversations, getConversationRuns, getMessages, deleteConversation, uploadFile, modelFor } from '../lib/api'
 import type { Message } from '../lib/api'
 import { ChatSocket } from '../lib/ws'
@@ -110,7 +110,7 @@ const ActionCard: FC<{ result: ActionResult }> = ({ result }) => {
   )
 
   if (result.isMem) return (
-    <p className="m-0 mt-1 flex items-center gap-1.5 rounded-lg border border-accent/20 bg-accent/8 px-2.5 py-[5px] text-[11px] text-violet-400">
+    <p className="m-0 mt-1 flex items-center gap-1.5 rounded-lg border border-accent/20 bg-accent/8 px-2.5 py-[5px] text-[11px] text-accent2">
       <span aria-hidden="true">🧠</span> {result.name}
     </p>
   )
@@ -247,7 +247,7 @@ function AgentConfigPanel() {
           variant={saved ? undefined : 'primary'}
           onClick={save}
           disabled={loading}
-          className={cn('w-full', saved && 'border-transparent bg-success text-white hover:bg-success')}
+          className={cn('w-full', saved && 'border-transparent bg-success-solid text-white hover:bg-success-solid')}
         >
           {saved ? <><Check size={12} aria-hidden="true" /> Saved</> : 'Save'}
         </Button>
@@ -265,7 +265,7 @@ interface Memory {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  project: '#7c6ef7', idea: '#f472b6', decision: '#fb923c',
+  project: '#a78bfa', idea: '#f472b6', decision: '#fb923c',
   fact: '#38bdf8', note: 'var(--color-muted)',
 }
 
@@ -840,7 +840,7 @@ export function Chat() {
                   )}
                   <div className={cn(
                     'max-w-[72%] break-words rounded-xl px-3.5 py-2.5 text-[13px] leading-relaxed text-text',
-                    mine ? 'rounded-br-[4px] bg-accent' : 'rounded-bl-[4px] bg-surface2',
+                    mine ? 'rounded-br-[4px] bg-accent-solid' : 'rounded-bl-[4px] bg-surface2',
                   )}>
                     {mine
                       ? <span className="whitespace-pre-wrap">{m.content}</span>

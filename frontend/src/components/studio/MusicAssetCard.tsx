@@ -50,7 +50,7 @@ export function MusicAssetCard({ asset, onChanged, onRegenerated, supportsExtend
         await ctx.close()
         if (cancelled) return
         const peaks = computePeaks(decoded, 300)
-        drawWaveform(canvas, peaks, { startFrac: 0, endFrac: 1, color: '#7c6ef7' })
+        drawWaveform(canvas, peaks, { startFrac: 0, endFrac: 1, color: '#4fd1ab' })
       } catch { /* thumbnail is best-effort — a failed decode just leaves a blank canvas */ }
     }
     void draw()

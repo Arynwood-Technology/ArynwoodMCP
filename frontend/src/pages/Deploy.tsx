@@ -54,7 +54,7 @@ function FileIcon({ name }: { name: string }) {
   if (['mp3', 'wav', 'ogg', 'flac', 'm4a'].includes(ext))
     return <FileAudio size={14} color="#5eead4" />
   if (['html', 'htm'].includes(ext))
-    return <Globe size={14} color="#7c6ef7" />
+    return <Globe size={14} color="#4fd1ab" />
   return <File size={14} color="var(--text-muted)" />
 }
 
@@ -120,13 +120,13 @@ function ServerModal({ initial, onSave, onClose }: {
         {field('username', 'SSH Username', 'text', 'root')}
 
         <div style={{ marginBottom: 10 }}>
-          <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>SSH Key Path <span style={{ color: '#6b7280' }}>(preferred)</span></label>
+          <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>SSH Key Path <span style={{ color: '#9ca3af' }}>(preferred)</span></label>
           <input value={form.ssh_key_path} placeholder="~/.ssh/id_rsa"
             onChange={e => set('ssh_key_path', e.target.value)} style={inp} />
         </div>
 
         <div style={{ marginBottom: 10 }}>
-          <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>Password <span style={{ color: '#6b7280' }}>(only if no key)</span></label>
+          <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>Password <span style={{ color: '#9ca3af' }}>(only if no key)</span></label>
           <input type="password" value={form.password}
             onChange={e => set('password', e.target.value)} style={inp} />
         </div>

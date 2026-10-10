@@ -11,6 +11,9 @@ ollama~=0.6.2
 python-multipart~=0.0.32
 watchdog~=6.0.0
 requests~=2.34.2
+# Not used directly: held at releases with security fixes (urllib3 via requests, h2 via ddgs's httpx[http2]).
+urllib3~=2.8
+h2~=4.4,>=4.4.1
 paramiko~=5.0.0
 prometheus-fastapi-instrumentator~=8.1.0
 # Direct dependency now (roadmap 2.5's LLM/tool call metrics import it explicitly),

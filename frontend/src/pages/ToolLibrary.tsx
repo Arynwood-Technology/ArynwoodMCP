@@ -77,8 +77,8 @@ const CATEGORY_META: Record<string, { label: string; Icon: any; color: string }>
   audio:  { label: 'Audio',             Icon: Volume2,   color: '#5eead4' },
   video:  { label: 'Video',             Icon: Video,     color: '#f472b6' },
   '3d':   { label: '3D',                Icon: Box,       color: '#a78bfa' },
-  ai:     { label: 'AI Infrastructure', Icon: Cpu,       color: '#7c6ef7' },
-  search: { label: 'Search',            Icon: Search,    color: '#3b82f6' },
+  ai:     { label: 'AI Infrastructure', Icon: Cpu,       color: '#c4b5fd' },
+  search: { label: 'Search',            Icon: Search,    color: '#60a5fa' },
   data:   { label: 'Data / Vector',     Icon: Database,  color: '#22c55e' },
   code:      { label: 'Code',              Icon: Code2,     color: '#facc15' },
   scraping:  { label: 'Scraping',          Icon: Globe,     color: '#38bdf8' },
@@ -86,9 +86,9 @@ const CATEGORY_META: Record<string, { label: string; Icon: any; color: string }>
 
 const STATUS_COLORS: Record<string, string> = {
   online:      '#22c55e',
-  available:   '#7c6ef7',
+  available:   '#4fd1ab',
   offline:     '#ef4444',
-  unavailable: '#6b7280',
+  unavailable: '#9ca3af',
   error:       '#f59e0b',
 }
 
@@ -714,7 +714,7 @@ function ActionSection({ tool }: { tool: Tool & { local_html?: boolean } }) {
         )}
         {hasInstall && (
           <button onClick={runInstall} disabled={running}
-            style={{ ...actionBtnBase, background: running ? 'var(--surface2)' : isDockerCmd ? '#0ea5e9' : '#7c6ef7', color: '#fff', opacity: running ? 0.7 : 1 }}>
+            style={{ ...actionBtnBase, background: running ? 'var(--surface2)' : isDockerCmd ? '#0369a1' : 'var(--accent-solid)', color: '#fff', opacity: running ? 0.7 : 1 }}>
             {running ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : isDockerCmd ? <Play size={14} /> : <Download size={14} />}
             {running ? (isDockerCmd ? 'Starting…' : 'Installing…') : isDockerCmd ? 'Start Container' : 'Install'}
           </button>
@@ -816,7 +816,7 @@ function HardwareCard() {
   return (
     <div style={{ background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px', marginBottom: 24 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <Zap size={14} color="#7c6ef7" />
+        <Zap size={14} color="#4fd1ab" />
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Your Hardware</span>
       </div>
 
@@ -966,7 +966,7 @@ function GpuLoadsCard() {
   if (!sdMemory && ollamaModels.length === 0) return null
 
   const rowStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface)', borderRadius: 8, padding: '10px 14px' }
-  const dot = (on: boolean): React.CSSProperties => ({ width: 8, height: 8, borderRadius: '50%', background: on ? '#22c55e' : '#6b7280', flexShrink: 0 })
+  const dot = (on: boolean): React.CSSProperties => ({ width: 8, height: 8, borderRadius: '50%', background: on ? '#22c55e' : '#9ca3af', flexShrink: 0 })
   const unloadBtn = (busy: boolean, loaded: boolean): React.CSSProperties => ({
     fontSize: 11, padding: '6px 12px', borderRadius: 6, cursor: busy ? 'not-allowed' : 'pointer',
     border: `1px solid ${loaded ? 'var(--danger)' : 'var(--accent)'}`,
@@ -1023,7 +1023,7 @@ function GpuLoadsCard() {
 function ToolCard({ tool, selected, onClick }: { tool: Tool & { vram_gb?: number; local_html?: boolean }; selected: boolean; onClick: () => void }) {
   const cat = CATEGORY_META[tool.category] ?? CATEGORY_META['image']
   const { Icon } = cat
-  const statusColor = STATUS_COLORS[tool.status] ?? '#6b7280'
+  const statusColor = STATUS_COLORS[tool.status] ?? '#9ca3af'
   const statusLabel = STATUS_LABELS[tool.status] ?? tool.status
   const hasPanel = !!TOOL_PANELS[tool.id]
   const off = useAppStore(s => s.status?.cpu_mode?.enabled ?? false) && !!tool.gpu
@@ -1060,8 +1060,8 @@ function ToolCard({ tool, selected, onClick }: { tool: Tool & { vram_gb?: number
             </button>
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: off ? '#6b7280' : statusColor }} />
-            <span style={{ fontSize: 9, color: off ? '#6b7280' : statusColor, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{off ? 'Off · CPU mode' : statusLabel}</span>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: off ? '#9ca3af' : statusColor }} />
+            <span style={{ fontSize: 9, color: off ? '#9ca3af' : statusColor, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{off ? 'Off · CPU mode' : statusLabel}</span>
           </div>
         </div>
       </div>
@@ -1171,8 +1171,8 @@ export function ToolLibrary() {
                 <h3 style={{ margin: 0, color: 'var(--text)', fontSize: 16 }}>{selectedTool.name}</h3>
                 <span style={{
                   fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
-                  color: STATUS_COLORS[selectedTool.status] ?? '#6b7280',
-                  background: (STATUS_COLORS[selectedTool.status] ?? '#6b7280') + '18',
+                  color: STATUS_COLORS[selectedTool.status] ?? '#9ca3af',
+                  background: (STATUS_COLORS[selectedTool.status] ?? '#9ca3af') + '18',
                   borderRadius: 4, padding: '2px 7px',
                 }}>
                   {STATUS_LABELS[selectedTool.status] ?? selectedTool.status}

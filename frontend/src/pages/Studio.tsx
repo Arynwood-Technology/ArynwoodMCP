@@ -35,7 +35,7 @@ const STATUS_COLOR: Record<string, string> = {
   running:  '#22c55e',
   starting: '#f59e0b',
   failed:   '#ef4444',
-  stopped:  '#6b7280',
+  stopped:  '#9ca3af',
 }
 
 export function Studio() {
@@ -105,7 +105,7 @@ export function Studio() {
         <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginRight: 4 }}>Sidecars</span>
         {Object.values(sidecars).map(sc => (
           <div key={sc.id} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--surface2)', borderRadius: 6, padding: '4px 10px' }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: STATUS_COLOR[sc.status] ?? '#6b7280', display: 'inline-block', flexShrink: 0 }} />
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: STATUS_COLOR[sc.status] ?? '#9ca3af', display: 'inline-block', flexShrink: 0 }} />
             <span title={sc.error} style={{ fontSize: 11, color: sc.status === 'failed' ? '#fca5a5' : 'var(--text-muted)' }}>{sc.label}</span>
             {cpuMode && sc.gpu && sc.status !== 'running' ? (
               <GpuMark />

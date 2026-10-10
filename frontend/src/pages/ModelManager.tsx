@@ -42,8 +42,8 @@ const CATEGORY_LABELS: Record<string, string> = {
   fast: 'Fast / Small', large: 'Large', vision: 'Vision', embed: 'Embeddings',
 }
 const CATEGORY_COLORS: Record<string, string> = {
-  general: '#7c6ef7', code: '#5eead4', fast: '#22c55e',
-  large: '#f59e0b', vision: '#f472b6', embed: '#3b82f6',
+  general: '#a78bfa', code: '#5eead4', fast: '#22c55e',
+  large: '#f59e0b', vision: '#f472b6', embed: '#60a5fa',
 }
 
 function formatSize(bytes: number) {
@@ -118,7 +118,7 @@ function ServerBanner({ srv, onStartLocal }: {
         <button
           onClick={startLocal}
           disabled={starting}
-          style={{ background: 'var(--success)', border: 'none', color: '#fff', borderRadius: 6, padding: '6px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
+          style={{ background: 'var(--success-solid)', border: 'none', color: '#fff', borderRadius: 6, padding: '6px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
         >
           <Power size={12} /> {starting ? 'Starting…' : 'Start Ollama'}
         </button>

@@ -41,8 +41,10 @@
   --color-text: #f4f8f6;
   --color-muted: #b8c7c1;
   --color-success: #22c55e;
+  --color-success-solid: #15803d;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
+  --color-danger-solid: #dc2626;
 
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --text-xs: 0.8125rem;
@@ -67,8 +69,10 @@
   --text: var(--color-text);
   --text-muted: var(--color-muted);
   --success: var(--color-success);
+  --success-solid: var(--color-success-solid);
   --warning: var(--color-warning);
   --danger: var(--color-danger);
+  --danger-solid: var(--color-danger-solid);
 }
 
 * { box-sizing: border-box; }

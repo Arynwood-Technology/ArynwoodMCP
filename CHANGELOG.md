@@ -9,6 +9,35 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-10-10
+
+### Fixed
+
+- **Community with a Grove on a server.** A Grove behind Cloudflare or nginx compresses its
+  answers, and Arynwood passed them to the Community page still compressed, so the page
+  couldn't read them. Answers are now unpacked first (the size limit counts the unpacked
+  size), and live change notices are requested uncompressed. Checked against
+  community.arynwood.com.
+- The relay for the host's IRC and peer-message sockets now always closes the Grove's side,
+  even when it is interrupted while closing. A test caught this about one run in five.
+
+### Changed
+
+- **Readable everywhere.** A contrast check of every page found text below the 4.5:1
+  standard, and all of it now passes. In Chat your own messages use the darker green
+  (1.78:1 before, 5.98:1 now). Start Ollama, Saved, delete and recording buttons have darker
+  fills behind their white text. Purple left over from the old look is now green-teal, or a
+  lighter violet where it marks a category, and grey "stopped" labels are lighter.
+- The Community screens match Arynwood Grove 0.4.1, including its readable avatar colours.
+
+### Security
+
+- `urllib3` 2.8 and `h2` 4.4.1 are now required (PYSEC-2026-4175, -4176, -4177 and
+  PYSEC-2026-3628). Frontend packages are updated within their versions, including the
+  `source-map-js` fix (GHSA-68fv-2mgg-jv7q). The Rust crates `anyhow`, `event-listener` and
+  `quick-xml` are updated (RUSTSEC-2026-0190, -0221, -0194, -0195; `quick-xml` is only built
+  for macOS). npm audit, pip-audit and cargo audit report no known vulnerabilities.
+
 ## [0.4.9] — 2026-10-10
 
 ### Added

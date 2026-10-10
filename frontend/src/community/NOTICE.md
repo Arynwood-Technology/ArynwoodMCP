@@ -8,5 +8,4 @@ also licenses them for Arynwood MCP under this repository's [license](../../../L
 Changes for Arynwood MCP: every request, live notice and socket goes through Arynwood's
 backend (`lib/grove.ts`, `backend/routers/community.py`), which holds the Grove sign-in;
 invitation links name the Grove's own address; joining from an invitation link stays inside
-the app; space exports download as files; and the peer-identity form sends the Grove's
-request header.
+the app; and space exports download as files. They match Arynwood Grove 0.4.1.

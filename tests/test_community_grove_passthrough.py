@@ -3,6 +3,7 @@ held by this app (never by the web view), what may and may not be forwarded, liv
 the host's sockets. Runs against a real stand-in Grove on a loopback port, because what crosses
 the network (headers, cookies, redirects, streaming) is the point."""
 import asyncio
+import gzip
 import json
 import socket
 import threading
@@ -66,8 +67,17 @@ def _fake_grove(seen: list) -> FastAPI:
     async def echo_size(request: Request):
         return {"bytes": len(await request.body())}
 
+    @app.get("/api/community/spaces/{space}/notes")
+    def notes(space: str, request: Request):
+        # Like Cloudflare or nginx in front of a real Grove: compressed whenever the client accepts it.
+        body = json.dumps({"space": space, "notes": ["a note"] * 400}).encode()
+        if "gzip" in request.headers.get("accept-encoding", ""):
+            return Response(gzip.compress(body), media_type="application/json", headers={"Content-Encoding": "gzip"})
+        return Response(body, media_type="application/json")
+
     @app.get("/api/community/spaces/{space}/events")
     async def events(space: str, request: Request):
+        seen.append(("events", dict(request.headers), None))
         if request.cookies.get(COOKIE) != "token-1":
             return JSONResponse({"detail": "Sign in first."}, status_code=401)
 
@@ -211,6 +221,18 @@ def test_downloads_keep_their_file_name_and_drop_grove_page_headers(client, grov
     assert "x-frame-options" not in r.headers
 
 
+def test_a_compressed_answer_reaches_the_page_decoded(client, grove):
+    r = client.get("/api/community/grove/community/spaces/s1/notes")
+    assert r.status_code == 200 and r.json()["space"] == "s1" and len(r.json()["notes"]) == 400
+    assert "content-encoding" not in r.headers
+
+
+def test_the_size_limit_counts_what_a_compressed_answer_unpacks_to(client, grove, monkeypatch):
+    monkeypatch.setattr(community, "MAX_RESPONSE_BYTES", 2000)
+    r = client.get("/api/community/grove/community/spaces/s1/notes")
+    assert r.status_code == 502 and "too large" in r.json()["detail"]
+
+
 def test_redirects_are_reported_not_followed(client, grove):
     r = client.get("/api/community/grove/community/moved")
     assert r.status_code == 502 and "elsewhere.example" in r.json()["detail"]
@@ -237,6 +259,7 @@ def test_live_notices_stream_through(client, grove):
         assert r.status_code == 200 and r.headers["content-type"].startswith("text/event-stream")
         text = "".join(r.iter_text())
     assert text.count("event: changed") == 2
+    assert [h for kind, h, _ in grove["seen"] if kind == "events"][-1]["accept-encoding"] == "identity"
 
 
 def test_live_notices_pass_a_refusal_through(client, grove):

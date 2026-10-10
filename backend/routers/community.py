@@ -38,6 +38,7 @@ from email.utils import parsedate_to_datetime
 from http.cookies import CookieError, SimpleCookie
 from urllib.parse import urlparse, urlsplit
 
+import anyio
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket
 from fastapi.responses import Response, StreamingResponse
@@ -466,7 +467,9 @@ async def grove_passthrough(path: str, request: Request, db=Depends(get_db)):
         async with _client(base, httpx.Timeout(30.0, connect=5.0)) as client:
             async with client.stream(request.method, target, headers=headers, content=body or None) as r:
                 data = bytearray()
-                async for chunk in r.aiter_raw():
+                # Decoded: a Grove behind Cloudflare or nginx answers gzip or brotli, and the page
+                # gets no Content-Encoding. The limit therefore applies to the decompressed size.
+                async for chunk in r.aiter_bytes():
                     data += chunk
                     if len(data) > MAX_RESPONSE_BYTES:
                         raise HTTPException(502, "The Grove's answer was too large.")
@@ -484,6 +487,8 @@ async def _relay_events(base: str, target: httpx.URL, headers: dict) -> Response
     each stream about every half minute and the page reconnects, so a read timeout of 90 s
     only trips on a Grove that has stopped answering."""
     client = _client(base, httpx.Timeout(10.0, connect=5.0, read=90.0))
+    # Uncompressed, so a proxy in front of the Grove has nothing to hold back while it compresses.
+    headers = {**headers, "accept-encoding": "identity"}
     try:
         upstream = await client.send(client.build_request("GET", target, headers=headers), stream=True)
     except httpx.HTTPError as e:
@@ -499,7 +504,7 @@ async def _relay_events(base: str, target: httpx.URL, headers: dict) -> Response
 
     async def relay():
         try:
-            async for chunk in upstream.aiter_raw():
+            async for chunk in upstream.aiter_bytes():
                 yield chunk
         except httpx.HTTPError:
             return
@@ -559,11 +564,14 @@ async def grove_socket(websocket: WebSocket, path: str):
     try:
         await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
     finally:
-        for task in tasks:
-            task.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
-        await upstream_cm.__aexit__(None, None, None)
-        try:
-            await websocket.close()
-        except RuntimeError:
-            pass  # the page already closed it
+        # Closing must finish even while this handler is being cancelled; cut short, it left
+        # the Grove's socket open and the cancellation escaped half-handled.
+        with anyio.CancelScope(shield=True):
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            await upstream_cm.__aexit__(None, None, None)
+            try:
+                await websocket.close()
+            except RuntimeError:
+                pass  # the page already closed it

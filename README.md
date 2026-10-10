@@ -13,7 +13,7 @@ and memory over your own documents, a design canvas, and Model Context Protocol 
 including Kdenlive editing through Cutroom's MCP server. A source checkout adds the GPU generation, audio
 production and publishing tools listed under [What's Inside](#whats-inside).
 
-**The packaged alpha** (v0.4.9: AppImage and `.deb` for Linux x86_64, and a Windows x64 installer) covers the core workspace. LoRA training, script-based
+**The packaged alpha** (v0.5.0: AppImage and `.deb` for Linux x86_64, and a Windows x64 installer) covers the core workspace. LoRA training, script-based
 GPU tools and the project file browser need a source checkout. Models and supporting services are installed
 separately. Requirements and limits: [arynwood.com/mcp](https://arynwood.com/mcp/).
 
@@ -31,19 +31,21 @@ instead of faking it.
 
 | Work | Status |
 |---|---|
-| Desktop alpha v0.4.9: Community inside the app, update notices, CPU mode and chat/image endpoints; Windows x64 installer, Linux AppImage and `.deb` | Shipped |
+| Desktop alpha v0.5.0: readable colours throughout, Community inside the app, update notices, CPU mode and chat/image endpoints; Windows x64 installer, Linux AppImage and `.deb` | Shipped |
 | Community: your Grove's shared spaces on the Community page; [Arynwood Grove](https://github.com/Arynwood-Technology/arynwood-community) is the separate service that keeps them | Shipped, alpha |
 | Headless gateway: owner-only remote control over loopback or your own IRC server | Experimental, off by default |
 
-## Latest release (0.4.9)
+## Latest release (0.5.0)
 
-0.4.9 brings Community inside the app: the Community page shows your Grove's planner and
-calendar, tasks, lists, notes, board, discussion, members and invitations. Use the Grove on
-this computer or one on a server by its `https://` address; Arynwood's backend keeps the
-Grove sign-in and talks only to the Grove you chose. It also brings a charcoal and green-teal
-look with larger text. Anyone on 0.4.8 sees an update notice; earlier versions need one
-manual install. This remains a single-owner desktop alpha with documented
-[security limits](SECURITY.md). See [docs/releases/0.4.9.md](docs/releases/0.4.9.md) and
+0.5.0 fixes Community with a Grove on a server (such as community.arynwood.com), whose
+compressed answers the page couldn't read in 0.4.9. A contrast check of the whole app found
+text below the 4.5:1 standard, including your own messages in Chat; all of it now passes.
+Python, frontend and Rust dependencies have security updates, and the Community screens match
+Arynwood Grove 0.4.1. Since 0.4.9 the Community page shows your Grove's planner, calendar,
+tasks, lists, notes, board, discussion and members, from the Grove on this computer or one on
+a server. Anyone on 0.4.8 or later sees an update notice; earlier versions need one manual
+install. This remains a single-owner desktop alpha with documented
+[security limits](SECURITY.md). See [docs/releases/0.5.0.md](docs/releases/0.5.0.md) and
 [docs/community.md](docs/community.md).
 
 **Experimental: headless gateway.** A remote control for your own workspace: reach Arynwood
@@ -67,7 +69,7 @@ verified.
 ## Table of Contents
 
 - [Status](#status)
-- [Latest release (0.4.9)](#latest-release-049)
+- [Latest release (0.5.0)](#latest-release-050)
 - [What's next](#whats-next)
 - [What's Inside](#whats-inside)
 - [Quick Start](#quick-start)
@@ -94,13 +96,14 @@ verified.
 
 ## Release & Packaging
 
-Version **0.4.9** ships a Windows x64 desktop alpha (an unsigned per-user installer, first
+Version **0.5.0** ships a Windows x64 desktop alpha (an unsigned per-user installer, first
 published in 0.4.5) alongside the Linux AppImage and `.deb`, which keep the Ubuntu 22.04 / glibc 2.35
 baseline. Models and supporting services are installed separately on both. Download published packages from [GitHub Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases).
 
 Desktop alpha packages and docs:
 
-- [`docs/releases/0.4.9.md`](docs/releases/0.4.9.md) - packages, checksums, release checks and known issues
+- [`docs/releases/0.5.0.md`](docs/releases/0.5.0.md) - packages, checksums, release checks and known issues
+- [`docs/releases/0.4.9.md`](docs/releases/0.4.9.md) - Community inside the app, charcoal look
 - [`docs/releases/0.4.8.md`](docs/releases/0.4.8.md) - automatic update notices
 - [`docs/community.md`](docs/community.md) - Community and choosing your Grove
 - [`docs/releases/0.4.7.md`](docs/releases/0.4.7.md) - CPU mode, endpoints and MCP hardening

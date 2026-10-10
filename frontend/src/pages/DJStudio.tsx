@@ -14,7 +14,7 @@ import {
 // ── Category meta ────────────────────────────────────────────────────────────
 
 const CATEGORY_META: Record<string, { label: string; sub: string; Icon: LucideIcon; color: string }> = {
-  dj:      { label: 'DJ Mixing',              sub: 'Live mixing / beatmatching',           Icon: Disc3,             color: '#7c6ef7' },
+  dj:      { label: 'DJ Mixing',              sub: 'Live mixing / beatmatching',           Icon: Disc3,             color: '#c4b5fd' },
   daw:     { label: 'Production',             sub: 'Arrangement, drums, mixdown',          Icon: Music4,            color: '#f472b6' },
   synth:   { label: 'Synths & Sound Design',  sub: 'Basslines, leads, drum synthesis',     Icon: Waves,             color: '#5eead4' },
   utility: { label: 'Utilities',              sub: 'Sandbox / permissions',                Icon: ShieldCheck,       color: '#facc15' },
@@ -24,7 +24,7 @@ const CATEGORY_ORDER = ['dj', 'daw', 'synth', 'utility', 'plugin']
 
 const STATUS_COLOR: Record<string, string> = {
   running: '#22c55e',
-  stopped: '#6b7280',
+  stopped: '#9ca3af',
   plugin:  '#38bdf8',
   unknown: '#f59e0b',
 }
@@ -40,7 +40,7 @@ const STATUS_LABEL: Record<string, string> = {
 function DjToolCard({ tool, launching, onLaunch }: { tool: DjTool; launching: boolean; onLaunch: (id: string) => void }) {
   const [open, setOpen] = useState(false)
   const cat = CATEGORY_META[tool.category] ?? CATEGORY_META.dj
-  const statusColor = STATUS_COLOR[tool.status] ?? '#6b7280'
+  const statusColor = STATUS_COLOR[tool.status] ?? '#9ca3af'
   const hasManual = tool.quickstart.length > 0 || tool.tips.length > 0 || tool.manual_url || tool.tutorial_url
 
   return (
