@@ -13,7 +13,7 @@ and memory over your own documents, a design canvas, and Model Context Protocol 
 including Kdenlive editing through Cutroom's MCP server. A source checkout adds the GPU generation, audio
 production and publishing tools listed under [What's Inside](#whats-inside).
 
-**The packaged alpha** (v0.4.8: AppImage and `.deb` for Linux x86_64, and a Windows x64 installer) covers the core workspace. LoRA training, script-based
+**The packaged alpha** (v0.4.9: AppImage and `.deb` for Linux x86_64, and a Windows x64 installer) covers the core workspace. LoRA training, script-based
 GPU tools and the project file browser need a source checkout. Models and supporting services are installed
 separately. Requirements and limits: [arynwood.com/mcp](https://arynwood.com/mcp/).
 
@@ -31,19 +31,20 @@ instead of faking it.
 
 | Work | Status |
 |---|---|
-| Desktop alpha v0.4.8: automatic update notices, CPU mode and chat/image endpoints; Windows x64 installer, Linux AppImage and `.deb` | Shipped |
+| Desktop alpha v0.4.9: Community inside the app, update notices, CPU mode and chat/image endpoints; Windows x64 installer, Linux AppImage and `.deb` | Shipped |
+| Community: your Grove's shared spaces on the Community page; [Arynwood Grove](https://github.com/Arynwood-Technology/arynwood-community) is the separate service that keeps them | Shipped, alpha |
 | Headless gateway: owner-only remote control over loopback or your own IRC server | Experimental, off by default |
-| Arynwood Community and Groves | Long-term vision |
 
-## Latest release (0.4.8)
+## Latest release (0.4.9)
 
-0.4.8 adds automatic update notices at startup and every six hours while the app is open.
-**View update** opens the official GitHub release page; installation remains manual.
-Users on earlier versions need to install 0.4.8 manually once to receive future notices.
-The checks fetch public GitHub release metadata without sending workspace content or
-credentials. Dismissal is remembered for the displayed version. Offline checks stay quiet.
-This remains a single-owner desktop alpha with documented [security limits](SECURITY.md).
-See [docs/releases/0.4.8.md](docs/releases/0.4.8.md).
+0.4.9 brings Community inside the app: the Community page shows your Grove's planner and
+calendar, tasks, lists, notes, board, discussion, members and invitations. Use the Grove on
+this computer or one on a server by its `https://` address; Arynwood's backend keeps the
+Grove sign-in and talks only to the Grove you chose. It also brings a charcoal and green-teal
+look with larger text. Anyone on 0.4.8 sees an update notice; earlier versions need one
+manual install. This remains a single-owner desktop alpha with documented
+[security limits](SECURITY.md). See [docs/releases/0.4.9.md](docs/releases/0.4.9.md) and
+[docs/community.md](docs/community.md).
 
 **Experimental: headless gateway.** A remote control for your own workspace: reach Arynwood
 from your phone over your own IRC server, or over a local API. It answers only your services
@@ -53,19 +54,20 @@ See [docs/gateway.md](docs/gateway.md).
 
 ## What's next
 
-**Long-term vision: Arynwood Community.** Invite-only private spaces called Groves, for
-families, friends, teams and small communities, with no ads and no sales. It would come as a
-standalone community app with no AI features, and as an optional part of Arynwood MCP, with
-private messages that travel peer-to-peer with end-to-end encryption. Arynwood MCP is how you
-talk to your own AI; Community would be how people talk to each other. This is a long-term
-vision, not a release plan, and none of it is available yet.
+**Arynwood Community.** Invite-only private spaces for families, friends, teams and small
+communities, with no ads and no sales, kept on a Grove: the standalone
+[Arynwood Grove](https://github.com/Arynwood-Technology/arynwood-community) service, which
+has no AI features, and since 0.4.9 the Community page inside Arynwood MCP. Arynwood MCP is
+how you talk to your own AI; Community is how people talk to each other. Peer-to-peer
+messages are a host-only alpha feature, and their delivery and encryption are not yet
+verified.
 
 ---
 
 ## Table of Contents
 
 - [Status](#status)
-- [Latest release (0.4.8)](#latest-release-048)
+- [Latest release (0.4.9)](#latest-release-049)
 - [What's next](#whats-next)
 - [What's Inside](#whats-inside)
 - [Quick Start](#quick-start)
@@ -92,13 +94,15 @@ vision, not a release plan, and none of it is available yet.
 
 ## Release & Packaging
 
-Version **0.4.8** ships a Windows x64 desktop alpha (an unsigned per-user installer, first
+Version **0.4.9** ships a Windows x64 desktop alpha (an unsigned per-user installer, first
 published in 0.4.5) alongside the Linux AppImage and `.deb`, which keep the Ubuntu 22.04 / glibc 2.35
 baseline. Models and supporting services are installed separately on both. Download published packages from [GitHub Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases).
 
 Desktop alpha packages and docs:
 
-- [`docs/releases/0.4.8.md`](docs/releases/0.4.8.md) - packages, checksums, release checks and known issues
+- [`docs/releases/0.4.9.md`](docs/releases/0.4.9.md) - packages, checksums, release checks and known issues
+- [`docs/releases/0.4.8.md`](docs/releases/0.4.8.md) - automatic update notices
+- [`docs/community.md`](docs/community.md) - Community and choosing your Grove
 - [`docs/releases/0.4.7.md`](docs/releases/0.4.7.md) - CPU mode, endpoints and MCP hardening
 - [`docs/releases/0.4.6.md`](docs/releases/0.4.6.md) - the 0.4.6 security update
 - [`docs/releases/0.4.5.md`](docs/releases/0.4.5.md) - the 0.4.5 notes
