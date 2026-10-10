@@ -66,3 +66,11 @@ it('keeps spaces usable when an invitation has expired',async()=>{
  await screen.findByRole('option',{name:'Home'})
  expect(screen.getByRole('alert')).toHaveTextContent('Invite expired or unavailable.')
 })
+it('shows the space topic and, to its owners, a way to manage the space',async()=>{
+ mocked.mockImplementation(async(path)=>path==='/auth/me'?user:path==='/community/spaces'?[{...home,topic:'Sunday dinners'},{...team,role:'member'}]:[])
+ show();expect(await screen.findByText('Sunday dinners')).toBeInTheDocument()
+ expect(screen.getByRole('link',{name:'Manage space'})).toHaveAttribute('href','/community/settings')
+ fireEvent.change(screen.getByRole('combobox'),{target:{value:'team'}})
+ expect(screen.queryByRole('link',{name:'Manage space'})).toBeNull()
+ expect(screen.queryByText('Sunday dinners')).toBeNull()
+})

@@ -9,6 +9,16 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-10-10
+
+### Added
+
+- **Managing Community spaces** (screens from Arynwood Grove 0.4.2). Owners rename a space and
+  give it a topic that every member sees under its name, make other members owners, and delete
+  the space for everyone after typing its name; a space always keeps an owner. Tasks can be
+  assigned from the Calendar as well as Tasks, and a private task only to yourself. Needs Grove
+  0.4.2 or later; with an older Grove these actions say to update it.
+
 ## [0.5.0] — 2026-10-10
 
 ### Fixed

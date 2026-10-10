@@ -31,6 +31,13 @@ through an invitation: in a space, **Invite members** makes a one-use link, and 
 can also turn on a reusable public link. An invitation link names the Grove's own address,
 so a link from a Grove on this computer opens only on this computer.
 
+A space's owners manage it from **Manage space**: rename it, give it a topic that everyone
+sees under its name, make other members owners (or members again), remove people, and delete
+the space for everyone after typing its name. A space always keeps at least one owner. Tasks
+can be assigned to anyone in the space from Tasks or the Calendar; a private task, which only
+you can see, only to yourself. Managing a space needs Arynwood Grove 0.4.2 or later; an older
+Grove says it needs updating.
+
 To join a Grove someone invited you to, choose **Join with an invitation link** and paste
 it. If the link is for a different Grove, Arynwood asks before switching to it.
 

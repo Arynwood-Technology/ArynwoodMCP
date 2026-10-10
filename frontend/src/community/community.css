@@ -498,6 +498,11 @@ main.full-bleed { overflow: hidden; }
 .community-nav a { min-height:38px; }
 .community-connection { height:650px; min-height:400px; border:1px solid var(--border); border-radius:14px; overflow:hidden; margin:20px 32px 32px; }
 @media (max-width:1000px) { .planner-grid { grid-template-columns:minmax(0,1fr); } .planner-focus { position:static; grid-row:1; } .community-connection { margin:16px; } }
+.space-topic { margin:4px 0 0; color:var(--text-muted); overflow-wrap:anywhere; }
+.role-select { padding:6px 10px !important; font-size:13px !important; }
+.danger-zone { margin-top:18px; padding-top:14px; border-top:1px solid var(--border); }
+.danger-zone h3 { margin:0 0 4px; font-size:15px; }
+.danger-zone p { margin:0 0 10px; }
 }
 
 @scope (.grove-community) { .planner-time-window { position:relative; max-height:65vh; overflow:auto; scrollbar-gutter:stable; } }

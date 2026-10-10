@@ -13,6 +13,7 @@ import { IRC } from './pages/IRC'
 import { P2PChat } from './pages/P2PChat'
 import { Mail } from './pages/Mail'
 import { ircDisconnect } from './lib/irc-manager'
+import { useSpaceRefresh } from './lib/live'
 import { useAppStore as useCommunityStore } from './store/useAppStore'
 import './community.css'
 const sections=['calendar','today','boards','discussion','household','lists','notes','settings','month','irc','messages','mail'] as const
@@ -23,7 +24,7 @@ export function Community() {
   const grove=useContext(GroveContext)
   const [dialog,setDialog]=useState<'create'|'invite'|null>(null),[busy,setBusy]=useState(false),[dialogError,setDialogError]=useState(''),[inviteLink,setInviteLink]=useState(''),[copied,setCopied]=useState(false)
   const [user,setUser]=useState<User|null>(null),[ready,setReady]=useState(false)
-  const [spaces,setSpaces]=useState<Space[]>([]),[selected,setSelected]=useState(''),[error,setError]=useState('')
+  const [spaces,setSpaces]=useState<Space[]>([]),[selected,setSelected]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState('')
   const [peerVisited,setPeerVisited]=useState(false)
   // Set on a server (GROVE_PUBLIC_URL): the address members on other computers use.
   const [publicUrl,setPublicUrl]=useState<string|null>(null)
@@ -50,6 +51,12 @@ export function Community() {
     void load()
     return()=>{active=false}
   },[user,location.search,navigate])
+  // A rename, a new topic or role, or a space deleted or left elsewhere: refetch the list. A space
+  // that has gone falls back to the first one left.
+  async function reloadSpaces(){
+    try{const updated=await api<Space[]>('/community/spaces');if(space&&!updated.some(s=>s.id===space.id))setNotice(`You no longer have access to ${space.name}. It was deleted, or you were removed.`);setSpaces(updated)}
+    catch{/* the open page reports its own errors */}
+  }
   function openDialog(kind:'create'|'invite'){setDialogError('');setInviteLink('');setCopied(false);setDialog(kind)}
   async function createSpace(event:React.FormEvent<HTMLFormElement>){
     event.preventDefault();setBusy(true);setDialogError('')
@@ -76,16 +83,18 @@ export function Community() {
       if(usedInvite){consumedInvite.current=new URLSearchParams(location.search).get('invite')??'';navigate('/community/calendar',{replace:true})}
       setUser(u)
     }}/>:<>
-      <header className="workspace community-header"><div className="section-heading"><div><div className="community-brand"><Logo label="Arynwood tree logo"/><span className="eyebrow tagline">The Grove, your community – your choices</span></div><h2>{space?.name??'Community'}</h2><div className="community-identity"><UserRound size={15}/><strong>{user.name}</strong><span>{user.email}</span><span>· {space?.role==='owner'?'Space owner':'Member'}{user.admin?' · Host':''}</span></div></div><button className="secondary" onClick={()=>void logout()}>Sign out</button></div>
-        <div className="action-row"><label>Space <select value={space?.id??''} onChange={e=>setSelected(e.target.value)}>{spaces.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label><button className="secondary" onClick={()=>openDialog('create')}>Create new space</button>{space?.role==='owner'&&<button className="primary" onClick={()=>openDialog('invite')}>Invite members</button>}</div>
+      <header className="workspace community-header"><div className="section-heading"><div><div className="community-brand"><Logo label="Arynwood tree logo"/><span className="eyebrow tagline">The Grove, your community – your choices</span></div><h2>{space?.name??'Community'}</h2>{space?.topic&&<p className="space-topic">{space.topic}</p>}<div className="community-identity"><UserRound size={15}/><strong>{user.name}</strong><span>{user.email}</span><span>· {space?.role==='owner'?'Space owner':'Member'}{user.admin?' · Host':''}</span></div></div><button className="secondary" onClick={()=>void logout()}>Sign out</button></div>
+        <div className="action-row"><label>Space <select value={space?.id??''} onChange={e=>{setSelected(e.target.value);setNotice('')}}>{spaces.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label><button className="secondary" onClick={()=>openDialog('create')}>Create new space</button>{space?.role==='owner'&&<><button className="primary" onClick={()=>openDialog('invite')}>Invite members</button><NavLink className="secondary" to="/community/settings">Manage space</NavLink></>}</div>
         {!!user.admin&&publicUrl&&/(\.sslip\.io|\.nip\.io|^[\d.]+|^\[.*\])$/.test(new URL(publicUrl).hostname)&&<p className="notice">This Grove is on a temporary address. <NavLink to="/community/settings">Use your own domain</NavLink></p>}
         <p className="muted-text">{publicUrl?`Community storage: this Grove's server (${new URL(publicUrl).host}), shared live with your members`:grove.local?'Community storage: this computer':`Community storage: ${new URL(grove.url).host}`}</p>
         <nav className="community-nav" aria-label="Community sections">{nav.filter(([s])=>user.admin||!['irc','messages'].includes(s)).map(([s,label,Icon])=><NavLink key={s} to={'/community/'+s} className={()=>section===s||(s==='calendar'&&section==='month')?'primary':'secondary'}><Icon size={15}/>{label}</NavLink>)}{(['today','boards','household','lists','notes','settings'] as const).map(s=><NavLink key={s} to={'/community/'+s} className={()=>section===s?'primary':'secondary'}>{({today:'Overview',boards:'Board',household:'Tasks',lists:'Lists',notes:'Notes',settings:'People & identity'})[s]}</NavLink>)}{!!user.admin&&<NavLink to="/community/mail" className={()=>section==='mail'?'primary':'secondary'}>Mail</NavLink>}</nav>
         {section==='discussion'&&<p className="muted-text" style={{marginTop:14}}>A shared message board for members of this space. For IRC conversations, use IRC rooms. For peer messages and photos, use Private messages.</p>}
         {hostPage&&<p className="muted-text" style={{marginTop:14}}>{section==='irc'?'IRC uses your network nickname and account. Connect explicitly; your Grove sign-in does not authenticate an IRC identity.':section==='messages'?'NKN messages use your peer address. Verify a contact’s address before sharing photos; a contact label is only a name you chose.':'Mail uses the host’s configured mailbox, separate from your Grove account.'} These connections currently belong to the host.</p>}
         {error&&<p role="alert" className="error">{error}</p>}
+        {notice&&<p role="status" className="notice">{notice}</p>}
+        {space&&<WatchSpace key={space.id} id={space.id} onChange={()=>void reloadSpaces()}/>}
       </header>
-      {hostPage&&!user.admin?<div className="workspace"><p>Host access required. Shared calendars, plans, and discussions are available to space members.</p></div>:section==='irc'?<div className="community-connection"><IRC/></div>:section==='mail'?<div className="community-connection"><Mail/></div>:section==='messages'?null:space?section==='settings'?<Settings key={space.id} space={space} user={user} onLogout={logout} onLeft={id=>setSpaces(list=>list.filter(s=>s.id!==id))}/>:section==='calendar'?<DayPlanner key={space.id} space={space} user={user}/>:<Workspace key={space.id} section={section==='month'?'calendar':section==='discussion'?'chat':section as 'today'|'boards'|'household'|'lists'|'notes'} space={space} user={user} search=""/>:<div className="workspace"><p>Create a new space, or open an invitation to join one.</p></div>}
+      {hostPage&&!user.admin?<div className="workspace"><p>Host access required. Shared calendars, plans, and discussions are available to space members.</p></div>:section==='irc'?<div className="community-connection"><IRC/></div>:section==='mail'?<div className="community-connection"><Mail/></div>:section==='messages'?null:space?section==='settings'?<Settings key={space.id} space={space} user={user} onLogout={logout} onLeft={(id,note)=>{setSpaces(list=>list.filter(s=>s.id!==id));setNotice(note)}} onChanged={()=>void reloadSpaces()}/>:section==='calendar'?<DayPlanner key={space.id} space={space} user={user}/>:<Workspace key={space.id} section={section==='month'?'calendar':section==='discussion'?'chat':section as 'today'|'boards'|'household'|'lists'|'notes'} space={space} user={user} search=""/>:<div className="workspace"><p>Create a new space, or open an invitation to join one.</p></div>}
       {!!user.admin&&peerVisited&&<div className="community-connection" hidden={section!=='messages'}><P2PChat/></div>}
       {dialog&&<Modal title={dialog==='create'?'Create new space':'Invite members'} onClose={()=>{if(!busy)setDialog(null)}}>
         {dialog==='create'?<form onSubmit={createSpace}>
@@ -106,3 +115,4 @@ export function Community() {
     </>}
   </div>
 }
+function WatchSpace({id,onChange}:{id:string;onChange:()=>void}){useSpaceRefresh(id,onChange,30000);return null}

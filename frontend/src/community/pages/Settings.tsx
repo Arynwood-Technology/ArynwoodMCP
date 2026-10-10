@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react'
-import { Copy, Plus, Download, LogOut, UserMinus, KeyRound, Mail, Hash, Radio } from 'lucide-react'
+import { Copy, Plus, Download, LogOut, UserMinus, KeyRound, Mail, Hash, Radio, Trash2 } from 'lucide-react'
 import { api, type Member, type Space, type User } from '../lib/community'
 import { Modal } from './Workspace'
 import { useSpaceRefresh } from '../lib/live'
@@ -10,12 +10,13 @@ import { downloadFile } from '../../lib/download'
 
 interface Connections { mail: boolean; smtp: boolean; version: string }
 
-export function Settings({ space, user, onLogout, onLeft }: { space: Space; user: User; onLogout: () => Promise<void>; onLeft: (id: string) => void }) {
+export function Settings({ space, user, onLogout, onLeft, onChanged }: { space: Space; user: User; onLogout: () => Promise<void>; onLeft: (id: string, note: string) => void; onChanged: () => void }) {
   const [link, setLink] = useState(''), [message, setMessage] = useState(''), [error, setError] = useState('')
   const [members, setMembers] = useState<Member[]>([])
-  const [removing, setRemoving] = useState<Member | null>(null)
+  const [removing, setRemoving] = useState<Member | null>(null), [steppingDown, setSteppingDown] = useState(false)
   const [connections, setConnections] = useState<Connections | null>(null)
   const owner = space.role === 'owner'
+  const owners = members.filter(m => m.role === 'owner').length
   const grove = useContext(GroveContext)
   const [exporting, setExporting] = useState(false)
   const root = `/community/spaces/${space.id}`
@@ -42,9 +43,18 @@ export function Settings({ space, user, onLogout, onLeft }: { space: Space; user
     try {
       await api(`${root}/members/${member.id}`, 'DELETE')
       setRemoving(null)
-      if (member.id === user.id) { onLeft(space.id); return }
+      if (member.id === user.id) { onLeft(space.id, `You left ${space.name}.`); return }
       setMembers(list => list.filter(m => m.id !== member.id)); flash(`${member.name} was removed.`)
     } catch (e) { setRemoving(null); fail(e) }
+  }
+  async function changeRole(member: Member, role: Member['role']) {
+    try {
+      await api(`${root}/members/${member.id}`, 'PUT', { role })
+      setSteppingDown(false)
+      setMembers(list => list.map(m => m.id === member.id ? { ...m, role } : m))
+      flash(member.id === user.id ? 'You are now a member. Another owner can make you an owner again.' : role === 'owner' ? `${member.name} is now an owner and can manage this space.` : `${member.name} is now a member.`)
+      if (member.id === user.id) onChanged()
+    } catch (e) { setSteppingDown(false); fail(e) }
   }
 
   return <div className="workspace">
@@ -52,22 +62,26 @@ export function Settings({ space, user, onLogout, onLeft }: { space: Space; user
     {error && <p className="error" role="alert">{error}</p>}
     {message && <p className="notice" role="status">{message}</p>}
     <div className="settings-grid">
+      {owner && <SpacePanel space={space} members={members.length} onSaved={text => { flash(text); onChanged() }} onDeleted={() => onLeft(space.id, `${space.name} was deleted.`)} />}
       <section className="panel">
         <h2>People</h2>
         <ul className="member-list">{members.map(m => <li key={m.id}>
           <span className="avatar small" aria-hidden="true">{m.name.charAt(0).toUpperCase()}</span>
-          <span className="who"><strong>{m.name}{m.id === user.id ? ' (you)' : ''}</strong><small>{m.role === 'owner' ? 'Owner' : 'Member'}</small></span>
-          {owner && m.role !== 'owner' && <button className="icon-button push" aria-label={`Remove ${m.name}`} title="Remove from space" onClick={() => setRemoving(m)}><UserMinus size={16} /></button>}
+          <span className="who"><strong>{m.name}{m.id === user.id ? ' (you)' : ''}</strong>{!owner && <small>{m.role === 'owner' ? 'Owner' : 'Member'}</small>}</span>
+          {owner && <select className="role-select push" aria-label={`Role for ${m.name}`} value={m.role} disabled={m.id === user.id && owners < 2} title={m.id === user.id && owners < 2 ? 'A space needs an owner. Make someone else an owner first.' : undefined}
+            onChange={e => { const role = e.target.value as Member['role']; if (m.id === user.id) setSteppingDown(true); else void changeRole(m, role) }}>
+            <option value="owner">Owner</option><option value="member">Member</option></select>}
+          {owner && m.id !== user.id && <button className="icon-button" aria-label={`Remove ${m.name}`} title="Remove from space" onClick={() => setRemoving(m)}><UserMinus size={16} /></button>}
         </li>)}</ul>
         {owner ? <>
+          <p className="muted-text">Owners can rename or delete the space, invite people, and change who else is an owner.</p>
           <p>Share a link with someone you trust. It works once and expires in seven days.</p>
           <button className="primary" onClick={invite}><Plus size={16} /> Create invite</button>
           {link && <div className="invite-box"><input readOnly aria-label="Invite link" value={link} onFocus={e => e.currentTarget.select()} /><button className="secondary" onClick={copy}><Copy size={14} /> Copy</button></div>}
           <PublicInviteLink spaceId={space.id} />
-        </> : <>
-          <p className="muted-text">Only the space owner can invite people.</p>
-          <button className="text-button danger" onClick={() => setRemoving(members.find(m => m.id === user.id) ?? { id: user.id, name: user.name, role: 'member' })}><UserMinus size={15} /> Leave this space</button>
-        </>}
+        </> : <p className="muted-text">Only owners can invite people.</p>}
+        {owner && owners < 2 ? <p className="muted-text">You are the only owner. To leave, make someone else an owner first, or delete the space.</p>
+          : <button className="text-button danger" onClick={() => setRemoving(members.find(m => m.id === user.id) ?? { id: user.id, name: user.name, role: space.role })}><UserMinus size={15} /> Leave this space</button>}
       </section>
       {!!user.admin && <GroveAddress />}
       <section className="panel">
@@ -100,7 +114,51 @@ export function Settings({ space, user, onLogout, onLeft }: { space: Space; user
       <p>{removing.id === user.id ? 'You will lose access until someone invites you again.' : 'They will lose access to this space. What they wrote stays.'}</p>
       <div className="action-row"><button className="danger-button" onClick={() => remove(removing)}>{removing.id === user.id ? 'Leave' : 'Remove'}</button><button className="secondary" onClick={() => setRemoving(null)}>Cancel</button></div>
     </Modal>}
+    {steppingDown && <Modal title="Stop being an owner?" onClose={() => setSteppingDown(false)}>
+      <p>You will stay in {space.name} as a member, and no longer manage it or its people. Another owner can make you an owner again.</p>
+      <div className="action-row"><button className="danger-button" onClick={() => void changeRole(members.find(m => m.id === user.id) ?? { id: user.id, name: user.name, role: 'owner' }, 'member')}>Become a member</button><button className="secondary" onClick={() => setSteppingDown(false)}>Cancel</button></div>
+    </Modal>}
   </div>
+}
+
+function SpacePanel({ space, members, onSaved, onDeleted }: { space: Space; members: number; onSaved: (text: string) => void; onDeleted: () => void }) {
+  const root = `/community/spaces/${space.id}`
+  const [error, setError] = useState(''), [busy, setBusy] = useState(false)
+  const [deleting, setDeleting] = useState(false), [confirm, setConfirm] = useState(''), [deleteError, setDeleteError] = useState('')
+  async function remove(event: React.FormEvent) {
+    event.preventDefault(); setBusy(true); setDeleteError('')
+    try { await api(root, 'DELETE'); onDeleted() }
+    catch (e) { setDeleteError((e as Error).message); setBusy(false) }
+  }
+  return <section className="panel">
+    <h2>This space</h2>
+    {/* Keyed by what is saved, so a change another owner makes shows here instead of being overwritten. */}
+    <form key={`${space.name}\n${space.topic ?? ''}`} onSubmit={async e => {
+      e.preventDefault(); const data = Object.fromEntries(new FormData(e.currentTarget))
+      setBusy(true); setError('')
+      try { await api(root, 'PUT', { name: String(data.name ?? ''), topic: String(data.topic ?? '') }); onSaved('Space saved.') }
+      catch (err) { setError((err as Error).message) } finally { setBusy(false) }
+    }}>
+      <label>Name<input name="name" required maxLength={80} defaultValue={space.name} /></label>
+      <label>Topic<input name="topic" maxLength={300} defaultValue={space.topic ?? ''} placeholder="What this space is for, or what is happening now" aria-describedby="space-topic-hint" /></label><small id="space-topic-hint">Everyone in the space sees it under the name.</small>
+      {error && <p className="error" role="alert">{error}</p>}
+      <div className="action-row"><button className="secondary" disabled={busy}>{busy && !deleting ? 'Saving' : 'Save'}</button></div>
+    </form>
+    <div className="danger-zone">
+      <h3>Delete this space</h3>
+      <p className="muted-text">Deletes it for everyone, with its calendar, tasks, lists, notes, board and discussion.</p>
+      <button className="secondary danger" onClick={() => { setConfirm(''); setDeleteError(''); setDeleting(true) }}><Trash2 size={14} /> Delete space</button>
+    </div>
+    {deleting && <Modal title={`Delete ${space.name}?`} onClose={() => { if (!busy) setDeleting(false) }}>
+      <p>{members > 1 ? `All ${members} members lose` : 'You lose'} this space and everything in it: calendar, tasks, lists, notes, board and discussion. This cannot be undone.</p>
+      <p className="muted-text">To keep a copy, export the space first (Your data).</p>
+      <form onSubmit={remove}>
+        <label>Type the space name to confirm<input aria-label="Space name to confirm" value={confirm} onChange={e => setConfirm(e.target.value)} autoComplete="off" placeholder={space.name} /></label>
+        {deleteError && <p className="error" role="alert">{deleteError}</p>}
+        <div className="action-row"><button className="danger-button" disabled={busy || confirm.trim() !== space.name}>{busy ? 'Deleting…' : 'Delete space'}</button><button type="button" className="secondary" disabled={busy} onClick={() => setDeleting(false)}>Cancel</button></div>
+      </form>
+    </Modal>}
+  </section>
 }
 
 function PasswordPanel({ onDone }: { onDone: (text: string) => void }) {

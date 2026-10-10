@@ -1,8 +1,8 @@
 import { groveUrl } from './grove'
 
 export interface User { id: string; name: string; email: string; admin: number }
-export interface Space { id: string; name: string; role: 'owner' | 'member' }
-export interface Member { id: string; name: string; role: string }
+export interface Space { id: string; name: string; topic?: string; role: 'owner' | 'member' }
+export interface Member { id: string; name: string; role: 'owner' | 'member' }
 export type Kind = 'board' | 'note' | 'task' | 'event' | 'chat' | 'list' | 'item' | 'comment'
 export interface Entry {
   id: string; space_id: string; author_id: string; author: string; kind: Kind
@@ -14,6 +14,8 @@ export async function api<T>(path: string, method = 'GET', body?: unknown): Prom
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
     if (response.status === 401 && !path.startsWith('/auth')) window.dispatchEvent(new Event('session-expired'))
+    // An older Grove has no such action (renaming or deleting a space came later).
+    if (response.status === 405) throw new Error('This Grove is an older version that cannot do this yet. Update the Grove to use it.')
     throw new Error(typeof data.detail === 'string' ? data.detail : 'Check your entries and try again.')
   }
   if (data.error || data.ok === false) throw new Error(data.error || 'Request failed.')
