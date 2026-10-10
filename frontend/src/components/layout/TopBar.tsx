@@ -21,11 +21,11 @@ export function TopBar({ title }: { title: string }) {
         <button
           type="button"
           onClick={() => setPaletteOpen(true)}
-          className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-surface2 py-1 pl-2 pr-1.5 text-[11px] text-muted transition-colors hover:border-accent hover:text-text"
+          className="flex cursor-pointer items-center gap-2 rounded-md border border-border bg-surface2 py-1 pl-2 pr-1.5 text-[13px] text-muted transition-colors hover:border-accent hover:text-text"
         >
           <Search size={12} aria-hidden="true" />
           <span>Search</span>
-          <kbd className="rounded border border-border px-1 py-px font-sans text-[10px]">⌘K</kbd>
+          <kbd className="rounded border border-border px-1 py-px font-sans text-[12px]">⌘K</kbd>
         </button>
 
         {status?.cpu_mode?.enabled && (
@@ -33,7 +33,7 @@ export function TopBar({ title }: { title: string }) {
             type="button"
             onClick={() => setStatusDrawerOpen(true)}
             title="CPU mode is on: tools that need an NVIDIA GPU are switched off (Tools). Open system status."
-            className="cursor-pointer rounded border border-border bg-surface2 px-2 py-0.5 text-[11px] text-muted transition-colors hover:border-accent"
+            className="cursor-pointer rounded border border-border bg-surface2 px-2 py-0.5 text-[13px] text-muted transition-colors hover:border-accent"
           >
             CPU mode
           </button>
@@ -45,7 +45,7 @@ export function TopBar({ title }: { title: string }) {
             type="button"
             onClick={() => setStatusDrawerOpen(true)}
             title={`${gpu.name ?? 'GPU'} — ${gpu.utilization}% utilisation, ${gpu.memory_used}MB of ${gpu.memory_total}MB in use. Open system status.`}
-            className="cursor-pointer rounded border border-transparent bg-accent2/10 px-2 py-0.5 text-[11px] text-accent2 transition-colors hover:border-accent2/40"
+            className="cursor-pointer rounded border border-transparent bg-accent2/10 px-2 py-0.5 text-[13px] text-accent2 transition-colors hover:border-accent2/40"
           >
             GPU {gpu.utilization}% · {gpu.memory_used}MB
           </button>

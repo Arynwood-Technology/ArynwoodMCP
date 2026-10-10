@@ -1,6 +1,6 @@
 {
   "productName": "arynwood-mcp",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "identifier": "com.arynwood.mcp",
   "build": {
     "frontendDist": "../dist",

@@ -788,7 +788,7 @@ export function Chat() {
                   aria-pressed={active}
                   className={cn(
                     'cursor-pointer rounded-full border border-border px-3 py-1 text-xs font-semibold transition-colors',
-                    active ? 'bg-accent text-white' : 'bg-transparent text-muted hover:text-text',
+                    active ? 'bg-accent-solid text-white' : 'bg-transparent text-muted hover:text-text',
                   )}
                 >
                   {p.name}

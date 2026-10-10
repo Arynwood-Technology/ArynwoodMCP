@@ -45,7 +45,7 @@ export function AppShell() {
   // mounts at all (real iframe to a real backend tool, nothing to point it at) —
   // App.tsx's /design route renders DemoUnavailable through the normal Outlet instead.
   const onDesign = !DEMO && location.pathname === '/design'
-  const title = pageTitle ?? ROUTE_TITLES[location.pathname] ?? 'Arynwood'
+  const title = pageTitle ?? (location.pathname.startsWith('/community') ? 'Community' : ROUTE_TITLES[location.pathname]) ?? 'Arynwood'
 
   useEffect(() => {
     // Bootstrap global data. Chat starts on the server the owner last chose (or an
@@ -91,8 +91,10 @@ export function AppShell() {
           </div>
           <div className={onDesign ? 'hidden' : 'h-full'}>
             {/* Keyed by route so navigating away from a crashed page clears the
-                error — previously the boundary latched until a full reload. */}
-            <PageErrorBoundary key={location.pathname}>
+                error — previously the boundary latched until a full reload.
+                Only the first segment: Community's sub-tabs (/community/boards…)
+                must not remount it, or the selected space resets to the first. */}
+            <PageErrorBoundary key={'/' + location.pathname.split('/')[1]}>
               <Outlet />
             </PageErrorBoundary>
           </div>

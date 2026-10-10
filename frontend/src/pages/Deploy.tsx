@@ -36,7 +36,7 @@ const inp: React.CSSProperties = {
   fontSize: 12, width: '100%', boxSizing: 'border-box',
 }
 const btn = (active = true, danger = false): React.CSSProperties => ({
-  background: danger ? '#ef444420' : active ? 'var(--accent)' : 'var(--surface2)',
+  background: danger ? '#ef444420' : active ? 'var(--accent-solid)' : 'var(--surface2)',
   border: `1px solid ${danger ? '#ef4444' : active ? 'var(--accent)' : 'var(--border)'}`,
   color: danger ? '#f87171' : '#fff',
   borderRadius: 6, padding: '6px 12px', cursor: active ? 'pointer' : 'not-allowed',
@@ -248,8 +248,14 @@ export function Deploy() {
   const [newFolder, setNewFolder] = useState('')
   const [creatingFolder, setCreatingFolder] = useState(false)
 
+  const [loadError, setLoadError] = useState('')
   const loadTargets = () =>
-    fetch('/api/deploy/targets').then(r => r.json()).then(setTargets).catch(() => {})
+    fetch('/api/deploy/targets').then(async r => {
+      if (!r.ok) throw new Error('Publish needs the local backend. Start MCP and retry.')
+      const data = await r.json()
+      if (!Array.isArray(data)) throw new Error('Unexpected publish-server response.')
+      return data
+    }).then(data => { setTargets(data); setLoadError('') }).catch(e => setLoadError(e.message))
 
   useEffect(() => { loadTargets() }, [])
 
@@ -374,6 +380,7 @@ export function Deploy() {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      {loadError && <div role="alert" style={{padding:12,color:'var(--danger)'}}>{loadError} <button onClick={loadTargets}>Retry</button></div>}
       {(showModal || editTarget) && (
         <ServerModal
           initial={editTarget ?? undefined}
@@ -407,7 +414,7 @@ export function Deploy() {
               const isActive = activeId === t.id
               return (
                 <div key={t.id} onClick={() => selectTarget(t)} style={{
-                  background: isActive ? 'rgba(124,110,247,0.12)' : 'transparent',
+                  background: isActive ? 'rgba(79,209,171,0.12)' : 'transparent',
                   border: `1px solid ${isActive ? 'var(--accent)' : 'transparent'}`,
                   borderRadius: 8, padding: '10px 10px', cursor: 'pointer', marginBottom: 4,
                 }}>

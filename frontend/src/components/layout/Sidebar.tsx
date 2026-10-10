@@ -20,7 +20,7 @@ const NARROW = '(max-width: 900px)'
 function Label({ children, show }: { children: React.ReactNode; show: boolean }) {
   // Rendered in both modes so the accessible name never depends on layout; the
   // rail just clips it visually.
-  return <span className={show ? 'truncate text-xs font-medium' : 'sr-only'}>{children}</span>
+  return <span className={show ? 'truncate text-sm font-medium' : 'sr-only'}>{children}</span>
 }
 
 function NavBtn({ to, icon: Icon, label, expanded, nested = false, also, gpu = false }: {
@@ -46,7 +46,7 @@ function NavBtn({ to, icon: Icon, label, expanded, nested = false, also, gpu = f
       {({ isActive }) => (
         <>
           <Icon size={nested && !expanded ? 16 : 20} aria-hidden="true" className="shrink-0" />
-          <Label show={expanded}>{label}{isActive || inAlso ? ' (current page)' : ''}<span className="sr-only">{note}</span></Label>
+          <Label show={expanded}>{label}<span className="sr-only">{isActive || inAlso ? ' (current page)' : ''}{note}</span></Label>
           {marked && (expanded
             ? <GpuMark className="ml-auto" />
             : <span aria-hidden="true" className="absolute right-1 top-1 size-1.5 rounded-full bg-[#76b900]" />)}
@@ -88,14 +88,17 @@ export function Sidebar() {
       aria-label="Main"
       className={cn(
         'flex shrink-0 flex-col gap-1 border-r border-border bg-surface pt-4 transition-[width] duration-150',
-        expanded ? 'w-56 items-stretch px-2' : 'w-16 items-center',
+        expanded ? 'w-64 items-stretch px-2' : 'w-16 items-center',
       )}
     >
       {/* Brand + collapse control */}
       <div className={cn('mb-4 flex items-center', expanded ? 'gap-2 px-0.5' : 'flex-col gap-1')}>
         {/* Lit while the model server answers; an eclipse when it doesn't. */}
         <ArynwoodMark size={40} variant={online ? 'orb' : 'eclipse'} />
-        {expanded && <span className="flex-1 truncate text-sm font-semibold text-text">Arynwood</span>}
+        {expanded && <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold leading-tight text-text">Arynwood MCP</span>
+          <span className="block text-[12px] text-muted">Your personal workspace</span>
+        </span>}
         {!narrow && (
           <button
             type="button"

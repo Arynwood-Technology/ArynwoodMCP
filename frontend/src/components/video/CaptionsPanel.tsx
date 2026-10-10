@@ -106,7 +106,7 @@ export function CaptionsPanel({ onSendToEditor }: { onSendToEditor: (segments: C
                 style={{
                   padding: '6px 10px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
                   border: source?.type === 'job' && source.jobId === item.job_id ? '1px solid var(--accent)' : '1px solid var(--border)',
-                  background: source?.type === 'job' && source.jobId === item.job_id ? 'rgba(124,110,247,0.12)' : 'var(--surface)',
+                  background: source?.type === 'job' && source.jobId === item.job_id ? 'rgba(79,209,171,0.12)' : 'var(--surface)',
                   color: source?.type === 'job' && source.jobId === item.job_id ? 'var(--accent)' : 'var(--text)',
                 }}
               >
@@ -133,7 +133,7 @@ export function CaptionsPanel({ onSendToEditor }: { onSendToEditor: (segments: C
         onClick={run} disabled={!source || running}
         style={{
           padding: '10px 24px', borderRadius: 8, fontWeight: 600, fontSize: 13, alignSelf: 'flex-start',
-          background: !source || running ? 'var(--surface2)' : 'var(--accent)', color: '#fff', border: 'none',
+          background: !source || running ? 'var(--surface2)' : 'var(--accent-solid)', color: '#fff', border: 'none',
           cursor: !source || running ? 'not-allowed' : 'pointer', opacity: !source || running ? 0.5 : 1,
         }}
       >
@@ -153,7 +153,7 @@ export function CaptionsPanel({ onSendToEditor }: { onSendToEditor: (segments: C
           <div style={{ display: 'flex', gap: 10 }}>
             <button
               onClick={sendToEditor}
-              style={{ alignSelf: 'flex-start', fontSize: 12, fontWeight: 600, color: '#fff', background: 'var(--accent)', border: 'none', borderRadius: 6, padding: '7px 14px', cursor: 'pointer' }}
+              style={{ alignSelf: 'flex-start', fontSize: 12, fontWeight: 600, color: '#fff', background: 'var(--accent-solid)', border: 'none', borderRadius: 6, padding: '7px 14px', cursor: 'pointer' }}
             >
               ➜ Send to Editor
             </button>

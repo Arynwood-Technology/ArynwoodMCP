@@ -153,7 +153,7 @@ export function GeneratePanel({ onOpenEditor }: { onOpenEditor?: () => void }) {
               style={{
                 padding: '8px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
                 border: e.id === engineId ? '1px solid var(--accent)' : '1px solid var(--border)',
-                background: e.id === engineId ? 'rgba(124,110,247,0.12)' : 'var(--surface)',
+                background: e.id === engineId ? 'rgba(79,209,171,0.12)' : 'var(--surface)',
                 color: e.id === engineId ? 'var(--accent)' : 'var(--text)',
               }}
             >
@@ -216,7 +216,7 @@ export function GeneratePanel({ onOpenEditor }: { onOpenEditor?: () => void }) {
         onClick={run} disabled={!canRun}
         style={{
           padding: '10px 24px', borderRadius: 8, fontWeight: 600, fontSize: 13, alignSelf: 'flex-start',
-          background: canRun ? 'var(--accent)' : 'var(--surface2)', color: '#fff', border: 'none',
+          background: canRun ? 'var(--accent-solid)' : 'var(--surface2)', color: '#fff', border: 'none',
           cursor: canRun ? 'pointer' : 'not-allowed', opacity: canRun ? 1 : 0.5,
         }}
       >

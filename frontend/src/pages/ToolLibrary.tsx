@@ -109,7 +109,7 @@ const inp: React.CSSProperties = {
 }
 
 const runBtn = (disabled = false): React.CSSProperties => ({
-  background: disabled ? 'var(--surface2)' : 'var(--accent)',
+  background: disabled ? 'var(--surface2)' : 'var(--accent-solid)',
   border: 'none', color: '#fff', borderRadius: 6, padding: '8px 14px',
   cursor: disabled ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 600,
 })
@@ -707,7 +707,7 @@ function ActionSection({ tool }: { tool: Tool & { local_html?: boolean } }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
         {(hasOpenUrl || hasLocalFile) && (
-          <button onClick={openApp} style={{ ...actionBtnBase, background: 'var(--accent)', color: '#fff' }}>
+          <button onClick={openApp} style={{ ...actionBtnBase, background: 'var(--accent-solid)', color: '#fff' }}>
             {hasLocalFile ? <FolderOpen size={14} /> : <ExternalLink size={14} />}
             {hasLocalFile ? 'Open File' : 'Open App'}
           </button>
@@ -791,7 +791,14 @@ function HardwareCard() {
   const [copying, setCopying] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/system/hardware').then(r => r.json()).then(setHw).catch(() => {})
+    let active = true
+    fetch('/api/system/hardware').then(async r => {
+      if (!r.ok) throw new Error('Hardware information unavailable')
+      const data = await r.json()
+      if (typeof data?.cpu?.name !== 'string') throw new Error('Invalid hardware response')
+      return data
+    }).then(data => { if (active) setHw(data) }).catch(() => {})
+    return () => { active = false }
   }, [])
 
   const copy = (text: string, key: string) => {
@@ -1138,7 +1145,7 @@ export function ToolLibrary() {
             const active = filterCat === cat
             return (
               <button key={cat} onClick={() => setFilterCat(cat)} style={{
-                background: active ? (meta?.color ?? 'var(--accent)') + '22' : 'var(--surface2)',
+                background: active ? (meta?.color ?? 'var(--accent-solid)') + '22' : 'var(--surface2)',
                 border: `1px solid ${active ? (meta?.color ?? 'var(--accent)') : 'var(--border)'}`,
                 color: active ? (meta?.color ?? 'var(--accent)') : 'var(--text-muted)',
                 borderRadius: 20, padding: '4px 12px', cursor: 'pointer', fontSize: 11, fontWeight: 600,

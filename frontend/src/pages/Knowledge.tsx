@@ -184,7 +184,7 @@ export function Knowledge() {
               <button key={m.key} onClick={() => { setMode(m.key); setResultMsg(''); setErrorMsg('') }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  background: mode === m.key ? 'rgba(124,110,247,0.15)' : 'var(--surface)',
+                  background: mode === m.key ? 'rgba(79,209,171,0.15)' : 'var(--surface)',
                   border: `1px solid ${mode === m.key ? 'var(--accent)' : 'var(--border)'}`,
                   color: mode === m.key ? 'var(--accent)' : 'var(--text-muted)',
                   borderRadius: 6, padding: '6px 12px', cursor: 'pointer', fontSize: 12,
@@ -201,7 +201,7 @@ export function Knowledge() {
                 onKeyDown={e => e.key === 'Enter' && submit()}
                 style={{ ...inputStyle, flex: 1 }} />
               <button onClick={submit} disabled={busy}
-                style={{ background: 'var(--accent)', border: 'none', color: '#fff', borderRadius: 6, padding: '7px 20px', cursor: busy ? 'default' : 'pointer', fontSize: 13, opacity: busy ? 0.6 : 1 }}>
+                style={{ background: 'var(--accent-solid)', border: 'none', color: '#fff', borderRadius: 6, padding: '7px 20px', cursor: busy ? 'default' : 'pointer', fontSize: 13, opacity: busy ? 0.6 : 1 }}>
                 {busy ? 'Learning…' : 'Learn'}
               </button>
             </div>
@@ -252,7 +252,7 @@ export function Knowledge() {
                 onChange={e => setTextBody(e.target.value)}
                 rows={6} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
               <button onClick={submit} disabled={busy}
-                style={{ alignSelf: 'flex-start', background: 'var(--accent)', border: 'none', color: '#fff', borderRadius: 6, padding: '7px 20px', cursor: busy ? 'default' : 'pointer', fontSize: 13, opacity: busy ? 0.6 : 1 }}>
+                style={{ alignSelf: 'flex-start', background: 'var(--accent-solid)', border: 'none', color: '#fff', borderRadius: 6, padding: '7px 20px', cursor: busy ? 'default' : 'pointer', fontSize: 13, opacity: busy ? 0.6 : 1 }}>
                 {busy ? 'Learning…' : 'Learn'}
               </button>
             </div>

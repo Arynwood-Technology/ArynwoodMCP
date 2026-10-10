@@ -20,7 +20,7 @@ export function EmptyState({ icon, iconClassName, title, description, action, cl
       {icon && <div aria-hidden="true" className={cn('text-muted opacity-70', iconClassName)}>{icon}</div>}
       <p className="m-0 text-[13px] text-muted">{title}</p>
       {description && (
-        <p className="m-0 max-w-sm text-[11px] leading-relaxed text-muted opacity-80">
+        <p className="m-0 max-w-sm text-[13px] leading-relaxed text-muted opacity-80">
           {description}
         </p>
       )}

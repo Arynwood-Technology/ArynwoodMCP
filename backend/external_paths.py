@@ -67,9 +67,7 @@ SYCAMORE_REPO_DIR = _env(
 
 # Arynwood Community (optional sidecar) — a local checkout of its official repo.
 COMMUNITY_DIR = _env("ARYNWOOD_COMMUNITY_DIR", os.path.join(PROJECTS_DIR, "arynwood-community"))
-# TODO(community-repo): PLACEHOLDER — the official repo under the Arynwood-Technology GitHub org
-# hasn't been created yet. Once it exists, set the real URL here (the UI and docs read it from
-# here) and update every other `TODO(community-repo)` marker (`grep -rn "TODO(community-repo)"`).
+# Arynwood Grove (Community's successor) is published here; the UI and docs read the link from here.
 COMMUNITY_REPO_URL = "https://github.com/Arynwood-Technology/arynwood-community"
 
 

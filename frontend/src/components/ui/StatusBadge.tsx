@@ -3,7 +3,7 @@ import { cn } from '../../lib/cn'
 
 const SHELL =
   'inline-flex items-center gap-1.5 rounded-md border border-border bg-surface2 px-2.5 py-1 ' +
-  'text-[11px] text-text no-underline'
+  'text-[13px] text-text no-underline'
 const INTERACTIVE = 'cursor-pointer transition-colors hover:border-accent'
 
 function Dot({ online }: { online: boolean }) {

@@ -9,6 +9,29 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+## [0.4.9] — release candidate
+
+### Added
+
+- **Community inside the app.** The Community page now opens your Grove's spaces — day
+  planner and calendar, tasks, lists, notes, board, discussion, members and invitations —
+  instead of only launching it in a browser. A Grove's host also gets its IRC rooms, peer
+  messages and Mail. The screens come from Arynwood Grove 0.4.0.
+- **Choose your Grove:** the one on this computer (started from the page) or one on a server,
+  by its `https://` address. Pasting an invitation to a different Grove asks before switching.
+- Arynwood's backend passes the page's requests, live change notices and the host's sockets
+  to that one Grove and keeps the Grove sign-in, so you stay signed in. It never forwards
+  Arynwood's own credentials and doesn't follow a Grove's redirects. See
+  [docs/community.md](docs/community.md).
+
+### Changed
+
+- **Charcoal and green-teal look** with larger, brighter text across the workspace and Design
+  Center. Buttons with white text use a darker green so they stay readable.
+- The Dashboard opens with a short welcome; the sidebar is wider and labelled "Arynwood MCP".
+- The Tools and Publish pages no longer crash when the backend is offline; Publish says why
+  and offers Retry.
+
 ## [0.4.8] — 2026-10-09
 
 ### Added

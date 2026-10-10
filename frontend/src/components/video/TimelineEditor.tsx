@@ -1422,7 +1422,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
         <strong style={{ fontSize: 12 }}>{clips.length === 0 ? 'Start by importing media from the left.' : 'Project controls'}</strong>
         <span style={{ color: 'var(--text-muted)', fontSize: 12, flex: 1 }}>Trim and arrange here, then add captions and generated shots when you need them.</span>
         {onOpenCaptions && <button onClick={onOpenCaptions} style={{ padding: '6px 9px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface2)', color: 'var(--text)', cursor: 'pointer', fontSize: 11 }}><Captions size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />Captions</button>}
-        {onOpenGenerate && <button onClick={onOpenGenerate} style={{ padding: '6px 9px', borderRadius: 6, border: '1px solid var(--accent)', background: 'rgba(124,110,247,.1)', color: 'var(--accent)', cursor: 'pointer', fontSize: 11 }}><Sparkles size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />Generate shot</button>}
+        {onOpenGenerate && <button onClick={onOpenGenerate} style={{ padding: '6px 9px', borderRadius: 6, border: '1px solid var(--accent)', background: 'rgba(79,209,171,.1)', color: 'var(--accent)', cursor: 'pointer', fontSize: 11 }}><Sparkles size={13} style={{ verticalAlign: '-2px', marginRight: 4 }} />Generate shot</button>}
       </div>
       <div style={{ display: 'flex', flex: 1, minHeight: 0, gap: 16 }}>
         {/* ── Media Pool ── */}
@@ -1449,7 +1449,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
             onDragOver={e => { e.preventDefault(); setIsFileOver(true) }}
             onDragLeave={() => setIsFileOver(false)}
             onDrop={e => { e.preventDefault(); setIsFileOver(false); addUpload(e.dataTransfer.files) }}
-            style={{ border: `1px dashed ${isFileOver ? 'var(--accent)' : 'var(--border)'}`, background: isFileOver ? 'rgba(124,110,247,0.06)' : 'transparent', borderRadius: 8, padding: '14px 16px' }}
+            style={{ border: `1px dashed ${isFileOver ? 'var(--accent)' : 'var(--border)'}`, background: isFileOver ? 'rgba(79,209,171,0.06)' : 'transparent', borderRadius: 8, padding: '14px 16px' }}
           >
             <span style={LABEL}>Upload Clips & Photos</span>
             <input type="file" accept="video/*,image/*" multiple style={{ fontSize: 12, color: 'var(--text)', width: '100%' }} onChange={e => addUpload(e.target.files)} />
@@ -1465,7 +1465,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
                   style={{
                     padding: '6px 10px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
                     border: canvas === opt.id ? '1px solid var(--accent)' : '1px solid var(--border)',
-                    background: canvas === opt.id ? 'rgba(124,110,247,0.12)' : 'var(--surface)',
+                    background: canvas === opt.id ? 'rgba(79,209,171,0.12)' : 'var(--surface)',
                     color: canvas === opt.id ? 'var(--accent)' : 'var(--text)',
                   }}
                 >
@@ -1504,7 +1504,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
                 <button
                   onClick={togglePlay}
                   title="Play/Pause (Space)"
-                  style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  style={{ width: 30, height: 30, borderRadius: '50%', border: 'none', background: 'var(--accent-solid)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   {playing ? <Pause size={14} /> : <Play size={14} />}
                 </button>
@@ -1530,7 +1530,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
                 style={{
                   display: 'flex', alignItems: 'center', gap: 4, padding: '4px 9px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
                   border: splitMode ? '1px solid var(--accent)' : '1px solid var(--border)',
-                  background: splitMode ? 'rgba(124,110,247,0.12)' : 'var(--surface)',
+                  background: splitMode ? 'rgba(79,209,171,0.12)' : 'var(--surface)',
                   color: splitMode ? 'var(--accent)' : 'var(--text-muted)',
                 }}
               >
@@ -1542,7 +1542,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
                 style={{
                   display: 'flex', alignItems: 'center', gap: 4, padding: '4px 9px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
                   border: snapEnabled ? '1px solid var(--accent)' : '1px solid var(--border)',
-                  background: snapEnabled ? 'rgba(124,110,247,0.12)' : 'var(--surface)',
+                  background: snapEnabled ? 'rgba(79,209,171,0.12)' : 'var(--surface)',
                   color: snapEnabled ? 'var(--accent)' : 'var(--text-muted)',
                 }}
               >
@@ -1576,7 +1576,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
                           onClick={e => onBlockClick(e, c)}
                           style={{
                             width: w, height: '100%', position: 'relative', flexShrink: 0,
-                            background: dragKey === c.key ? 'rgba(124,110,247,0.35)' : 'var(--surface2)',
+                            background: dragKey === c.key ? 'rgba(79,209,171,0.35)' : 'var(--surface2)',
                             border: selection?.kind === 'clip' && selection.key === c.key ? '2px solid var(--accent)' : '1px solid var(--border)',
                             borderRadius: 4, overflow: 'hidden', marginRight: 2,
                             cursor: splitMode ? 'crosshair' : dragKey === c.key ? 'grabbing' : 'grab',
@@ -1614,7 +1614,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
                           width: 18, height: 18, borderRadius: '50%', cursor: 'pointer', zIndex: 2,
                           fontSize: 9, lineHeight: '16px', padding: 0,
                           border: t.type === 'cut' ? '1px solid var(--border)' : '1px solid var(--accent)',
-                          background: t.type === 'cut' ? 'var(--surface)' : 'var(--accent)',
+                          background: t.type === 'cut' ? 'var(--surface)' : 'var(--accent-solid)',
                           color: t.type === 'cut' ? 'var(--text-muted)' : '#fff',
                         }}
                       >
@@ -1639,7 +1639,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
                         title={cue.text}
                         style={{
                           position: 'absolute', left: x, width: w, height: '100%',
-                          background: captionDragKey === cue.key ? 'rgba(124,110,247,0.35)' : 'var(--surface2)',
+                          background: captionDragKey === cue.key ? 'rgba(79,209,171,0.35)' : 'var(--surface2)',
                           border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
                           borderRadius: 4, overflow: 'hidden',
                           cursor: captionDragKey === cue.key ? 'grabbing' : 'grab',
@@ -1672,7 +1672,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
                           onClick={e => onAudioBlockClick(e, t)}
                           style={{
                             position: 'absolute', left: x, width: w, height: '100%',
-                            background: audioDragKey === t.key ? 'rgba(124,110,247,0.35)' : 'var(--surface2)',
+                            background: audioDragKey === t.key ? 'rgba(79,209,171,0.35)' : 'var(--surface2)',
                             border: selection?.kind === 'audio' && selection.key === t.key ? '2px solid var(--accent)' : '1px solid var(--border)',
                             borderRadius: 4, overflow: 'hidden',
                             cursor: splitMode ? 'crosshair' : audioDragKey === t.key ? 'grabbing' : 'grab',
@@ -1699,9 +1699,9 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
 
               <div
                 onMouseDown={onRulerMouseDown}
-                style={{ position: 'absolute', left: playhead * pxPerSec - 1, top: 0, bottom: 0, width: 2, background: 'var(--accent)', cursor: 'col-resize', zIndex: 5 }}
+                style={{ position: 'absolute', left: playhead * pxPerSec - 1, top: 0, bottom: 0, width: 2, background: 'var(--accent-solid)', cursor: 'col-resize', zIndex: 5 }}
               >
-                <div style={{ position: 'absolute', top: -6, left: -5, width: 12, height: 12, borderRadius: '50%', background: 'var(--accent)' }} />
+                <div style={{ position: 'absolute', top: -6, left: -5, width: 12, height: 12, borderRadius: '50%', background: 'var(--accent-solid)' }} />
               </div>
             </div>
             </div>
@@ -1729,7 +1729,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
                       style={{
                         display: 'flex', alignItems: 'center', gap: 4, padding: '3px 7px 3px 3px', borderRadius: 999, cursor: 'pointer',
                         border: selectedClip.look === look.id ? '1px solid var(--accent)' : '1px solid var(--border)',
-                        background: selectedClip.look === look.id ? 'rgba(124,110,247,0.12)' : 'var(--surface)',
+                        background: selectedClip.look === look.id ? 'rgba(79,209,171,0.12)' : 'var(--surface)',
                       }}
                     >
                       <span style={{ width: 14, height: 14, borderRadius: '50%', background: look.swatch, flexShrink: 0, border: '1px solid rgba(255,255,255,0.15)' }} />
@@ -1750,7 +1750,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
                         style={{
                           padding: '3px 9px', borderRadius: 999, cursor: 'pointer', fontSize: 10, fontWeight: 600,
                           border: selectedClip.speed === speed ? '1px solid var(--accent)' : '1px solid var(--border)',
-                          background: selectedClip.speed === speed ? 'rgba(124,110,247,0.12)' : 'var(--surface)',
+                          background: selectedClip.speed === speed ? 'rgba(79,209,171,0.12)' : 'var(--surface)',
                           color: selectedClip.speed === speed ? 'var(--accent)' : 'var(--text-muted)',
                         }}
                       >
@@ -1826,7 +1826,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
             style={{
               padding: '5px 10px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
               border: showMusicBrowser ? '1px solid var(--accent)' : '1px solid var(--border)',
-              background: showMusicBrowser ? 'rgba(124,110,247,0.12)' : 'var(--surface)',
+              background: showMusicBrowser ? 'rgba(79,209,171,0.12)' : 'var(--surface)',
               color: showMusicBrowser ? 'var(--accent)' : 'var(--text)',
             }}
           >
@@ -1847,7 +1847,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
             style={{
               display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600,
               cursor: rendering || micRequesting ? 'not-allowed' : 'pointer', border: 'none',
-              background: recording ? 'var(--danger)' : 'var(--accent)', color: '#fff', opacity: rendering || micRequesting ? 0.5 : 1,
+              background: recording ? 'var(--danger)' : 'var(--accent-solid)', color: '#fff', opacity: rendering || micRequesting ? 0.5 : 1,
             }}
           >
             {recording ? <Square size={12} /> : <Mic size={12} />}
@@ -1855,7 +1855,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
           </button>
           {recording && (
             <div style={{ width: 60, height: 6, borderRadius: 3, background: 'var(--surface2)', overflow: 'hidden' }}>
-              <div style={{ width: `${Math.min(recordLevel * 220, 100)}%`, height: '100%', background: 'var(--accent)', transition: 'width 60ms linear' }} />
+              <div style={{ width: `${Math.min(recordLevel * 220, 100)}%`, height: '100%', background: 'var(--accent-solid)', transition: 'width 60ms linear' }} />
             </div>
           )}
         </div>
@@ -1884,7 +1884,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
               </select>
               <button
                 onClick={searchMusic} disabled={musicSearching}
-                style={{ padding: '6px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: musicSearching ? 'wait' : 'pointer', border: 'none', background: 'var(--accent)', color: '#fff' }}
+                style={{ padding: '6px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: musicSearching ? 'wait' : 'pointer', border: 'none', background: 'var(--accent-solid)', color: '#fff' }}
               >
                 {musicSearching ? 'Searching…' : 'Search'}
               </button>
@@ -1966,7 +1966,7 @@ export function TimelineEditor({ active = true, pendingCaptions, onCaptionsImpor
             onClick={render} disabled={clips.length === 0 || rendering || recording}
             style={{
               padding: '10px 24px', borderRadius: 8, fontWeight: 600, fontSize: 13, alignSelf: 'flex-start',
-              background: clips.length === 0 || rendering || recording ? 'var(--surface2)' : 'var(--accent)', color: '#fff', border: 'none',
+              background: clips.length === 0 || rendering || recording ? 'var(--surface2)' : 'var(--accent-solid)', color: '#fff', border: 'none',
               cursor: clips.length === 0 || rendering || recording ? 'not-allowed' : 'pointer', opacity: clips.length === 0 || rendering || recording ? 0.5 : 1,
             }}
           >

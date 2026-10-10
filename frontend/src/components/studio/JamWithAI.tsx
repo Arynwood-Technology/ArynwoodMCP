@@ -37,7 +37,7 @@ const PROVIDER_LISTENING_NOTES: Record<string, string> = {
 const chip = (active: boolean, disabled = false): React.CSSProperties => ({
   padding: '8px 14px', borderRadius: 8, cursor: disabled ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 600,
   border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
-  background: active ? 'rgba(124,110,247,0.16)' : 'var(--surface2)',
+  background: active ? 'rgba(79,209,171,0.16)' : 'var(--surface2)',
   color: disabled ? 'var(--text-muted)' : active ? 'var(--accent)' : 'var(--text)',
   opacity: disabled ? 0.5 : 1,
 })
@@ -147,7 +147,7 @@ export function JamWithAI({ sidecarReady }: JamWithAIProps) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 900 }}>
-      <section style={{ padding: 18, borderRadius: 12, border: '1px solid var(--border)', background: 'linear-gradient(135deg, rgba(124,110,247,0.16), rgba(94,234,212,0.04))' }}>
+      <section style={{ padding: 18, borderRadius: 12, border: '1px solid var(--border)', background: 'linear-gradient(135deg, rgba(79,209,171,0.16), rgba(94,234,212,0.04))' }}>
         <div style={label}>What are you giving the AI?</div>
         <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
           Record, upload, or pick a take, then ask the AI to respond as a bandmate. The response always lands
@@ -247,7 +247,7 @@ export function JamWithAI({ sidecarReady }: JamWithAIProps) {
           disabled={!canJam}
           onClick={handleJam}
           style={{ marginTop: 16, padding: '10px 20px', border: 'none', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8,
-            background: canJam ? 'var(--accent)' : 'var(--surface2)', color: canJam ? '#fff' : 'var(--text-muted)',
+            background: canJam ? 'var(--accent-solid)' : 'var(--surface2)', color: canJam ? '#fff' : 'var(--text-muted)',
             cursor: canJam ? 'pointer' : 'not-allowed', fontSize: 13, fontWeight: 700 }}
         >
           <Guitar size={14} /> Generate response
@@ -269,7 +269,7 @@ export function JamWithAI({ sidecarReady }: JamWithAIProps) {
                 <span>{job.progress}%</span>
               </div>
               <div style={{ height: 5, background: 'var(--surface2)', borderRadius: 3, overflow: 'hidden', marginTop: 4 }}>
-                <div style={{ height: '100%', width: `${job.progress}%`, background: 'var(--accent)', transition: 'width .3s' }} />
+                <div style={{ height: '100%', width: `${job.progress}%`, background: 'var(--accent-solid)', transition: 'width .3s' }} />
               </div>
             </div>
           ))}

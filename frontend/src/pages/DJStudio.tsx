@@ -169,7 +169,7 @@ function SessionCard({ session, tools, starting, onStart }: {
         ))}
       </div>
       <button onClick={() => onStart(session.id)} disabled={starting} style={{
-        background: 'var(--accent)', border: 'none', color: '#fff', borderRadius: 6,
+        background: 'var(--accent-solid)', border: 'none', color: '#fff', borderRadius: 6,
         padding: '7px 12px', cursor: starting ? 'default' : 'pointer', fontSize: 12, fontWeight: 600,
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
       }}>

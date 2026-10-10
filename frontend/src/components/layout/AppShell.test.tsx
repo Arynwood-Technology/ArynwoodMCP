@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { MemoryRouter, Routes, Route, Link } from 'react-router-dom'
+import { useEffect } from 'react'
 import { AppShell } from './AppShell'
 import { usePageTitle } from './usePageTitle'
 import { useAppStore } from '../../store/useAppStore'
@@ -76,6 +77,31 @@ describe('AppShell', () => {
     renderAt('/design')
     expect(screen.getByTestId('design-center')).toBeInTheDocument()
     expect(screen.queryByRole('banner')).not.toBeInTheDocument()
+  })
+
+  it('keeps a page mounted while moving between its own sub-routes', async () => {
+    // Community holds the selected space in state; a remount on /community/boards
+    // silently switched it back to the first space (and "Leave" left the wrong one).
+    let mounts = 0
+    function Nested() {
+      useEffect(() => { mounts++ }, [])
+      return <><Link to="/community/boards">Boards</Link><Link to="/models">Leave community</Link></>
+    }
+    render(
+      <MemoryRouter initialEntries={['/community/calendar']}>
+        <Routes>
+          <Route element={<AppShell />}>
+            <Route path="/community/*" element={<Nested />} />
+            <Route path="/models" element={<Page />} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    )
+    expect(mounts).toBe(1)
+    fireEvent.click(screen.getByRole('link', { name: 'Boards' }))
+    expect(mounts).toBe(1)
+    fireEvent.click(screen.getByRole('link', { name: 'Leave community' }))
+    expect(await screen.findByText('page body')).toBeInTheDocument()
   })
 
   it('clears the title override when the overriding page unmounts', () => {

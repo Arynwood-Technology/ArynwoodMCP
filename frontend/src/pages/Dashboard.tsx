@@ -35,8 +35,8 @@ function QuickLinks() {
         >
           <l.icon size={18} aria-hidden="true" className="shrink-0" />
           <span className="min-w-0">
-            <span className="block text-xs font-semibold text-text">{l.label}</span>
-            <span className="mt-px block text-[10px] text-muted">{l.desc}</span>
+            <span className="block text-sm font-semibold text-text">{l.label}</span>
+            <span className="mt-1 block text-xs leading-relaxed text-muted">{l.desc}</span>
           </span>
         </Link>
       ))}
@@ -146,11 +146,11 @@ function ArynwoodChat() {
             <p className="m-0 text-[13px] font-bold text-text">Arynwood</p>
             <p className="m-0 flex items-center gap-1">
               <span aria-hidden="true" className={`size-1.5 shrink-0 rounded-full ${wsReady ? 'bg-success' : 'bg-warning'}`} />
-              <span className="text-[10px] text-muted">{wsReady ? 'connected' : 'connecting…'}</span>
+              <span className="text-[12px] text-muted">{wsReady ? 'connected' : 'connecting…'}</span>
             </p>
           </div>
         </div>
-        <Button size="sm" variant="outline" className="text-[10px] text-muted" onClick={() => navigate('/chat')}>
+        <Button size="sm" variant="outline" className="text-[12px] text-muted" onClick={() => navigate('/chat')}>
           Full chat <ArrowRight size={11} aria-hidden="true" />
         </Button>
       </div>
@@ -162,13 +162,13 @@ function ArynwoodChat() {
             aria-label="Model name"
             onBlur={() => { if (modelDraft.trim()) setActiveModel(modelDraft.trim()); setEditingModel(false) }}
             onKeyDown={e => { if (e.key === 'Enter') { if (modelDraft.trim()) setActiveModel(modelDraft.trim()); setEditingModel(false) } if (e.key === 'Escape') setEditingModel(false) }}
-            className="w-25 rounded-md border border-border bg-surface px-1.5 py-0.5 text-[10px] text-text" />
+            className="w-25 rounded-md border border-border bg-surface px-1.5 py-0.5 text-[12px] text-text" />
         ) : (
           <Button
             size="sm"
             title="Click to change model"
             onClick={() => { setModelDraft(activeModel); setEditingModel(true) }}
-            className="h-auto shrink-0 border-accent/30 bg-accent/12 px-1.5 py-0.5 text-[10px] text-accent hover:bg-accent/20"
+            className="h-auto shrink-0 border-accent/30 bg-accent/12 px-1.5 py-0.5 text-[12px] text-accent hover:bg-accent/20"
           >
             ⬡ {activeModel}
           </Button>
@@ -176,11 +176,11 @@ function ArynwoodChat() {
         {modelServers.length > 0 ? (
           <select value={activeServer?.id ?? ''} aria-label="Model server"
             onChange={e => { const s = modelServers.find(x => x.id === Number(e.target.value)); if (s) chooseServer(s) }}
-            className="flex-1 cursor-pointer rounded-md border border-border bg-surface px-1.5 py-0.5 text-[10px] text-text">
+            className="flex-1 cursor-pointer rounded-md border border-border bg-surface px-1.5 py-0.5 text-[12px] text-text">
             {modelServers.map(s => <option key={s.id} value={s.id}>{s.name} ({serverAddress(s)})</option>)}
           </select>
         ) : (
-          <span className="text-[10px] italic text-muted">{activeServer ? serverAddress(activeServer) : 'localhost:11434'}</span>
+          <span className="text-[12px] italic text-muted">{activeServer ? serverAddress(activeServer) : 'localhost:11434'}</span>
         )}
       </div>
 
@@ -192,15 +192,15 @@ function ArynwoodChat() {
         )}
         {msgs.map(m => {
           if (m.role === 'error') return (
-            <p key={m.id} role="alert" className="m-0 flex items-center gap-[7px] rounded-[7px] border border-danger/30 bg-danger/8 px-2.5 py-[7px] text-[11px]">
+            <p key={m.id} role="alert" className="m-0 flex items-center gap-[7px] rounded-[7px] border border-danger/30 bg-danger/8 px-2.5 py-[7px] text-[13px]">
               <span aria-hidden="true">⚠️</span><span className="text-danger">{m.text}</span>
             </p>
           )
           const mine = m.role === 'user'
           return (
             <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-              <p className={`m-0 max-w-[88%] whitespace-pre-wrap break-words rounded-[10px] px-[11px] py-[7px] text-xs leading-normal text-text ${
-                mine ? 'rounded-br-[2px] bg-accent' : 'rounded-bl-[2px] border border-border bg-surface'
+              <p className={`m-0 max-w-[88%] whitespace-pre-wrap break-words rounded-[10px] px-[11px] py-[7px] text-sm leading-relaxed text-text ${
+                mine ? 'rounded-br-[2px] bg-accent-solid' : 'rounded-bl-[2px] border border-border bg-surface'
               }`}>
                 {m.text}
               </p>
@@ -209,7 +209,7 @@ function ArynwoodChat() {
         })}
         {streaming && (
           <div className="flex justify-start">
-            <p className="m-0 max-w-[88%] whitespace-pre-wrap break-words rounded-[10px] rounded-bl-[2px] border border-border bg-surface px-[11px] py-[7px] text-xs leading-normal text-text">
+            <p className="m-0 max-w-[88%] whitespace-pre-wrap break-words rounded-[10px] rounded-bl-[2px] border border-border bg-surface px-[11px] py-[7px] text-sm leading-relaxed text-text">
               {stripInternalBlocks(streamBuf) || <span className="opacity-40">Thinking…</span>}
               <span aria-hidden="true" className="ml-0.5 opacity-40">▋</span>
             </p>
@@ -221,7 +221,7 @@ function ArynwoodChat() {
       {attachment && (
         <div className="mt-1.5 flex items-center gap-1.5 rounded-md border border-accent/30 bg-accent/10 px-2.5 py-1">
           <Paperclip size={11} aria-hidden="true" className="shrink-0 text-accent" />
-          <span className="flex-1 truncate text-[11px] text-accent">{attachment.name}</span>
+          <span className="flex-1 truncate text-[13px] text-accent">{attachment.name}</span>
           <IconButton size="sm" label="Remove attachment" className="size-4" onClick={() => setAttachment(null)}>
             <X size={12} />
           </IconButton>
@@ -244,7 +244,7 @@ function ArynwoodChat() {
           placeholder={wsReady ? (attachment ? 'Add a message…' : 'Ask Arynwood…') : 'Connecting…'}
           aria-label="Message Arynwood"
           disabled={!wsReady || streaming}
-          className="flex-1 rounded-md border border-border bg-surface px-2 py-1 text-xs text-text disabled:opacity-50" />
+          className="flex-1 rounded-md border border-border bg-surface px-3 py-2 text-sm text-text disabled:opacity-50" />
         <IconButton size="sm" variant="primary" label="Send message" onClick={send} disabled={!canSend}>
           <ArrowRight size={14} />
         </IconButton>
@@ -283,14 +283,14 @@ export function Dashboard() {
             <StatusBadge online={status.tortoise_tts}     label="TTS"     to="/tools" />
             <StatusBadge online={status.prometheus}       label="Metrics" href="http://localhost:9090" />
             {status.gpu?.available && (
-              <p className="m-0 ml-1 flex gap-2.5 text-[11px] text-muted">
+              <p className="m-0 ml-1 flex gap-2.5 text-[13px] text-muted">
                 <span className="text-warning">{status.gpu.temp}°C</span>
                 <span>{status.gpu.utilization}% util</span>
                 <span className="text-accent">{status.gpu.memory_used}/{status.gpu.memory_total}MB</span>
               </p>
             )}
           </>
-        ) : <span className="text-[11px] text-muted">Checking services…</span>}
+        ) : <span className="text-[13px] text-muted">Checking services…</span>}
         {status?.can_restart !== false && (
           <Button
             size="sm" variant="outline" className="ml-auto"
@@ -301,6 +301,14 @@ export function Dashboard() {
           </Button>
         )}
       </PageBar>
+
+      <section aria-label="Welcome to Arynwood MCP" className="flex items-center gap-4 border-b border-border bg-surface px-5 py-4">
+        <ArynwoodMark size={52} variant="orb" />
+        <div>
+          <h1 className="m-0 text-lg font-semibold text-text">Arynwood MCP</h1>
+          <p className="m-0 mt-1 text-sm leading-relaxed text-muted">All things, connected. Your personal space for local AI, design, and community.</p>
+        </div>
+      </section>
 
       {/* Two-column layout */}
       <div className="flex min-h-0 flex-1 overflow-hidden">

@@ -50,8 +50,8 @@ Ollama separately. Knowledge retrieval also requires Qdrant and embeddings.
 
 - Linux shell install commands for optional GPU tools cannot run on Windows;
   install those tools separately using their Windows instructions.
-- Community's local `start.sh` lifecycle is Linux-only. Start it separately and
-  set `ARYNWOOD_COMMUNITY_URL` to connect to it.
+- Starting a Grove on this computer from the Community page is Linux-only. Start it
+  separately, or use a Grove on a server, and choose its address with Change Grove.
 - GPU generation/training scripts, Kdenlive automation and MusicStudio providers
   need their own Windows-compatible dependencies and separate validation.
 - The 0.4.5 and 0.4.6 CI builds passed the platform tests, frontend tests and the

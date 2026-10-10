@@ -107,7 +107,7 @@ on Linux or `%LOCALAPPDATA%\arynwood-mcp\.env` on Windows). A path that doesn't 
 | `ARYNWOOD_PROJECTS_DIR` | `~/GitHub` | Root for the sibling repos below |
 | `ARYNWOOD_MUSICSTUDIO_DIR` | `$PROJECTS/MusicStudio` | Music sidecars (stems, RVC, song generation) |
 | `ARYNWOOD_SYCAMORE_DIR` | `$PROJECTS/sycamore/lib/sycamore` | PDF learning (layout/OCR/tables) |
-| `ARYNWOOD_COMMUNITY_DIR` | `$PROJECTS/arynwood-community` | Arynwood Community sidecar (optional) — a checkout of its official repo, `github.com/Arynwood-Technology/arynwood-community` <!-- TODO(community-repo): placeholder URL; the repo hasn't been created yet — update once it exists --> |
-| `ARYNWOOD_COMMUNITY_URL` | `http://127.0.0.1:8018` | Community address; a non-local URL (e.g. `https://community.arynwood.com`) means a hosted instance — status and Open only |
+| `ARYNWOOD_COMMUNITY_DIR` | `$PROJECTS/arynwood-community` | A Grove on this computer (optional) — a checkout of Arynwood Grove, `github.com/Arynwood-Technology/arynwood-community`, that the Community page can start |
+| `ARYNWOOD_COMMUNITY_URL` | `http://127.0.0.1:8018` | Default Grove address for the Community page; the owner's choice there overrides it. A server's address (e.g. `https://community.arynwood.com`) is used but never started or stopped here ([community.md](community.md)) |
 
 A specific setting beats its root, and an empty value (`ARYNWOOD_KOHYA_DIR=`) counts as unset.

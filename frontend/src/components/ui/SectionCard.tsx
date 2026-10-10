@@ -30,7 +30,7 @@ export function SectionCard({
 export function SectionLabel({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <h2 className={cn(
-      'm-0 mb-2.5 text-[9px] font-bold uppercase tracking-[0.12em] text-muted',
+      'm-0 mb-2.5 text-[12px] font-bold uppercase tracking-[0.12em] text-muted',
       className,
     )}>
       {children}

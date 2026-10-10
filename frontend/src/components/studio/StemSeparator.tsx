@@ -89,7 +89,7 @@ export function StemSeparator({ sidecarReady }: { sidecarReady: boolean }) {
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           <div
             onClick={() => fileRef.current?.click()}
-            style={{ flex: 1, border: `1px dashed ${file ? 'var(--accent)' : 'var(--border)'}`, background: file ? 'rgba(124,110,247,0.06)' : 'transparent', borderRadius: 8, padding: '14px 18px', color: file ? 'var(--text)' : 'var(--text-muted)', fontSize: 13, cursor: 'pointer', textAlign: 'center' }}
+            style={{ flex: 1, border: `1px dashed ${file ? 'var(--accent)' : 'var(--border)'}`, background: file ? 'rgba(79,209,171,0.06)' : 'transparent', borderRadius: 8, padding: '14px 18px', color: file ? 'var(--text)' : 'var(--text-muted)', fontSize: 13, cursor: 'pointer', textAlign: 'center' }}
           >
             {file ? `🎵 ${file.name}` : 'Click to pick an audio file'}
           </div>
@@ -120,7 +120,7 @@ export function StemSeparator({ sidecarReady }: { sidecarReady: boolean }) {
       <button
         disabled={disabled}
         onClick={startSeparation}
-        style={{ padding: '10px 24px', background: disabled ? 'var(--surface2)' : 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1, alignSelf: 'flex-start' }}
+        style={{ padding: '10px 24px', background: disabled ? 'var(--surface2)' : 'var(--accent-solid)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1, alignSelf: 'flex-start' }}
       >
         {status === 'running' ? 'Separating…' : 'Separate Stems'}
       </button>
@@ -128,7 +128,7 @@ export function StemSeparator({ sidecarReady }: { sidecarReady: boolean }) {
       {status === 'running' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1, height: 6, background: 'var(--surface2)', borderRadius: 3, overflow: 'hidden' }}>
-            <div style={{ height: '100%', background: 'var(--accent)', borderRadius: 3, transition: 'width 0.4s ease', width: `${progress}%` }} />
+            <div style={{ height: '100%', background: 'var(--accent-solid)', borderRadius: 3, transition: 'width 0.4s ease', width: `${progress}%` }} />
           </div>
           <span style={{ fontSize: 12, color: 'var(--text-muted)', minWidth: 36 }}>{progress}%</span>
         </div>

@@ -298,7 +298,7 @@ function YoutubeAnalyticsPanel({ data }: { data: YoutubeChannelAnalytics }) {
               <button key={s} onClick={() => setSortBy(s)} style={{
                 fontSize: 10.5, padding: '3px 9px', borderRadius: 999, cursor: 'pointer',
                 border: `1px solid ${sortBy === s ? 'var(--accent)' : 'var(--border)'}`,
-                background: sortBy === s ? 'rgba(124,110,247,0.12)' : 'transparent',
+                background: sortBy === s ? 'rgba(79,209,171,0.12)' : 'transparent',
                 color: sortBy === s ? 'var(--accent)' : 'var(--text-muted)', fontWeight: sortBy === s ? 600 : 400,
               }}>
                 Sort: {s === 'views' ? 'Most Views' : 'Newest'}
@@ -693,7 +693,7 @@ export function Social() {
                   onChange={e => setImageFile(e.target.files?.[0] ?? null)} />
                 <div
                   onClick={() => imageRef.current?.click()}
-                  style={{ border: `1px dashed ${imageFile ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 8, padding: '10px 14px', fontSize: 12, cursor: 'pointer', color: imageFile ? 'var(--text)' : 'var(--text-muted)', textAlign: 'center', background: imageFile ? 'rgba(124,110,247,0.06)' : 'transparent' }}
+                  style={{ border: `1px dashed ${imageFile ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 8, padding: '10px 14px', fontSize: 12, cursor: 'pointer', color: imageFile ? 'var(--text)' : 'var(--text-muted)', textAlign: 'center', background: imageFile ? 'rgba(79,209,171,0.06)' : 'transparent' }}
                 >
                   {imageFile ? (
                     <span>{imageFile.name} <button onClick={e => { e.stopPropagation(); setImageFile(null) }} aria-label="Remove image" title="Remove image" style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', marginLeft: 6 }}><X size={11} /></button></span>
@@ -729,7 +729,7 @@ export function Social() {
               onClick={post}
               style={{
                 width: '100%', padding: '10px', borderRadius: 8, border: 'none',
-                background: canPost ? 'var(--accent)' : 'var(--surface2)', color: '#fff',
+                background: canPost ? 'var(--accent-solid)' : 'var(--surface2)', color: '#fff',
                 cursor: canPost ? 'pointer' : 'not-allowed', fontWeight: 600, fontSize: 14,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 opacity: canPost ? 1 : 0.5,

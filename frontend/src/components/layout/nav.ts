@@ -29,7 +29,7 @@ export const NAV: NavItem[] = [
   { to: '/studio',  icon: Music2,       label: 'Music', also: ['/dj'], gpu: true },
   { to: '/video',   icon: Clapperboard, label: 'Video Studio', gpu: true },
   { to: '/social',  icon: Share2,       label: 'Social Media'  },
-  { to: '/community', icon: Users,      label: 'Community'     },
+  { to: '/community', icon: Users,      label: 'Community', also: ['/community/today','/community/boards','/community/chat','/community/calendar','/community/household','/community/lists','/community/notes','/community/settings']     },
 ]
 
 /** Every reachable destination, flattened — the command palette searches this so

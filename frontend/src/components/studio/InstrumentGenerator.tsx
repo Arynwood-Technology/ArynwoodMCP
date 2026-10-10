@@ -18,7 +18,7 @@ const button: React.CSSProperties = { padding: '8px 13px', borderRadius: 7, bord
 const chip = (active: boolean, disabled = false): React.CSSProperties => ({
   padding: '8px 14px', borderRadius: 8, cursor: disabled ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 600,
   border: active ? '1px solid var(--accent)' : '1px solid var(--border)',
-  background: active ? 'rgba(124,110,247,0.16)' : 'var(--surface2)',
+  background: active ? 'rgba(79,209,171,0.16)' : 'var(--surface2)',
   color: disabled ? 'var(--text-muted)' : active ? 'var(--accent)' : 'var(--text)',
   opacity: disabled ? 0.5 : 1,
 })
@@ -108,7 +108,7 @@ export function InstrumentGenerator({ sidecarReady }: InstrumentGeneratorProps) 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 900 }}>
-      <section style={{ padding: 18, borderRadius: 12, border: '1px solid var(--border)', background: 'linear-gradient(135deg, rgba(124,110,247,0.16), rgba(94,234,212,0.04))' }}>
+      <section style={{ padding: 18, borderRadius: 12, border: '1px solid var(--border)', background: 'linear-gradient(135deg, rgba(79,209,171,0.16), rgba(94,234,212,0.04))' }}>
         <div style={label}>What are you playing?</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
           {INSTRUMENTS.map(i => (
@@ -186,7 +186,7 @@ export function InstrumentGenerator({ sidecarReady }: InstrumentGeneratorProps) 
           disabled={!canGenerate}
           onClick={handleGenerate}
           style={{ marginTop: 16, padding: '10px 20px', border: 'none', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8,
-            background: canGenerate ? 'var(--accent)' : 'var(--surface2)', color: canGenerate ? '#fff' : 'var(--text-muted)',
+            background: canGenerate ? 'var(--accent-solid)' : 'var(--surface2)', color: canGenerate ? '#fff' : 'var(--text-muted)',
             cursor: canGenerate ? 'pointer' : 'not-allowed', fontSize: 13, fontWeight: 700 }}
         >
           <Sparkles size={14} /> Generate
@@ -207,7 +207,7 @@ export function InstrumentGenerator({ sidecarReady }: InstrumentGeneratorProps) 
                 <span>{job.progress}%</span>
               </div>
               <div style={{ height: 5, background: 'var(--surface2)', borderRadius: 3, overflow: 'hidden', marginTop: 4 }}>
-                <div style={{ height: '100%', width: `${job.progress}%`, background: 'var(--accent)', transition: 'width .3s' }} />
+                <div style={{ height: '100%', width: `${job.progress}%`, background: 'var(--accent-solid)', transition: 'width .3s' }} />
               </div>
             </div>
           ))}

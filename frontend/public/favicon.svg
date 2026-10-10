@@ -4,11 +4,11 @@
   <defs>
     <clipPath id="aw-drawing-boundary"><circle cx="254.3" cy="254.8" r="253"/></clipPath>
     <radialGradient id="aw-core" cx="48%" cy="57%" r="62%">
-      <stop offset="0" stop-color="#b1edde"/>
-      <stop offset=".22" stop-color="#67d5c1"/>
-      <stop offset=".50" stop-color="#2b8c88"/>
-      <stop offset=".78" stop-color="#213e4b"/>
-      <stop offset="1" stop-color="#211630"/>
+      <stop offset="0" stop-color="#c0f4df"/>
+      <stop offset=".22" stop-color="#6bdcba"/>
+      <stop offset=".50" stop-color="#29866f"/>
+      <stop offset=".78" stop-color="#203c35"/>
+      <stop offset="1" stop-color="#18221f"/>
     </radialGradient>
     <filter id="aw-soft" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="10"/></filter>
     <filter id="aw-wide" x="-45%" y="-45%" width="190%" height="190%"><feGaussianBlur stdDeviation="24"/></filter>

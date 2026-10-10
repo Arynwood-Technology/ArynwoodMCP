@@ -48,6 +48,10 @@ with no practical exploit) can go in a regular GitHub issue.
   never quoted as the owner's own words.
 - **Bounded outbound fetches.** Learning from a URL reaches public addresses only, with each
   redirect checked again, and is capped in size and time.
+- **Community** talks to one Grove, the address the owner chose (`https://` unless it's on
+  this computer), through the backend. The backend keeps the Grove sign-in, forwards only the
+  Grove API areas the Community page uses, never sends Arynwood's API key or cookies, and
+  doesn't follow redirects ([docs/community.md](docs/community.md)).
 - **Deploys** require a known SSH host key, and keep uploads inside the target folder.
 - **Files.** Project reads stay inside the project. Developer codebase tools (opt-in, source
   checkout only) skip credential files and bound their subprocesses.
@@ -65,11 +69,13 @@ triaged quickly.
   access. The protections above are application rules, not isolation.
 - **Direct actions aren't under the approval policy.** Deploy, social publishing, studio and
   install buttons in the UI are owner actions. The approval gate covers agent tool calls.
-- **No login.** With no API key, any local program has owner access. Setting a key needs every
+- **No login.** With no API key, any local program has owner access, including to the
+  Grove account signed in on the Community page. Setting a key needs every
   client updated; there is no login screen yet, and the WebSocket sends the key as a
   `?token=` query parameter.
 - **No enforced offline mode.** Web search, URL learning, downloads, social APIs, publishing,
-  deploys, IRC and configured remote model, image or MCP servers all send data out when used.
+  deploys, IRC, a Grove on a server, and configured remote model, image or MCP servers all send
+  data out when used.
   Automatic update checks contact GitHub at startup and every six hours while open, using
   public release metadata without credentials or workspace content; GitHub sees normal
   connection metadata, including the user's IP address.

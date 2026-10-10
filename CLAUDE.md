@@ -84,6 +84,11 @@ All source in `frontend/src/`.
   Fast Refresh keeps working). `IconButton` **requires** a `label` prop, which becomes
   both `aria-label` and the tooltip — the type is what stops new unlabelled icon buttons
 - **`components/studio/`** — `EffectsRack`, `StemSeparator`, `VoiceConversion`
+- **`community/`** — Arynwood Grove's Community screens, shown by `pages/Community.tsx` under `/community/*`
+  (see the `community.py` router row). Their CSS is wrapped in `@scope (.grove-community)` so it can't restyle
+  the rest of the app; every Grove URL is built by `community/lib/grove.ts` (`groveUrl`/`groveSocketUrl`), never
+  `/community-api` or `location.origin`. `AppShell` keys its error boundary by the first path segment so
+  Community's sub-routes don't remount it
 - **`lib/cn.ts`** — `clsx` + `tailwind-merge`; lets a caller's `className` override a
   primitive's built-in classes instead of both landing in the output
 - **`lib/api.ts`** — typed fetch wrapper; all calls go through `request()` which prefixes `/api` (Vite proxies to `:8010`, including WebSocket)
@@ -112,7 +117,9 @@ collide.
 
 `AppShell`, `Sidebar`, `TopBar`, `Chat`, `Dashboard` and everything in `components/ui/`
 are migrated to Tailwind classes; the rest of `pages/` and `components/` still use
-inline styles. Both idioms coexist safely — migrate a file when you're already working
+inline styles. Palette since 0.4.9: charcoal surfaces with green-teal light. `accent` is a light teal for text, borders and
+focus; anything filled with white text on it uses `accent-solid` (`bg-accent-solid`, `var(--accent-solid)`), or
+the contrast fails. Both idioms coexist safely — migrate a file when you're already working
 in it rather than in a separate sweep. Data-driven colours (e.g. `TYPE_COLORS` in
 Chat's memory panel) legitimately stay inline; Tailwind can't generate dynamic classes.
 
@@ -287,7 +294,7 @@ All mounted under `/api/<domain>` by `backend/api.py`.
 | | `video.py` | `/api/video` | Video generation/edit/caption jobs, video library |
 | | `dj.py` | `/api/dj` | DJ Toolkit — launcher + built-in manual for Mixxx/Ardour/Hydrogen/Surge XT/Vital/Flatseal/Calf/LSP/Dragonfly/Geonkick. Desktop GUI apps with no HTTP surface (unlike every other router here) — status comes from `flatpak ps` / `pgrep` on the backend host; launch just spawns and forgets (`start_new_session=True` so a `--reload` restart doesn't kill a running app). "Sessions" bundle multi-tool launches (e.g. Ardour+Hydrogen, which share transport over PipeWire/JACK). Deliberately not a sidebar destination: the Music page has a small "DJ Toolkit" button that opens `/dj` (see `nav.ts`'s `also`, which keeps Music highlighted there). Keep its content generic — no personal paths, no installed-version numbers; `tests/test_dj_router.py` fails if they come back |
 | **Gateway** | `gateway.py` | `/api/gateway` | **Experimental, parked — mounted only in the daemon or with `ARYNWOOD_ENABLE_GATEWAY=1`.** Headless gateway (`backend/gateway/`) — persistent sessions (key → conversation + `trust_level`, `gateway_sessions` table, survives restarts) running agent turns with no UI: `POST /inbound`, session CRUD/reset/cancel, approvals, and a `/ws` event stream. Turns use the conversational tool loop and are trust-gated. `python -m backend.gateway` runs the whole backend headless as the always-on daemon (`:8020` by default; `is_daemon()` gates daemon-only work). Config `mcp/config/gateway/` + overlay `~/.local/share/arynwood-mcp/gateway.json`. See `docs/gateway.md` |
-| | `community.py` | `/api/community` | **Arynwood Community** — optional sidecar for the separate Community app (private spaces: boards, chat, calendar, household, lists, notes). v1 is launcher + status only: `/status` (via Community's unauthenticated `/api/health`), `/start`, `/stop`, `/open?target=app|repo` (system browser via `xdg-open` — Community sends `X-Frame-Options: DENY`, so it can't be embedded, and its API is per-member cookie auth, so Arynwood doesn't read its data). **Unlike the MusicStudio sidecars it outlives Arynwood** (`start_new_session`, no `die_with_parent`) because members stay connected; a pidfile (`~/.local/share/arynwood-mcp/community.pid`, only honoured if that pid is Community's server in Community's folder) lets Stop work after a restart. `ARYNWOOD_COMMUNITY_DIR` (default `$PROJECTS/arynwood-community`) / `ARYNWOOD_COMMUNITY_URL` (a non-local URL = hosted instance, status + Open only). Paths reach the UI home-relative (`display_path`), never absolute. **TODO(community-repo):** `external_paths.COMMUNITY_REPO_URL` is a placeholder until the official repo exists under Arynwood-Technology on GitHub — update it and every `TODO(community-repo)` marker then |
+| | `community.py` | `/api/community` | **Community / Arynwood Grove** — the Community page's connection to a Grove (the separate service, `github.com/Arynwood-Technology/arynwood-community`, AGPL). Owner's address choice (`settings.community_url`, `PUT /address`; default `ARYNWOOD_COMMUNITY_URL` else `http://127.0.0.1:8018`; `https://` required unless loopback), local `/start` `/stop` (a Grove started here **outlives Arynwood**: `start_new_session`, pidfile `~/.local/share/arynwood-mcp/community.pid`, honoured only if that pid is the Grove's server in its folder), `/open` in the system browser. **Pass-through** `/grove/{path}` (+ SSE `community/spaces/{id}/events`, WebSockets `irc/ws` `p2p/ws`): only `GROVE_AREAS`, no redirects followed, Arynwood's Authorization/Cookie/Origin never forwarded, and the **Grove cookie is held server-side** (`settings.community_session`, keyed to the address, cleared on change) — the packaged web view (`tauri://localhost`) is a different site from any Grove and Grove's cookie is SameSite=Strict. Screens live in `frontend/src/community/` (copied from Grove 0.4.0, dual-licensed — see its `NOTICE.md`); all their URLs go through `community/lib/grove.ts`. Tests: `test_community_grove_passthrough.py` (real stand-in Grove), `test_community_sidecar.py`. Paths reach the UI home-relative (`display_path`), never absolute |
 
 ## Headless gateway (always-on agent)
 

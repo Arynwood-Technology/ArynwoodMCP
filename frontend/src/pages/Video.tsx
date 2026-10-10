@@ -52,7 +52,7 @@ export function Video() {
       <div style={{ padding: '18px 24px 0', background: 'linear-gradient(180deg, var(--surface), var(--bg))', borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap', maxWidth: 1280, margin: '0 auto' }}>
           <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ width: 38, height: 38, borderRadius: 10, display: 'grid', placeItems: 'center', background: 'rgba(124,110,247,.18)', color: 'var(--accent)' }}><Clapperboard size={20} /></div>
+            <div style={{ width: 38, height: 38, borderRadius: 10, display: 'grid', placeItems: 'center', background: 'rgba(79,209,171,.18)', color: 'var(--accent)' }}><Clapperboard size={20} /></div>
             <div><div style={{ color: 'var(--accent2)', fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase' }}>{activeTab.eyebrow}</div><div style={{ fontSize: 15, fontWeight: 700, marginTop: 3 }}>{activeTab.description}</div></div>
           </div>
           <div style={{ color: 'var(--text-muted)', fontSize: 12, paddingTop: 6 }}>{library.length} clip{library.length === 1 ? '' : 's'} in your library</div>
@@ -62,7 +62,7 @@ export function Video() {
             const Icon = item.icon
             const active = tab === item.id
             const badge = item.id === 'editor' ? newClipCount : 0
-            return <button key={item.id} onClick={() => openTab(item.id)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '11px 15px', border: 'none', borderBottom: active ? '2px solid var(--accent)' : '2px solid transparent', background: active ? 'rgba(124,110,247,.08)' : 'transparent', color: active ? 'var(--text)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 13, fontWeight: active ? 700 : 500, whiteSpace: 'nowrap' }}><Icon size={15} color={active ? 'var(--accent)' : undefined} />{item.label}{cpuMode && item.id === 'generate' && <GpuMark />}{badge > 0 && <span title={`${badge} new clip${badge === 1 ? '' : 's'} ready`} style={{ minWidth: 17, height: 17, padding: '0 5px', display: 'inline-grid', placeItems: 'center', borderRadius: 10, background: 'var(--accent)', color: '#fff', fontSize: 10 }}>{badge}</span>}</button>
+            return <button key={item.id} onClick={() => openTab(item.id)} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '11px 15px', border: 'none', borderBottom: active ? '2px solid var(--accent)' : '2px solid transparent', background: active ? 'rgba(79,209,171,.08)' : 'transparent', color: active ? 'var(--text)' : 'var(--text-muted)', cursor: 'pointer', fontSize: 13, fontWeight: active ? 700 : 500, whiteSpace: 'nowrap' }}><Icon size={15} color={active ? 'var(--accent)' : undefined} />{item.label}{cpuMode && item.id === 'generate' && <GpuMark />}{badge > 0 && <span title={`${badge} new clip${badge === 1 ? '' : 's'} ready`} style={{ minWidth: 17, height: 17, padding: '0 5px', display: 'inline-grid', placeItems: 'center', borderRadius: 10, background: 'var(--accent-solid)', color: '#fff', fontSize: 10 }}>{badge}</span>}</button>
           })}
         </nav>
       </div>

@@ -17,6 +17,13 @@ export function apiUrl(path: string): string {
   return import.meta.env.PROD && path.startsWith('/api') ? `${BACKEND_ORIGIN}${path}` : path
 }
 
+/** `/api/...` → a WebSocket URL for the backend: absolute in a production build (see BACKEND_ORIGIN), this
+ *  page's own host in dev, where Vite proxies /api WebSockets too. */
+export function wsUrl(path: string): string {
+  if (import.meta.env.PROD) return BACKEND_ORIGIN.replace(/^http/, 'ws') + path
+  return `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}${path}`
+}
+
 export async function request<T>(path: string, opts?: RequestInit): Promise<T> {
   const isFormData = opts?.body instanceof FormData
   const r = await fetch(`${BASE}${path}`, {
@@ -56,16 +63,18 @@ export const getSidecars = () => request<Record<string, Sidecar>>('/studio/sidec
 export const startSidecar = (id: string) =>
   request<{ status: string }>(`/studio/sidecars/${id}/start`, { method: 'POST' })
 
-// Arynwood Community (optional sidecar — backend/routers/community.py)
+// Community: the owner's Grove (backend/routers/community.py)
 export interface CommunityStatus {
   label: string
   mode: 'local' | 'remote'
   url: string
+  /** The installer default the owner can return to. */
+  default_url: string
   status: 'running' | 'starting' | 'stopped' | 'failed' | 'unreachable'
   version: string | null
   /** Home-relative ("~/…") — the backend never sends an absolute home path. */
   dir: string | null
-  /** Official source repo. TODO(community-repo): placeholder until the repo exists. */
+  /** Official source repo (Arynwood Grove). */
   repo_url: string
   installed: boolean | null
   setup_missing: string[]
@@ -77,6 +86,8 @@ export interface CommunityStatus {
 export const getCommunityStatus = () => request<CommunityStatus>('/community/status')
 export const startCommunity = () => request<{ status: string }>('/community/start', { method: 'POST' })
 export const stopCommunity = () => request<{ status: string }>('/community/stop', { method: 'POST' })
+export const setCommunityAddress = (url: string | null) =>
+  request<CommunityStatus>('/community/address', { method: 'PUT', body: JSON.stringify({ url }) })
 export const openCommunity = (target: 'app' | 'repo' = 'app') =>
   request<{ url: string }>(`/community/open?target=${target}`, { method: 'POST' })
 

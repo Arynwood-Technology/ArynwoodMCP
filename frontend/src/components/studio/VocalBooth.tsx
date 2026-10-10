@@ -175,7 +175,7 @@ function ScriptToVoice({ onSendToEffects }: { onSendToEffects: (blob: Blob) => v
         <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Expressiveness: {exaggeration.toFixed(2)}<input type="range" min={0.2} max={0.8} step={0.05} value={exaggeration} onChange={event => setExaggeration(Number(event.target.value))} style={{ display: 'block', width: '100%', marginTop: 5, accentColor: 'var(--accent)' }} /></label>
         <label style={{ fontSize: 11, color: 'var(--text-muted)' }}>Pacing: {cfgWeight.toFixed(2)}<input type="range" min={0.2} max={1} step={0.05} value={cfgWeight} onChange={event => setCfgWeight(Number(event.target.value))} style={{ display: 'block', width: '100%', marginTop: 5, accentColor: 'var(--accent)' }} /></label>
       </div>
-      <button type="button" disabled={!ready} onClick={() => void generate()} style={{ ...stepButton, marginTop: 14, background: ready ? 'var(--accent)' : 'var(--surface2)', borderColor: ready ? 'var(--accent)' : 'var(--border)', color: ready ? '#fff' : 'var(--text-muted)', cursor: ready ? 'pointer' : 'not-allowed' }}>{generating ? 'Generating your WAV…' : usingSaved ? `Generate as ${selectedVoice}` : 'Generate WAV'}</button>
+      <button type="button" disabled={!ready} onClick={() => void generate()} style={{ ...stepButton, marginTop: 14, background: ready ? 'var(--accent-solid)' : 'var(--surface2)', borderColor: ready ? 'var(--accent)' : 'var(--border)', color: ready ? '#fff' : 'var(--text-muted)', cursor: ready ? 'pointer' : 'not-allowed' }}>{generating ? 'Generating your WAV…' : usingSaved ? `Generate as ${selectedVoice}` : 'Generate WAV'}</button>
       {status && <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--accent2)' }}>{status}</p>}
       {error && <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--danger)' }}>{error}</p>}
       {audioUrl && <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}><audio controls src={audioUrl} style={{ flex: '1 1 280px', height: 34 }} /><DownloadButton url={audioUrl} filename={(usingSaved ? selectedVoice : 'script') + '.wav'} style={stepButton}>Download WAV</DownloadButton><button type="button" onClick={() => void sendToEffects()} style={{ ...stepButton, borderColor: 'var(--accent)', color: 'var(--accent)' }}>Send to Effects Rack →</button></div>}
@@ -187,7 +187,7 @@ function ScriptToVoice({ onSendToEffects }: { onSendToEffects: (blob: Blob) => v
 export function VocalBooth({ onSendToEffects, onSendToVoice, onOpenEffects, onOpenVoice }: VocalBoothProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <section style={{ ...card, background: 'linear-gradient(135deg, rgba(124,110,247,0.18), rgba(94,234,212,0.06))' }}>
+      <section style={{ ...card, background: 'linear-gradient(135deg, rgba(79,209,171,0.18), rgba(94,234,212,0.06))' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
           <div style={{ fontSize: 30, lineHeight: 1 }}>🎙️</div>
           <div style={{ flex: 1, minWidth: 220 }}>

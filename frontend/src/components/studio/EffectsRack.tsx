@@ -206,7 +206,7 @@ export function EffectsRack({ sidecarReady, externalFile, onExternalFileConsumed
         <span style={{ ...label, display: 'block', marginBottom: 8 }}>Audio File</span>
         <div
           onClick={() => fileRef.current?.click()}
-          style={{ border: `1px dashed ${file ? 'var(--accent)' : 'var(--border)'}`, background: file ? 'rgba(124,110,247,0.06)' : 'transparent', borderRadius: 8, padding: '14px 18px', color: file ? 'var(--text)' : 'var(--text-muted)', fontSize: 13, cursor: 'pointer', textAlign: 'center' }}
+          style={{ border: `1px dashed ${file ? 'var(--accent)' : 'var(--border)'}`, background: file ? 'rgba(79,209,171,0.06)' : 'transparent', borderRadius: 8, padding: '14px 18px', color: file ? 'var(--text)' : 'var(--text-muted)', fontSize: 13, cursor: 'pointer', textAlign: 'center' }}
         >
           {file ? `🎵 ${file.name}` : 'Click to pick an audio file'}
         </div>
@@ -274,14 +274,14 @@ export function EffectsRack({ sidecarReady, externalFile, onExternalFileConsumed
           <div style={label}>Live WAV audition</div>
           <p style={{ margin: '6px 0 10px', fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.45 }}>Play the selected take through the current chain. Slider changes rebuild the audition immediately while playback continues; use headphones if monitoring the mic too.</p>
           <audio ref={previewAudioRef} src={previewUrl} preload="auto" onEnded={() => setPreviewPlaying(false)} style={{ display: 'none' }} />
-          <button type="button" onClick={() => void togglePreview()} style={{ padding: '8px 13px', borderRadius: 7, border: '1px solid var(--accent)', background: previewPlaying ? 'rgba(239,68,68,.12)' : 'rgba(124,110,247,.14)', color: previewPlaying ? 'var(--danger)' : 'var(--accent)', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>{previewPlaying ? 'Stop audition' : '▶ Audition current settings'}</button>
+          <button type="button" onClick={() => void togglePreview()} style={{ padding: '8px 13px', borderRadius: 7, border: '1px solid var(--accent)', background: previewPlaying ? 'rgba(239,68,68,.12)' : 'rgba(79,209,171,.14)', color: previewPlaying ? 'var(--danger)' : 'var(--accent)', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>{previewPlaying ? 'Stop audition' : '▶ Audition current settings'}</button>
         </section>
       )}
 
       <button
         disabled={!file || chain.length === 0 || processing || !sidecarReady}
         onClick={applyChain}
-        style={{ padding: '10px 24px', background: (!file || chain.length === 0 || processing || !sidecarReady) ? 'var(--surface2)' : 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: (!file || chain.length === 0 || processing || !sidecarReady) ? 'not-allowed' : 'pointer', opacity: (!file || chain.length === 0 || processing || !sidecarReady) ? 0.5 : 1, alignSelf: 'flex-start' }}
+        style={{ padding: '10px 24px', background: (!file || chain.length === 0 || processing || !sidecarReady) ? 'var(--surface2)' : 'var(--accent-solid)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: (!file || chain.length === 0 || processing || !sidecarReady) ? 'not-allowed' : 'pointer', opacity: (!file || chain.length === 0 || processing || !sidecarReady) ? 0.5 : 1, alignSelf: 'flex-start' }}
       >
         {processing ? 'Processing…' : 'Apply Chain'}
       </button>

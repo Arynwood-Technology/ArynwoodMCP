@@ -193,7 +193,7 @@ function PullProgress({ name, srv, onDone, onError }: {
         {pct > 0 && !done && <span style={{ fontSize: 10, color: 'var(--accent)' }}>{pct}%</span>}
       </div>
       <div style={{ height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${done ? 100 : pct || 5}%`, background: done ? 'var(--success)' : 'var(--accent)', transition: 'width 0.4s', borderRadius: 2 }} />
+        <div style={{ height: '100%', width: `${done ? 100 : pct || 5}%`, background: done ? 'var(--success)' : 'var(--accent-solid)', transition: 'width 0.4s', borderRadius: 2 }} />
       </div>
     </div>
   )
@@ -297,7 +297,7 @@ export function ModelManager() {
   const tabBtn = (t: string) => ({
     padding: '7px 18px', borderRadius: 8, border: 'none', cursor: 'pointer',
     fontSize: 13, fontWeight: 600 as const,
-    background: tab === t ? 'var(--accent)' : 'var(--surface2)',
+    background: tab === t ? 'var(--accent-solid)' : 'var(--surface2)',
     color: tab === t ? '#fff' : 'var(--text-muted)',
   })
 
@@ -351,7 +351,7 @@ export function ModelManager() {
               <button
                 onClick={() => { if (customPull.trim()) { startPull(customPull.trim()); setCustomPull('') } }}
                 disabled={!customPull.trim()}
-                style={{ background: 'var(--accent)', border: 'none', color: '#fff', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
+                style={{ background: 'var(--accent-solid)', border: 'none', color: '#fff', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}
               >
                 <Download size={13} /> Pull
               </button>
@@ -380,7 +380,7 @@ export function ModelManager() {
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: 14 }}>{m.name}</span>
-                          {isActive && <span style={{ fontSize: 10, background: 'rgba(124,110,247,0.2)', color: 'var(--accent)', borderRadius: 4, padding: '1px 6px', fontWeight: 600 }}>ACTIVE</span>}
+                          {isActive && <span style={{ fontSize: 10, background: 'rgba(79,209,171,0.2)', color: 'var(--accent)', borderRadius: 4, padding: '1px 6px', fontWeight: 600 }}>ACTIVE</span>}
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, display: 'flex', gap: 10 }}>
                           <span>{formatSize(m.size)}</span>
@@ -389,7 +389,7 @@ export function ModelManager() {
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => selectModelForChat(m.name)} style={{ background: isActive ? 'var(--accent)' : 'var(--surface)', border: `1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}`, color: isActive ? '#fff' : 'var(--text)', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <button onClick={() => selectModelForChat(m.name)} style={{ background: isActive ? 'var(--accent-solid)' : 'var(--surface)', border: `1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}`, color: isActive ? '#fff' : 'var(--text)', borderRadius: 7, padding: '5px 10px', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
                           <MessageSquare size={12} /> Chat
                         </button>
                         <button onClick={() => del(m.name)} aria-label={`Delete ${m.name}`} title={`Delete ${m.name}`} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '5px 6px' }}>
@@ -416,7 +416,7 @@ export function ModelManager() {
               {Object.entries(CATEGORY_LABELS).map(([k, label]) => (
                 <button key={k} onClick={() => setCategoryFilter(k)} style={{
                   padding: '5px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                  background: categoryFilter === k ? (CATEGORY_COLORS[k] ?? 'var(--accent)') : 'var(--surface2)',
+                  background: categoryFilter === k ? (CATEGORY_COLORS[k] ?? 'var(--accent-solid)') : 'var(--surface2)',
                   color: categoryFilter === k ? '#fff' : 'var(--text-muted)',
                 }}>
                   {label}
@@ -461,7 +461,7 @@ export function ModelManager() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--success)' }}>
                               <Check size={12} /> Installed
                             </div>
-                            <button onClick={() => selectModelForChat(m.tag)} style={{ marginLeft: 'auto', background: 'var(--accent)', border: 'none', color: '#fff', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <button onClick={() => selectModelForChat(m.tag)} style={{ marginLeft: 'auto', background: 'var(--accent-solid)', border: 'none', color: '#fff', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
                               <MessageSquare size={11} /> Chat
                             </button>
                           </>

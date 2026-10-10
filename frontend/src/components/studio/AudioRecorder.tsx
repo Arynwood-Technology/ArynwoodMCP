@@ -9,7 +9,7 @@ interface BrowseResult { path: string; parent: string | null; home: string; dirs
 const LABEL: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: 4 }
 const SEL: React.CSSProperties = { padding: '7px 10px', borderRadius: 6, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)', fontSize: 12, width: '100%' }
 const BTN: React.CSSProperties = { padding: '7px 14px', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)', color: 'var(--text)', fontSize: 12, cursor: 'pointer' }
-const BTN_ACCENT: React.CSSProperties = { padding: '10px 20px', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }
+const BTN_ACCENT: React.CSSProperties = { padding: '10px 20px', background: 'var(--accent-solid)', color: '#fff', border: 'none', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }
 
 function timestamp() {
   const d = new Date()
@@ -374,7 +374,7 @@ export function AudioRecorder({ onSendToEffects, onSendToVoice, onSendToJam }: A
               <>
                 <span style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'monospace' }}>{formatTime(elapsed)}</span>
                 <div style={{ flex: 1, maxWidth: 160, height: 8, background: 'var(--surface2)', borderRadius: 4, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${Math.min(100, level * 220)}%`, background: level > 0.35 ? 'var(--warning)' : 'var(--accent)', transition: 'width 0.08s linear' }} />
+                  <div style={{ height: '100%', width: `${Math.min(100, level * 220)}%`, background: level > 0.35 ? 'var(--warning)' : 'var(--accent-solid)', transition: 'width 0.08s linear' }} />
                 </div>
               </>
             )}

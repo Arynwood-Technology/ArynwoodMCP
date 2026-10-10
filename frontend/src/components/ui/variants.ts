@@ -11,14 +11,14 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-accent text-white border-transparent hover:bg-accent/85',
+        primary: 'bg-accent-solid text-white border-transparent hover:bg-accent-solid/85',
         secondary: 'bg-surface2 text-text border-border hover:border-accent',
         ghost: 'bg-transparent text-muted border-transparent hover:text-text hover:bg-surface2',
         outline: 'bg-transparent text-text border-border hover:border-accent',
         danger: 'bg-danger text-white border-transparent hover:bg-danger/85',
       },
       size: {
-        sm: 'h-7 px-2.5 text-[11px]',
+        sm: 'h-7 px-2.5 text-[13px]',
         md: 'h-8 px-3 text-xs',
         lg: 'h-10 px-4 text-sm',
       },
@@ -33,7 +33,7 @@ export const iconButtonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-accent text-white border-transparent hover:bg-accent/85',
+        primary: 'bg-accent-solid text-white border-transparent hover:bg-accent-solid/85',
         secondary: 'bg-surface2 text-muted border-border hover:text-text hover:border-accent',
         ghost: 'bg-transparent text-muted border-transparent hover:text-text hover:bg-surface2',
         danger: 'bg-transparent text-muted border-transparent hover:text-danger hover:bg-danger/10',
