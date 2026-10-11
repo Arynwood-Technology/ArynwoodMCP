@@ -99,8 +99,9 @@ def fit_request(messages: list[dict], tools, num_ctx: int, reserve: int = 1024,
         if not candidates:
             required = request_tokens(out, tools, model)
             model_label = f" for {model}" if model else ""
+            parts = 'instructions, current message, and tool definitions' if tools else 'instructions and current message'
             raise ContextBudgetError(
-                f'The required instructions, current message, and tool definitions need approximately '
+                f'The required {parts} need approximately '
                 f'{required:,} input tokens{model_label}, but this request allows {limit:,} '
                 f'({num_ctx:,} context tokens with {num_ctx - limit:,} reserved for the reply). '
                 'Shorten instructions, Agent Config notes or attachments, or select a model with '

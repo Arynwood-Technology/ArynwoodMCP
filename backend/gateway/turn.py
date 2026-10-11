@@ -172,8 +172,13 @@ async def _execute(sink, db, session, msg, trust: str, policy: dict, approve,
 
     is_aryn = persona_key == "central"
     on_agent_model = model == mcp_tool_agent.DEFAULT_AGENT_MODEL and session.server_id is None
+    # Agent Config's "Use tools" covers gateway turns too: off means no native tools, tool
+    # servers or automatic web search, as on the desktop.
+    tools_on = await chat._get_setting(db, "agent_tools_enabled", "true") != "false"
+    if not tools_on:
+        await sink.send_json({"type": "status", "label": "Tools and web browsing are off in Agent Config."})
     persona_has_tools = persona.get('tools_enabled', persona_key in chat.NATIVE_TOOLS_PERSONAS)
-    native = native_tools_for(policy, db) if on_agent_model and persona_has_tools else []
+    native = native_tools_for(policy, db) if tools_on and on_agent_model and persona_has_tools else []
     memory_on = is_aryn and policy["memories"]
     kb_on = policy["knowledge_base"] and persona.get("knowledge_enabled", True)
     runtime_context.record_evidence("trust", level=trust, sender=msg.sender, source=msg.source,
@@ -201,7 +206,7 @@ async def _execute(sink, db, session, msg, trust: str, policy: dict, approve,
                  "\n".join(m['role'] + ': ' + m['content'][:2000] for m in history[-6:]) +
                  "\nCurrent request:\n" + message) if history else message
     servers: list[str] = []
-    if on_agent_model and is_aryn and policy["local_tools"]:
+    if tools_on and on_agent_model and is_aryn and policy["local_tools"]:
         await sink.send_json({"type": "status", "label": "Checking available tools…"})
         servers = await mcp_tool_agent.select_servers(gate_text)
     toolset = await mcp_tool_agent.prepare_toolset(servers, native, focus=gate_text) if servers or native else Toolset()
@@ -233,7 +238,7 @@ async def _execute(sink, db, session, msg, trust: str, policy: dict, approve,
         base = chat.build_system_prompt(
             persona, custom_context, memories, recent_ctx, budget_tokens=system_budget,
             history_summary=summary, has_native_tools=bool(toolset.native), tool_servers=[],
-            count_tokens=count_system, memory_enabled=memory_on,
+            count_tokens=count_system, memory_enabled=memory_on, allow_web_search=tools_on,
         )
         return base + ("\n\n" + extra if extra else "")
 
@@ -242,7 +247,7 @@ async def _execute(sink, db, session, msg, trust: str, policy: dict, approve,
 
     used_web_search = False
     kb_hits: list[dict] = []
-    if not toolset.native and policy["web_search"] and chat._should_search(message):
+    if tools_on and not toolset.native and policy["web_search"] and chat._should_search(message):
         await sink.send_json({"type": "status", "label": "Searching the web…"})
         try:
             search_ctx = await chat._web_search(message)

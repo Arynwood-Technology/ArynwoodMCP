@@ -79,6 +79,7 @@ class CompactCPUChatTests(unittest.TestCase):
                                         {"role": "user", "content": "hello"}], None, 2048, model="small-model")
         for text in ("small-model", "1,536", "2,048 context tokens", "512 reserved"):
             self.assertIn(text, str(error.exception))
+        self.assertNotIn("tool definitions", str(error.exception))  # none were sent
 
     def test_history_eviction_preserves_the_current_request(self):
         persona, _ = cpu_chat.select_persona(self.personas["doc"], 2048, True)
@@ -95,6 +96,7 @@ class CompactCPUChatTests(unittest.TestCase):
                                        [{"description": "x" * 15000}], 4096, reserve=256)
         self.assertIn("3,840", str(error.exception))
         self.assertIn("256 reserved", str(error.exception))
+        self.assertIn("tool definitions", str(error.exception))
 
 
 if __name__ == "__main__":
