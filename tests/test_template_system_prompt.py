@@ -1,6 +1,8 @@
 """Some Ollama chat templates drop the system prompt whenever tools are attached (hermes3's does).
 With tools, the system content must still reach the model, as a leading user message.
 See backend/services/ollama_client.py, _TOOLS_ELSE_SYSTEM."""
+import logging
+
 import httpx
 import pytest
 
@@ -46,11 +48,13 @@ def test_system_content_becomes_the_leading_user_message():
 
 @pytest.fixture
 def ollama(monkeypatch):
-    """A fake Ollama: /api/show answers with `template`, chat records what it was sent."""
-    state = {"template": HERMES3, "shows": 0, "sent": []}
+    """A fake Ollama: /api/show answers with `template` (or `fail`, when set), chat records what it was sent."""
+    state = {"template": HERMES3, "fail": None, "shows": 0, "sent": []}
 
     def show(request):
         state["shows"] += 1
+        if state["fail"]:
+            return state["fail"](request)
         return httpx.Response(200, json={"template": state["template"]})
     factory = httpx.AsyncClient
     monkeypatch.setattr(ollama_client.httpx, "AsyncClient",
@@ -59,7 +63,12 @@ def ollama(monkeypatch):
     class Client:
         async def chat(self, *, model, messages, tools=None, options=None, keep_alive=None, stream=False):
             state["sent"].append(messages)
-            return {"message": {"content": "ok"}, "prompt_eval_count": 1, "eval_count": 1}
+            reply = {"message": {"content": "ok"}, "done": True, "prompt_eval_count": 1, "eval_count": 1}
+            if stream:
+                async def chunks():
+                    yield reply
+                return chunks()
+            return reply
     monkeypatch.setattr(ollama_client, "get_async_client", lambda *a, **k: Client())
     monkeypatch.setattr(ollama_client, "_ollama_options", lambda *a: _noop_options())
     monkeypatch.setattr(ollama_client, "_drops_system", {})
@@ -89,3 +98,76 @@ async def test_without_tools_or_with_a_good_template_nothing_changes(ollama):
     ollama["template"] = LLAMA32
     await ollama_client.chat(model="llama3.2:3b", messages=MESSAGES, tools=TOOLS, host="localhost", port=11434)
     assert ollama["sent"][-1] == MESSAGES
+
+
+# /api/show going wrong: Ollama down or restarting, a slow answer, a proxy that sends /api/show to a
+# node without the model, or an answer without a template. (handler, the error named in the warning)
+def _refused(request):
+    raise httpx.ConnectError("connection refused", request=request)
+
+
+def _timed_out(request):
+    raise httpx.ReadTimeout("timed out", request=request)
+
+
+FAILURES = {
+    "connection refused": (_refused, "ConnectError"),
+    "timeout": (_timed_out, "ReadTimeout"),
+    "404": (lambda request: httpx.Response(404, json={"error": "model not found"}), "HTTPStatusError"),
+    "no template field": (lambda request: httpx.Response(200, json={"modelfile": "FROM x"}), "ValueError"),
+    "template is null": (lambda request: httpx.Response(200, json={"template": None}), "ValueError"),
+    "a JSON list": (lambda request: httpx.Response(200, json=["hermes3"]), "AttributeError"),
+    "not JSON": (lambda request: httpx.Response(200, text="<html>bad gateway</html>"), "JSONDecodeError"),
+}
+
+
+async def _send(stream: bool, model: str, tools=TOOLS):
+    kw = dict(model=model, messages=MESSAGES, tools=tools, host="localhost", port=11434)
+    if stream:
+        async for _ in ollama_client.chat_stream(**kw):
+            pass
+    else:
+        await ollama_client.chat(**kw)
+
+
+@pytest.mark.parametrize("stream", [False, True], ids=["chat", "chat_stream"])
+@pytest.mark.parametrize("failure", FAILURES)
+async def test_a_failed_template_lookup_keeps_the_system_prompt_on_tool_rounds(ollama, caplog, failure, stream):
+    handler, error = FAILURES[failure]
+    ollama["fail"] = handler
+    with caplog.at_level(logging.WARNING, logger=ollama_client.__name__):
+        await _send(stream, "hermes3:8b")
+    sent = ollama["sent"][-1]
+    assert sent[0]["role"] == "user" and "Answer in French." in sent[0]["content"]   # hermes3's pinned answer
+    assert not any(m["role"] == "system" for m in sent)
+    [warning] = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
+    assert "hermes3:8b" in warning and error in warning
+
+
+async def test_a_failed_lookup_is_asked_again_and_a_good_answer_is_used_as_before(ollama):
+    ollama["fail"], ollama["template"] = FAILURES["connection refused"][0], LLAMA32
+    await _send(False, "llama3.2:3b")
+    assert ollama["sent"][-1] == MESSAGES                 # pinned: llama3.2's template keeps .System
+    ollama["fail"] = None
+    await _send(False, "llama3.2:3b")
+    await _send(False, "llama3.2:3b")
+    assert ollama["sent"][-1] == MESSAGES
+    assert ollama["shows"] == 2                           # the failure wasn't cached; the answer was
+
+
+async def test_a_model_with_no_pinned_answer_gets_its_instructions_as_a_user_message(ollama):
+    ollama["fail"] = FAILURES["no template field"][0]
+    await _send(False, "some-new-model:7b")
+    sent = ollama["sent"][-1]
+    assert sent[0]["role"] == "user" and "Answer in French." in sent[0]["content"]
+    await _send(False, "some-new-model:7b", tools=None)   # no tools: nothing is looked up or moved
+    assert ollama["sent"][-1] == MESSAGES and ollama["shows"] == 1
+
+
+@pytest.mark.parametrize("model,drops", [
+    ("hermes3:8b", True), ("hermes3", True), ("registry.ollama.ai/library/hermes3:latest", True),
+    ("llama3.2:3b", False), ("nemotron-3-nano:4b", False), ("Gemma4:12b", False),
+    ("hf.co/someone/new-model-GGUF:Q4_K_M", True),
+])
+def test_pinned_answers_are_found_by_model_family(model, drops):
+    assert ollama_client.pinned_drops_system(model) is drops

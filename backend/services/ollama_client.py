@@ -120,6 +120,24 @@ def template_drops_system_with_tools(template: str) -> bool:
     return bool(m) and ".System" not in m.group(1)
 
 
+# What template_drops_system_with_tools says about each family's real template, read with /api/show
+# from Ollama 0.35.1 on 2026-10-11. Used only when /api/show fails or answers without a template
+# (Ollama down or restarting, a proxy sending /api/show to a node without the model): treating that
+# as "keeps .System" sent hermes3's tool rounds with no system prompt at all.
+PINNED_DROPS_SYSTEM = {
+    "hermes3": True,
+    "llama3.2": False, "granite3.3": False, "phi4-mini": False, "gemma4": False, "nemotron-3-nano": False,
+}
+
+
+def pinned_drops_system(model: str) -> bool:
+    """The pinned answer for a model's family ('hermes3:8b' -> 'hermes3'; a registry or hf.co path
+    keeps only its last part). A family with no pinned answer counts as dropping .System, because
+    the leading user message reaches the model whatever its template does."""
+    family = model.rsplit("/", 1)[-1].split(":", 1)[0].lower()
+    return PINNED_DROPS_SYSTEM.get(family, True)
+
+
 async def _drops_system_with_tools(model: str, host: Optional[str], port: Optional[int]) -> bool:
     key = (_normalize_host(resolve_host(host, port)), model)
     if key not in _drops_system:
@@ -127,9 +145,16 @@ async def _drops_system_with_tools(model: str, host: Optional[str], port: Option
             async with httpx.AsyncClient(timeout=5.0) as client:
                 r = await client.post(f"{resolve_host(host, port)}/api/show", json={"model": model})
             r.raise_for_status()
-            _drops_system[key] = template_drops_system_with_tools(r.json().get("template", ""))
-        except Exception:
-            return False   # unknown: leave the request as it is, and ask again next time
+            template = r.json().get("template")
+            if not isinstance(template, str):
+                raise ValueError(f"the answer has no template (got {type(template).__name__})")
+        except Exception as e:
+            fallback = pinned_drops_system(model)
+            logger.warning("Couldn't read the chat template of %s from /api/show (%s: %s); sending its "
+                           "system prompt %s", model, type(e).__name__, str(e).split("\n", 1)[0],
+                           "as a leading user message" if fallback else "as a system message")
+            return fallback   # not cached: ask again next time
+        _drops_system[key] = template_drops_system_with_tools(template)
     return _drops_system[key]
 
 

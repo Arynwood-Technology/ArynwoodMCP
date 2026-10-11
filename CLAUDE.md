@@ -504,8 +504,12 @@ as "Lumen", it answered in English as a generic assistant once a tool was attach
 `template_drops_system_with_tools` is true, sends the system content as a leading user
 message (`system_as_leading_user_message`). Other installed models (llama3.2, granite3.3,
 phi4-mini, gemma4, nemotron) render both and are left alone. Any eval score from before this
-fix was measured without the system prompt on tool rounds. Tests:
-`tests/test_template_system_prompt.py`.
+fix was measured without the system prompt on tool rounds. When `/api/show` fails or answers
+without a template (Ollama down or restarting, a proxy sending it to a node without the model),
+it used to count as "keeps .System" — the same dropped prompt. Since 2026-10-11 it uses the
+family's answer in `PINNED_DROPS_SYSTEM` (read from the real templates; an unpinned family gets
+the leading user message, which every template renders), logs a warning naming the model and
+error, and asks again on the next call. Tests: `tests/test_template_system_prompt.py`.
 
 ### Ollama remote host
 Remote Ollama is at whatever host is configured for it (see the Servers page / `servers` table). The local instance is at `localhost:11434`. Both are seeded into `config/arynwood.db` on first `init_db()`. Chat's server picker sends `server_host`/`server_port` per request.
