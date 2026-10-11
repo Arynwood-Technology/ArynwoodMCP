@@ -164,31 +164,40 @@ function PanelToggle({
 
 // ── Agent config panel ─────────────────────────────────────────────────────────
 
-function AgentConfigPanel() {
+export function AgentConfigPanel() {
   const [open, setOpen]       = useState(false)
   const [context, setContext] = useState('')
   const [maxHist, setMaxHist] = useState(30)
+  const [toolsEnabled, setToolsEnabled] = useState(true)
   const [saved, setSaved]     = useState(false)
   const [loading, setLoading] = useState(false)
+  const [configError, setConfigError] = useState('')
 
   useEffect(() => {
     if (!open) return
     fetch('/api/chat/agent-config').then(r => r.json()).then(d => {
       setContext(d.context ?? '')
       setMaxHist(d.max_history ?? 30)
+      setToolsEnabled(d.tools_enabled ?? true)
     }).catch(() => {})
   }, [open])
 
   const save = async () => {
     setLoading(true)
-    await fetch('/api/chat/agent-config', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ context, max_history: maxHist }),
-    })
-    setLoading(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    setSaved(false)
+    setConfigError('')
+    try {
+      const response = await fetch('/api/chat/agent-config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ context, max_history: maxHist, tools_enabled: toolsEnabled }),
+      })
+      if (!response.ok) throw new Error('Could not save Agent Config. Try again.')
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (e) {
+      setConfigError(e instanceof Error ? e.message : String(e))
+    } finally { setLoading(false) }
   }
 
   return (
@@ -200,7 +209,18 @@ function AgentConfigPanel() {
         Agent Config
       </PanelToggle>
 
-      <div id="agent-config-panel" className={cn('mt-2.5 flex-col gap-2.5', open ? 'flex' : 'hidden')}>
+      <div id="agent-config-panel" className={cn('mt-2.5 max-h-[60vh] flex-col gap-2.5 overflow-y-auto', open ? 'flex' : 'hidden')}>
+        <div>
+          <label className="flex items-center gap-2 text-[11px] text-text">
+            <input type="checkbox" checked={toolsEnabled} aria-describedby="agent-tools-hint"
+              onChange={e => setToolsEnabled(e.target.checked)} />
+            Use tools
+          </label>
+          <p id="agent-tools-hint" className="m-0 mt-1 text-[10px] text-muted">
+            Turn off for plain chat with small models. Disables tool calls, automatic web search
+            and MCP actions for all chats. Supplied knowledge can still be used.
+          </p>
+        </div>
         <div>
           <label htmlFor="agent-context" className="mb-1 block text-[10px] text-muted">
             Context / notes injected into every system prompt
@@ -243,6 +263,7 @@ function AgentConfigPanel() {
           </p>
         </div>
 
+        {configError && <p role="alert" className="m-0 text-[11px] text-danger">{configError}</p>}
         <Button
           variant={saved ? undefined : 'primary'}
           onClick={save}

@@ -26,6 +26,34 @@ Both bundle the frontend and a packaged backend — no separate `venv`/`npm inst
 step. **Ollama is not bundled** and must be installed separately (see
 [ollama.com](https://ollama.com)) — the app will tell you if it can't reach it.
 
+### Chat on a CPU-only computer
+
+CPU mode turns on automatically when no NVIDIA GPU is detected. Install an Ollama
+model separately and enter its exact installed name in the top bar. For example,
+`ollama pull llama3.2:1b` installs a small model; actual speed depends on your machine.
+For plain chat with a model that struggles with tool calls, open **Agent Config**,
+uncheck **Use tools**, and click **Save**. This choice persists across launches and
+turns off native tool calls, automatic web search and external MCP actions for all
+chats. Supplied knowledge excerpts can still inform the reply.
+
+Standalone greetings such as `hello` bypass tool calls, automatic searches and
+retrieval on every machine. They receive brief-greeting guidance; a greeting followed
+by a task or an attachment still goes through the normal request path.
+
+Local CPU chat uses at most 6,144 context tokens by default, further limited by
+the model's own supported context. For models with 4,096 tokens or less, the bundled
+personas use a compact chat profile with shorter built-in instructions and tools
+disabled regardless of the checkbox. A status message discloses that profile.
+Agent Config notes, pinned memories and the current request are preserved, and the
+reply is capped at 512 tokens unless the persona sets its own explicit output limit.
+
+A custom persona keeps its full instructions unless its definition explicitly
+provides a `cpu_system` alternative. See [customizing personas](customizing-personas.md).
+If required content still cannot fit, the error reports estimated input tokens,
+the effective context and reserved reply space. Shorten the required content or
+select a model with a larger supported context; reducing history or raising a
+server setting cannot override a model's native limit.
+
 The AppImage is a few hundred MB: it carries its own web engine and the GStreamer plugins that
 audio, video and microphone recording need.
 

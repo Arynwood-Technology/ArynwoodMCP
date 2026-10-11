@@ -7,6 +7,7 @@ import json
 import aiosqlite
 import httpx
 import pytest
+from unittest.mock import AsyncMock
 
 from backend.db import DB_PATH, init_db
 from backend.routers import chat, images, servers
@@ -26,7 +27,7 @@ async def _reset_db():
     db = await _db()
     try:
         await db.execute("DELETE FROM servers WHERE id > 1")
-        await db.execute("DELETE FROM settings WHERE key IN ('cpu_mode', 'image_endpoint')")
+        await db.execute("DELETE FROM settings WHERE key IN ('cpu_mode', 'image_endpoint', 'agent_tools_enabled')")
         await db.execute("UPDATE settings SET value='1' WHERE key='default_server_id'")
         await db.commit()
     finally:
@@ -333,3 +334,98 @@ def test_cpu_mode_tells_the_user_why_the_reply_is_slow(monkeypatch, client):
     labels = [m["label"] for m in msgs if m["type"] == "status"]
     assert any("this computer's CPU" in label for label in labels)
     assert seen_ctx == [machine.CPU_NUM_CTX]
+
+
+def test_agent_tool_preference_is_persisted_and_old_clients_preserve_it(client):
+    original = client.get('/api/chat/agent-config').json()
+    assert original['tools_enabled'] is True
+    assert client.put('/api/chat/agent-config', json={**original, 'tools_enabled': False}).status_code == 200
+    assert client.get('/api/chat/agent-config').json()['tools_enabled'] is False
+    # An older client saves notes/history without knowing about tools_enabled.
+    legacy = {key: value for key, value in original.items() if key != 'tools_enabled'}
+    assert client.put('/api/chat/agent-config', json=legacy).status_code == 200
+    assert client.get('/api/chat/agent-config').json()['tools_enabled'] is False
+    assert client.put('/api/chat/agent-config', json={**original, 'tools_enabled': 'false'}).status_code == 422
+    assert client.put('/api/chat/agent-config', json=original).status_code == 200
+    assert client.get('/api/chat/agent-config').json()['tools_enabled'] is True
+
+
+@pytest.mark.parametrize('native_ctx,tools_enabled,compact,message', [
+    (2048, True, True, 'summarize chapter three'),
+    (32768, False, False, 'summarize chapter three'),
+    (32768, True, False, 'hello'),
+])
+def test_cpu_plain_chat_skips_every_tool_path(monkeypatch, client, native_ctx, tools_enabled, compact, message):
+    from backend.services import context_budget, knowledge, mcp_tool_agent
+    monkeypatch.setattr(context_budget, '_calibration', {})
+    monkeypatch.setattr(chat, '_calibration_loaded', True)
+    monkeypatch.setattr(machine, '_setting', 'on')
+    monkeypatch.setattr(machine, '_gpu_present', False)
+    monkeypatch.setattr(ollama_client, 'context_length', AsyncMock(return_value=native_ctx))
+    monkeypatch.setattr(chat, '_load_relevant_memories', AsyncMock(return_value=[]))
+    monkeypatch.setattr(chat, '_load_recent_conversation_context', AsyncMock(return_value=''))
+    monkeypatch.setattr(chat, '_process_memories', AsyncMock(return_value=[]))
+    monkeypatch.setattr(knowledge, 'search', AsyncMock(return_value=[]))
+    monkeypatch.setattr(chat, '_should_search', lambda message: True)
+    web = AsyncMock(side_effect=AssertionError('web search must not run'))
+    tools = AsyncMock(side_effect=AssertionError('MCP actions must not run'))
+    monkeypatch.setattr(chat, '_web_search', web)
+    monkeypatch.setattr(mcp_tool_agent, 'gather_context_for_message', tools)
+    seen = []
+
+    async def stream(**kwargs):
+        seen.append(kwargs)
+        yield {'token': 'Hello.', 'done': True}
+
+    monkeypatch.setattr(ollama_client, 'chat_stream', stream)
+    config = client.get('/api/chat/agent-config').json()
+    client.put('/api/chat/agent-config', json={**config, 'tools_enabled': tools_enabled})
+    with client.websocket_connect('/api/chat/ws') as ws:
+        ws.send_json({'message': message, 'persona': 'central', 'model': 'small-model'})
+        events = []
+        while not (events and events[-1].get('type') == 'token' and events[-1].get('done')):
+            event = ws.receive_json()
+            assert event['type'] != 'error', event
+            events.append(event)
+    assert len(seen) == 1 and not seen[0].get('tools')
+    assert seen[0]['options']['num_ctx'] == min(native_ctx, machine.CPU_NUM_CTX)
+    if compact:
+        assert seen[0]['options']['num_predict'] == 512
+    labels = [e['label'] for e in events if e['type'] == 'status']
+    if message == 'hello':
+        assert chat.chat_intent.GREETING_REPLY_GUIDANCE in seen[0]['messages'][0]['content']
+        knowledge.search.assert_not_awaited()
+        chat._load_relevant_memories.assert_not_awaited()
+        chat._load_recent_conversation_context.assert_not_awaited()
+    else:
+        assert any('compact CPU chat' in s if compact else 'off in Agent Config' in s for s in labels)
+    web.assert_not_awaited()
+    tools.assert_not_awaited()
+
+
+def test_oversized_required_input_is_rejected_before_tool_dispatch(monkeypatch, client):
+    from backend.services import knowledge, mcp_tool_agent
+    monkeypatch.setattr(machine, '_setting', 'on')
+    monkeypatch.setattr(ollama_client, 'context_length', AsyncMock(return_value=32768))
+    monkeypatch.setattr(chat, '_load_relevant_memories', AsyncMock(return_value=[]))
+    monkeypatch.setattr(chat, '_load_recent_conversation_context', AsyncMock(return_value=''))
+    tools = AsyncMock()
+    web = AsyncMock()
+    search = AsyncMock()
+    monkeypatch.setattr(mcp_tool_agent, 'gather_context_for_message', tools)
+    monkeypatch.setattr(chat, '_web_search', web)
+    monkeypatch.setattr(knowledge, 'search', search)
+    client.put('/api/chat/agent-config', json={'context': 'x' * 40000})
+    try:
+        with client.websocket_connect('/api/chat/ws') as ws:
+            ws.send_json({'message': 'hello', 'persona': 'central', 'model': 'small-model'})
+            while True:
+                event = ws.receive_json()
+                if event['type'] == 'error':
+                    assert 'input tokens' in event['message']
+                    break
+        tools.assert_not_awaited()
+        web.assert_not_awaited()
+        search.assert_not_awaited()
+    finally:
+        client.put('/api/chat/agent-config', json={'context': ''})

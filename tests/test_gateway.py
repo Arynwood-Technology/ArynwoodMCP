@@ -460,6 +460,30 @@ async def test_owner_turn_runs_tools_mid_reply(make_gateway, kdenlive, monkeypat
         await gen.aclose()
 
 
+async def test_agent_config_use_tools_off_applies_to_gateway_turns(make_gateway, kdenlive, monkeypatch):
+    searches = []
+
+    async def web(message):
+        searches.append(message)
+        return "results"
+
+    monkeypatch.setattr(chat, "_should_search", lambda message: True)
+    monkeypatch.setattr(chat, "_web_search", web)
+    requests = _script(monkeypatch, [json.dumps({"name": "get_timeline_summary", "arguments": {}}), "unused"])
+    key = await _owner_key()
+    gen, db = await _db()
+    try:
+        await chat._set_setting(db, "agent_tools_enabled", "false")
+        result = await make_gateway().submit(InboundMessage(session=key, text="what's on my timeline?"))
+    finally:
+        await chat._set_setting(db, "agent_tools_enabled", "true")
+        await gen.aclose()
+    # A plain streamed reply: no agent loop, no tool servers, no native tools, no web search.
+    assert result.reply == "ok" and kdenlive == [] and searches == []
+    assert not any(r["tools"] for r in requests)
+    assert "Tool execution and web browsing are disabled" in _system_prompt(_requests[-1]["messages"])
+
+
 def test_http_sets_and_validates_trust(client):
     path = "/api/gateway/sessions/api:trust-check"
     assert client.put(path, json={"label": "x"}).json()["trust_level"] == "stranger"
