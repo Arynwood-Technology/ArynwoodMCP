@@ -273,6 +273,26 @@ def test_redaction_minimizes_nested_evidence_without_mutation():
         runtime_context.evidence.reset(token)
 
 
+def test_redaction_keeps_token_counts_but_not_credentials():
+    from backend.services.secret_redaction import redact
+    from backend.services import context_budget, runtime_context
+    counts = {'estimated_tokens': 4635, 'budget_tokens': 1536, 'tokens': 12, 'reserve_tokens': 0.5}
+    assert redact(counts) == counts
+    credentials = {'token': 'abc', 'access_token': 'abc', 'api_token': 123456,
+                   'tokens': 'abc', 'refresh_tokens': ['abc']}
+    assert redact(credentials) == {key: '[REDACTED]' for key in credentials}
+    # The context-budget report reaches Chat's "Context: ~X of Y tokens" line through evidence.
+    _, report = context_budget.fit_request([{'role': 'user', 'content': 'hello'}], None, 2048)
+    token = runtime_context.evidence.set([])
+    try:
+        runtime_context.record_evidence('context_budget', **report)
+        recorded = runtime_context.evidence.get()[0]
+        assert recorded['estimated_tokens'] == report['estimated_tokens'] > 0
+        assert recorded['budget_tokens'] == report['budget_tokens'] > 0
+    finally:
+        runtime_context.evidence.reset(token)
+
+
 @pytest.mark.parametrize('schema,arguments', [
     ({'type': 'object', 'additionalProperties': False}, {'unexpected': 1}),
     ({'properties': {'id': {'minimum': 2}}}, {'id': 1}),

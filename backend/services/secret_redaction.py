@@ -7,6 +7,12 @@ _PATTERNS = (
     re.compile(r'(?i)\bbearer\s+[A-Za-z0-9._~+/-]+=*'),
     re.compile(r'(?i)\b(?:password|passwd|api[_-]?key|access[_-]?token|refresh[_-]?token)\s*[:=]\s*[^\s&,;]+'),
 )
+# estimated_tokens, budget_tokens, tokens: a number under a plural *tokens key is a count.
+_COUNT_KEY = re.compile(r'(?i)tokens$')
+
+
+def _is_count(key, item) -> bool:
+    return bool(_COUNT_KEY.search(str(key))) and isinstance(item, (int, float)) and not isinstance(item, bool)
 
 
 def redact(value):
@@ -15,7 +21,7 @@ def redact(value):
             value = pattern.sub('[REDACTED]', value)
         return value
     if isinstance(value, dict):
-        return {key: '[REDACTED]' if _SECRET_KEY.search(str(key)) else redact(item)
+        return {key: '[REDACTED]' if _SECRET_KEY.search(str(key)) and not _is_count(key, item) else redact(item)
                 for key, item in value.items()}
     if isinstance(value, (list, tuple)):
         return [redact(item) for item in value]
