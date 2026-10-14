@@ -8,6 +8,7 @@ Non-loopback clients require authentication even when a launcher is bypassed.
 """
 
 import os
+import re
 import secrets
 from urllib.parse import parse_qs
 
@@ -21,6 +22,20 @@ TRUSTED_BROWSER_ORIGINS = [
     "http://localhost:8010", "http://127.0.0.1:8010",
     "tauri://localhost", "http://tauri.localhost", "https://tauri.localhost",
 ]
+
+# Read-only files the desktop app itself loads cross-site. Its web view is tauri://localhost, and
+# WebKitGTK (checked on 2.52) sends the html-tools iframes and <img>/<audio>/<video> loads to :8010
+# with Sec-Fetch-Site: cross-site and neither Origin nor Referer, exactly like another site's request.
+# GET/HEAD of these change nothing, the media ids are random UUIDs, and html-tools render only inside
+# a trusted frame (frame-ancestors, set where they're served).
+CROSS_SITE_READ_ONLY = re.compile(
+    r"/html-tools/.+"
+    r"|/api/tools/jobs/[^/]+/file"
+    r"|/api/music/assets/[^/]+/audio"
+    r"|/api/studio/stems/[^/]+/[^/]+"
+    r"|/api/studio/voice/convert/[^/]+/result"
+    r"|/api/video/music/proxy"
+)
 
 
 class ApiKeyMiddleware:
@@ -59,7 +74,9 @@ class ApiKeyMiddleware:
             return
         # Cross-site navigations/images can omit Origin. Do not let them trigger
         # owner endpoints (including the legacy GET install stream).
-        if origin is None and headers.get(b"sec-fetch-site") == b"cross-site":
+        if origin is None and headers.get(b"sec-fetch-site") == b"cross-site" and not (
+                scope["type"] == "http" and scope.get("method") in ("GET", "HEAD")
+                and CROSS_SITE_READ_ONLY.fullmatch(scope["path"])):
             await self._reject(scope, receive, send, 403, "Cross-site request denied")
             return
 

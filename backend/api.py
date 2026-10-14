@@ -238,6 +238,9 @@ if os.path.isdir(_HTML_TOOLS_DIR):
             from fastapi import HTTPException
             raise HTTPException(status_code=404)
         resp = FileResponse(path)
+        # The auth gate lets cross-site requests load these (the packaged app's iframes are
+        # cross-site), so only the app itself may frame them.
+        resp.headers["Content-Security-Policy"] = "frame-ancestors 'self' " + " ".join(TRUSTED_BROWSER_ORIGINS)
         resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         resp.headers["Pragma"] = "no-cache"
         resp.headers["Expires"] = "0"

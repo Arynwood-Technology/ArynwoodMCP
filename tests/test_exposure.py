@@ -43,13 +43,15 @@ def test_custom_hosts_need_auth_and_no_wildcards(monkeypatch):
         allowed_hosts()
 
 
-async def invoke(monkeypatch, *, peer='192.168.1.4', key=None, headers=(), path='/api/memory', kind='http'):
+async def invoke(monkeypatch, *, peer='192.168.1.4', key=None, headers=(), path='/api/memory', kind='http', method='GET'):
     monkeypatch.delenv('ARYNWOOD_ALLOWED_HOSTS', raising=False)
     monkeypatch.delenv('ARYNWOOD_API_KEY', raising=False)
     if key:
         monkeypatch.setenv('ARYNWOOD_API_KEY', key)
     inner, send = AsyncMock(), AsyncMock()
     scope = {'type': kind, 'path': path, 'client': (peer, 1234), 'headers': list(headers)}
+    if kind == 'http':
+        scope['method'] = method
     await ApiKeyMiddleware(inner)(scope, None, send)
     return inner, send
 
@@ -82,6 +84,35 @@ async def test_cross_site_get_without_origin_cannot_start_install(monkeypatch):
     inner, send = await invoke(monkeypatch, peer='127.0.0.1', path='/api/tools/tool/install/stream', headers=[(b'sec-fetch-site', b'cross-site')])
     inner.assert_not_awaited()
     assert send.call_args_list[0].args[0]['status'] == 403
+
+
+# The packaged app (tauri://localhost) loads these with Sec-Fetch-Site: cross-site and no Origin or Referer.
+@pytest.mark.parametrize('path', [
+    '/html-tools/client-intake.html', '/html-tools/fonts/fonts.css',
+    '/api/tools/jobs/0123abcd/file', '/api/music/assets/0123abcd/audio', '/api/studio/stems/0123abcd/vocals',
+    '/api/studio/voice/convert/0123abcd/result', '/api/video/music/proxy',
+])
+async def test_desktop_app_iframes_and_media_load_cross_site(monkeypatch, path):
+    inner, send = await invoke(monkeypatch, peer='127.0.0.1', path=path, headers=[(b'sec-fetch-site', b'cross-site')])
+    inner.assert_awaited_once()
+    send.assert_not_awaited()
+
+
+@pytest.mark.parametrize('method,path', [
+    ('GET', '/api/memory'), ('GET', '/api/tools/jobs/0123abcd/file/extra'), ('GET', '/api/studio/stems/0123abcd'),
+    ('GET', '/html-tools/'), ('GET', '/social-media/private.png'), ('POST', '/api/tools/jobs/0123abcd/file'),
+])
+async def test_cross_site_without_origin_still_denied_elsewhere(monkeypatch, method, path):
+    inner, send = await invoke(monkeypatch, peer='127.0.0.1', path=path, method=method, headers=[(b'sec-fetch-site', b'cross-site')])
+    inner.assert_not_awaited()
+    assert send.call_args_list[0].args[0]['status'] == 403
+
+
+def test_only_the_app_may_frame_html_tools(client):
+    r = client.get('/html-tools/client-intake.html', headers={'Sec-Fetch-Site': 'cross-site'})
+    assert r.status_code == 200
+    assert r.headers['content-security-policy'].startswith("frame-ancestors 'self' ")
+    assert 'tauri://localhost' in r.headers['content-security-policy']
 
 
 def test_host_validation_applies_to_actual_app(client):
