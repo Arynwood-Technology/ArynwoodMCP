@@ -152,7 +152,7 @@ palette**, and a **system status drawer**. See [Getting Around](#getting-around)
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.11+
 - Node.js 20.19+ or 22.12+
 - [Ollama](https://ollama.com) running locally or on a remote server
 

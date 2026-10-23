@@ -11,6 +11,11 @@ them as a summary, not a precise record.
 
 ### Security
 
+- **Pillow 13.0.0** (was 12.3.0, which has 35 published advisories: buffer overflows,
+  use-after-free and decompression-bomb bypasses in its image decoders, and MCP opens pictures
+  with it). Pillow 13 needs Python 3.11, so a source checkout now needs Python 3.11 or newer
+  (3.10 reaches end of life this month). CI tests 3.11; Linux release builds use 3.12, as the
+  Windows build already did.
 - **A picture uploaded for a social post is only ever a picture.** The upload's own file name
   chose the saved extension, so a web page uploaded as the "image" was served as `text/html`
   from Arynwood's own address (and the extension wasn't checked for path characters). Uploads are
