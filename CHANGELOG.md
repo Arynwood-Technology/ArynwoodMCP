@@ -9,6 +9,8 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+## [0.5.3] — 2026-10-23
+
 ### Security
 
 - **Pillow 13.0.0** (was 12.3.0, which has 35 published advisories: buffer overflows,

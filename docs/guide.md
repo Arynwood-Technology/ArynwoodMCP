@@ -22,7 +22,7 @@ The backend is Python/FastAPI. The frontend is React 19 + Vite + Tailwind v4. Th
 
 ### Requirements
 
-- Python 3.10+
+- Python 3.11+
 - Node.js 20.19+ or 22.12+
 - Rust (for Tauri builds)
 - Ollama (for LLM features)

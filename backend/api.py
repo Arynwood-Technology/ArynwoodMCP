@@ -125,7 +125,7 @@ async def lifespan(app: FastAPI):
         studio.stop_all_sidecars()
 
 
-app = FastAPI(title="Arynwood MCP", version="0.5.2", lifespan=lifespan)
+app = FastAPI(title="Arynwood MCP", version="0.5.3", lifespan=lifespan)
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 # No endpoint under /api/* set any Cache-Control header, which left every dynamic

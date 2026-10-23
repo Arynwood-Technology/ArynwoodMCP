@@ -137,7 +137,7 @@ migrated file. Put any new element-level default in `@layer base`, never bare.
 `prefers-reduced-motion` block — the app had neither, and the form reset strips the UA
 outline, so keyboard users previously had no focus indicator anywhere.
 
-### Layer 2 — Backend (FastAPI / Python 3.10+)
+### Layer 2 — Backend (FastAPI / Python 3.11+)
 
 - **`backend/api.py`** — entry point; registers all routers, calls `init_db()` via `lifespan()`
 - **`backend/db.py`** — SQLite at `config/arynwood.db`; `get_db()` yields an `aiosqlite` connection with `row_factory = aiosqlite.Row`

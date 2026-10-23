@@ -1,6 +1,6 @@
 [package]
 name = "arynwood"
-version = "0.5.2"
+version = "0.5.3"
 description = "Arynwood MCP Desktop"
 authors = []
 edition = "2021"
