@@ -19,8 +19,10 @@ Credentials (in .env):
 """
 
 import html
+import io
 import json
 import os
+import re
 import secrets
 import time
 from typing import Optional
@@ -28,7 +30,7 @@ from urllib.parse import urlencode
 
 import httpx
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 
 from backend.db import get_db
 from backend._frozen import user_data_dir
@@ -563,6 +565,51 @@ async def list_posts(db=Depends(get_db)):
     return [dict(r) for r in rows]
 
 
+# ── Uploaded pictures ─────────────────────────────────────────────────────────
+# A picture uploaded for a post is served from this backend's own address for the platforms to
+# fetch, so only real pictures are kept: each is decoded and saved again (which also drops its EXIF,
+# location included), under a name and extension chosen here, never the upload's own.
+
+_IMAGE_FORMATS = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}
+_IMAGE_MAX_BYTES = 20 * 1024 * 1024
+_MEDIA_TYPES = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp", "gif": "image/gif"}
+# Older uploads kept the upload's own extension; only picture ones are still served.
+_MEDIA_NAME = re.compile(r"[0-9a-f]{32}\.(jpe?g|png|webp|gif)", re.I)
+# A picture and nothing else, even when a browser opens one directly.
+_MEDIA_HEADERS = {"X-Content-Type-Options": "nosniff", "Content-Security-Policy": "default-src 'none'; sandbox"}
+_NOT_A_PICTURE = "Upload a JPEG, PNG or WebP picture."
+
+
+def _media_dir() -> str:
+    return os.path.join(user_data_dir(), "static", "social-media")
+
+
+def save_uploaded_image(data: bytes) -> str:
+    """Re-encode an uploaded picture into the social-media folder; returns its new file name."""
+    from PIL import Image, ImageOps, UnidentifiedImageError
+    if len(data) > _IMAGE_MAX_BYTES:
+        raise HTTPException(413, "Pictures can be up to 20 MB.")
+    try:
+        with Image.open(io.BytesIO(data)) as img:
+            fmt = img.format
+            if fmt not in _IMAGE_FORMATS:
+                raise HTTPException(415, _NOT_A_PICTURE)
+            icc = img.info.get("icc_profile")
+            picture = ImageOps.exif_transpose(img)
+            if fmt == "JPEG" and picture.mode not in ("RGB", "L"):
+                picture = picture.convert("RGB")
+            out = io.BytesIO()
+            options = {"quality": 95} if fmt in ("JPEG", "WEBP") else {}
+            picture.save(out, fmt, **options, **({"icc_profile": icc} if icc else {}))
+    except (UnidentifiedImageError, Image.DecompressionBombError, OSError, SyntaxError, ValueError):
+        raise HTTPException(415, _NOT_A_PICTURE)
+    os.makedirs(_media_dir(), exist_ok=True)
+    name = f"{secrets.token_hex(16)}.{_IMAGE_FORMATS[fmt]}"
+    with open(os.path.join(_media_dir(), name), "wb") as f:
+        f.write(out.getvalue())
+    return name
+
+
 # ── Unified post endpoint ─────────────────────────────────────────────────────
 
 @router.post("/post")
@@ -584,15 +631,7 @@ async def create_post(
     # If image file uploaded, save it and create a URL for it
     served_media_url = media_url
     if image and not media_url:
-        # Save uploaded image to static dir and serve it
-        import uuid as _uuid
-        static_dir = os.path.join(user_data_dir(), "static", "social-media")
-        os.makedirs(static_dir, exist_ok=True)
-        ext = (image.filename or "image.jpg").rsplit(".", 1)[-1]
-        fname = f"{_uuid.uuid4().hex}.{ext}"
-        fpath = os.path.join(static_dir, fname)
-        with open(fpath, "wb") as f:
-            f.write(await image.read())
+        fname = save_uploaded_image(await image.read(_IMAGE_MAX_BYTES + 1))
         served_media_url = f"{REDIRECT_BASE}/social-media/{fname}"
 
     results = []
@@ -772,16 +811,12 @@ async def _post_linkedin(token: str, person_urn: str, text: str, media_url: str)
 
 # ── Static serving of uploaded social media images ───────────────────────────
 
-from fastapi.staticfiles import StaticFiles
-from fastapi import Request
-from fastapi.responses import FileResponse
-import os as _os
-
 @router.get("/media/{filename}")
 async def serve_social_media(filename: str):
-    """GET /media/{filename} — serve an uploaded social media image from the static dir."""
-    static_dir = _os.path.join(user_data_dir(), "static", "social-media")
-    path = _os.path.join(static_dir, filename)
-    if not _os.path.isfile(path):
+    """GET /media/{filename} — serve an uploaded social media picture; api.py also serves it at
+    /social-media/{filename}, the address the platforms are given."""
+    name = _MEDIA_NAME.fullmatch(filename)
+    path = os.path.join(_media_dir(), filename)
+    if not name or not os.path.isfile(path):
         raise HTTPException(404)
-    return FileResponse(path)
+    return FileResponse(path, media_type=_MEDIA_TYPES[name[1].lower()], headers=_MEDIA_HEADERS)

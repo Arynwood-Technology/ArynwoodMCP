@@ -16,7 +16,6 @@ if os.path.exists(_env_file):
                 _k, _v = _line.split("=", 1)
                 os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from prometheus_fastapi_instrumentator import Instrumentator
 
 import asyncio
@@ -217,9 +216,9 @@ if gateway_enabled():
     app.include_router(gateway.router, prefix="/api/gateway", tags=["gateway"])
 
 
-_SOCIAL_MEDIA_DIR = os.path.join(user_data_dir(), "static", "social-media")
-os.makedirs(_SOCIAL_MEDIA_DIR, exist_ok=True)
-app.mount("/social-media", StaticFiles(directory=_SOCIAL_MEDIA_DIR), name="social-media")
+# The address the platforms fetch a post's uploaded picture from (social.REDIRECT_BASE): served by the
+# same checks and headers as /api/social/media, so only pictures, and only as pictures.
+app.add_api_route("/social-media/{filename}", social.serve_social_media, methods=["GET", "HEAD"], include_in_schema=False)
 
 _HTML_TOOLS_DIR = os.path.join(app_base_dir(), "static", "html-tools")
 if os.path.isdir(_HTML_TOOLS_DIR):

@@ -9,6 +9,20 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Security
+
+- **A picture uploaded for a social post is only ever a picture.** The upload's own file name
+  chose the saved extension, so a web page uploaded as the "image" was served as `text/html`
+  from Arynwood's own address (and the extension wasn't checked for path characters). Uploads are
+  now decoded and saved again (JPEG, PNG or WebP, EXIF and location dropped) under a name chosen
+  by the backend, and both addresses that serve them (`/social-media/` and
+  `/api/social/media/`) send only pictures, with `nosniff` and a sandboxing policy.
+
+### Changed
+
+- CI, release and demo builds run on Node.js 22.23.4 (the October 21 security release). Three of
+  the workflows used Node 20, which no longer gets security fixes.
+
 ## [0.5.2] — 2026-10-22
 
 ### Added
