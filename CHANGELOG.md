@@ -9,7 +9,7 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
-## [0.5.2] — release candidate
+## [0.5.2] — 2026-10-22
 
 ### Added
 

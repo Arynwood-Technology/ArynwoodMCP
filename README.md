@@ -13,7 +13,7 @@ and memory over your own documents, a design canvas, and Model Context Protocol 
 including Kdenlive editing through Cutroom's MCP server. A source checkout adds the GPU generation, audio
 production and publishing tools listed under [What's Inside](#whats-inside).
 
-**The packaged alpha** (v0.5.1: AppImage and `.deb` for Linux x86_64, and a Windows x64 installer) covers the core workspace. LoRA training, script-based
+**The packaged alpha** (v0.5.2: AppImage and `.deb` for Linux x86_64, and a Windows x64 installer) covers the core workspace. LoRA training, script-based
 GPU tools and the project file browser need a source checkout. Models and supporting services are installed
 separately. Requirements and limits: [arynwood.com/mcp](https://arynwood.com/mcp/).
 
@@ -31,21 +31,24 @@ instead of faking it.
 
 | Work | Status |
 |---|---|
-| Desktop alpha v0.5.1: managing Community spaces, readable colours throughout, Community inside the app, update notices, CPU mode and chat/image endpoints; Windows x64 installer, Linux AppImage and `.deb` | Shipped |
+| Desktop alpha v0.5.2: Community from Arynwood Grove 0.7.1, managing Community spaces, readable colours throughout, Community inside the app, update notices, CPU mode and chat/image endpoints; Windows x64 installer, Linux AppImage and `.deb` | Shipped |
 | Community: your Grove's shared spaces on the Community page; [Arynwood Grove](https://github.com/Arynwood-Technology/arynwood-community) is the separate service that keeps them | Shipped, alpha |
 | Headless gateway: owner-only remote control over loopback or your own IRC server | Experimental, off by default |
 
-## Latest release (0.5.1)
+## Latest release (0.5.2)
 
-0.5.1 lets space owners manage a Community space: rename it and give it a topic, make other
-members owners, and delete it for everyone. Tasks can be assigned from the Calendar too. The
-Community screens match Arynwood Grove 0.4.2, which these actions need on the Grove's side.
-0.5.0 fixed Community with a Grove on a server (such as community.arynwood.com), passed a
+0.5.2 brings the Community page up to Arynwood Grove 0.7.1: a side menu, Messages between
+members with photos and files, Public chat, Lists, a space's Files, Webmaster tools with the
+site editor and live previews, Look & feel and Grove admin. It needs a Grove on 0.7.1 or later.
+It also makes the desktop app's html-tools (Client Intake, Flowchart, Terminal Hub, Design
+Center) and media playback load again, which packaged builds had refused since 0.4.6.
+0.5.1 let space owners rename a space, give it a topic, make other members owners and delete
+it. 0.5.0 fixed Community with a Grove on a server (such as community.arynwood.com), passed a
 contrast check of the whole app, and updated dependencies for security. Since 0.4.9 the Community page shows your Grove's planner, calendar,
 tasks, lists, notes, board, discussion and members, from the Grove on this computer or one on
 a server. Anyone on 0.4.8 or later sees an update notice; earlier versions need one manual
 install. This remains a single-owner desktop alpha with documented
-[security limits](SECURITY.md). See [docs/releases/0.5.1.md](docs/releases/0.5.1.md) and
+[security limits](SECURITY.md). See [docs/releases/0.5.2.md](docs/releases/0.5.2.md) and
 [docs/community.md](docs/community.md).
 
 **Experimental: headless gateway.** A remote control for your own workspace: reach Arynwood
@@ -69,7 +72,7 @@ they are not end-to-end encrypted.
 ## Table of Contents
 
 - [Status](#status)
-- [Latest release (0.5.1)](#latest-release-051)
+- [Latest release (0.5.2)](#latest-release-052)
 - [What's next](#whats-next)
 - [What's Inside](#whats-inside)
 - [Quick Start](#quick-start)
@@ -96,13 +99,14 @@ they are not end-to-end encrypted.
 
 ## Release & Packaging
 
-Version **0.5.1** ships a Windows x64 desktop alpha (an unsigned per-user installer, first
+Version **0.5.2** ships a Windows x64 desktop alpha (an unsigned per-user installer, first
 published in 0.4.5) alongside the Linux AppImage and `.deb`, which keep the Ubuntu 22.04 / glibc 2.35
 baseline. Models and supporting services are installed separately on both. Download published packages from [GitHub Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases).
 
 Desktop alpha packages and docs:
 
-- [`docs/releases/0.5.1.md`](docs/releases/0.5.1.md) - packages, checksums, release checks and known issues
+- [`docs/releases/0.5.2.md`](docs/releases/0.5.2.md) - packages, checksums, release checks and known issues
+- [`docs/releases/0.5.1.md`](docs/releases/0.5.1.md) - managing Community spaces
 - [`docs/releases/0.5.0.md`](docs/releases/0.5.0.md) - Community on a server, readable everywhere, security updates
 - [`docs/releases/0.4.9.md`](docs/releases/0.4.9.md) - Community inside the app, charcoal look
 - [`docs/releases/0.4.8.md`](docs/releases/0.4.8.md) - automatic update notices
