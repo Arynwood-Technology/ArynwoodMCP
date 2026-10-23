@@ -1,6 +1,6 @@
-import { renderHook } from '@testing-library/react'
+import { cleanup, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { useSpaceRefresh } from './live'
+import { useLiveRefresh, useSpaceRefresh } from './live'
 
 class FakeEventSource {
   static CONNECTING = 0; static OPEN = 1; static CLOSED = 2
@@ -11,12 +11,13 @@ class FakeEventSource {
   url: string
   constructor(url: string) { this.url = url; FakeEventSource.opened.push(this) }
   addEventListener(name: string, fn: () => void) { (this.listeners[name] ??= []).push(fn) }
+  removeEventListener(name: string, fn: () => void) { this.listeners[name] = (this.listeners[name] ?? []).filter(f => f !== fn) }
   emit(name: string) { if (name === 'open') this.readyState = FakeEventSource.OPEN; this.listeners[name]?.forEach(fn => fn()) }
   close() { this.closed = true; this.readyState = FakeEventSource.CLOSED }
 }
 
 beforeEach(() => { vi.useFakeTimers(); FakeEventSource.opened = []; vi.stubGlobal('EventSource', FakeEventSource) })
-afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers() })
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.useRealTimers() })
 
 it('refetches once per burst of changes another member makes', () => {
   const refresh = vi.fn()
@@ -76,4 +77,19 @@ it('closes the stream when the space changes or the page leaves', () => {
   expect(FakeEventSource.opened.map(s => [s.url.match(/spaces\/([^/]+)\/events/)?.[1], s.closed])).toEqual([['home', true], ['team', false]])
   unmount()
   expect(FakeEventSource.opened[1].closed).toBe(true)
+})
+
+it('shares one connection between the parts of a page that listen to the same stream', () => {
+  const changed = vi.fn(), website = vi.fn()
+  const first = renderHook(() => useLiveRefresh('/api/community/grove/messages/events', changed, 3000))
+  const second = renderHook(() => useLiveRefresh('/api/community/grove/messages/events', website, 3000, 'website'))
+  expect(FakeEventSource.opened).toHaveLength(1)
+  const [source] = FakeEventSource.opened
+  source.emit('open'); source.emit('website')
+  vi.advanceTimersByTime(200)
+  expect([changed.mock.calls.length, website.mock.calls.length]).toEqual([0, 1])
+  first.unmount()
+  expect(source.closed).toBe(false)
+  second.unmount()
+  expect(source.closed).toBe(true)
 })

@@ -35,7 +35,16 @@ CROSS_SITE_READ_ONLY = re.compile(
     r"|/api/studio/stems/[^/]+/[^/]+"
     r"|/api/studio/voice/convert/[^/]+/result"
     r"|/api/video/music/proxy"
+    # The Community page's pictures: a Grove's logo and login picture, photos in Messages, and image
+    # files shown from a space's Files. Their ids are random; the Grove's answers stay read-only.
+    r"|/api/community/grove/brand/(?:logo|picture)"
+    r"|/api/community/grove/messages/photos/[^/]+"
+    r"|/api/community/grove/community/spaces/[^/]+/files/[^/]+/content"
+    r"|/api/community/preview/.+"
 )
+# A Grove website preview (backend/routers/community.py) runs sandboxed, so the fonts and module scripts
+# it loads with CORS say `Origin: null`. Its signed address is the whole permission; no sign-in goes with it.
+SANDBOXED_READ_ONLY = re.compile(r"/api/community/preview/.+")
 
 
 class ApiKeyMiddleware:
@@ -69,14 +78,15 @@ class ApiKeyMiddleware:
             await self._reject(scope, receive, send, 400, "Untrusted Host header")
             return
         origin = headers.get(b"origin")
-        if origin is not None and origin.decode("latin-1") not in TRUSTED_BROWSER_ORIGINS:
+        read_only = scope["type"] == "http" and scope.get("method") in ("GET", "HEAD")
+        if origin is not None and origin.decode("latin-1") not in TRUSTED_BROWSER_ORIGINS and not (
+                origin == b"null" and read_only and SANDBOXED_READ_ONLY.fullmatch(scope["path"])):
             await self._reject(scope, receive, send, 403, "Untrusted browser origin")
             return
         # Cross-site navigations/images can omit Origin. Do not let them trigger
         # owner endpoints (including the legacy GET install stream).
         if origin is None and headers.get(b"sec-fetch-site") == b"cross-site" and not (
-                scope["type"] == "http" and scope.get("method") in ("GET", "HEAD")
-                and CROSS_SITE_READ_ONLY.fullmatch(scope["path"])):
+                read_only and CROSS_SITE_READ_ONLY.fullmatch(scope["path"])):
             await self._reject(scope, receive, send, 403, "Cross-site request denied")
             return
 

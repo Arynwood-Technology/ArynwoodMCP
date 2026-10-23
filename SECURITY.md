@@ -51,7 +51,15 @@ with no practical exploit) can go in a regular GitHub issue.
 - **Community** talks to one Grove, the address the owner chose (`https://` unless it's on
   this computer), through the backend. The backend keeps the Grove sign-in, forwards only the
   Grove API areas the Community page uses, never sends Arynwood's API key or cookies, and
-  doesn't follow redirects ([docs/community.md](docs/community.md)).
+  doesn't follow redirects ([docs/community.md](docs/community.md)). Files and photos keep the
+  Grove's own content policy (`sandbox`). Website previews are served at the Grove's signed
+  preview address without the sign-in, sandboxed, and only the app may frame them.
+- **The desktop app's cross-site loads.** WebKitGTK sends the packaged app's iframes and media
+  with `Sec-Fetch-Site: cross-site` and no `Origin`. Only GET/HEAD of a short list of read-only
+  paths pass the rule against such requests: html-tools pages, generated media, the Community
+  page's pictures (a Grove's logo, photos in Messages, image files) and website previews. A
+  preview's own fonts and module scripts arrive with `Origin: null` (it is sandboxed); that is
+  accepted for preview GETs only.
 - **Deploys** require a known SSH host key, and keep uploads inside the target folder.
 - **Files.** Project reads stay inside the project. Developer codebase tools (opt-in, source
   checkout only) skip credential files and bound their subprocesses.

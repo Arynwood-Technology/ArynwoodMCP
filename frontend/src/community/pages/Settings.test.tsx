@@ -6,7 +6,7 @@ vi.mock('../lib/community', () => ({ api: vi.fn() }))
 vi.mock('../components/PublicInviteLink', () => ({ PublicInviteLink: () => null }))
 vi.mock('../components/GroveAddress', () => ({ GroveAddress: () => null }))
 const mocked = vi.mocked(api)
-const me = { id: 'me', name: 'Rowan', email: 'rowan@example.test', admin: 0 }
+const me = { id: 'me', name: 'Rowan', email: 'rowan@example.test', admin: 0, role: 'member' as const, can_start_spaces: true }
 const home: Space = { id: 'space-1', name: 'Home', topic: 'Sunday dinners', role: 'owner' }
 const sam: Member = { id: 'sam', name: 'Sam', role: 'member' }
 beforeEach(() => { mocked.mockReset() })

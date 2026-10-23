@@ -1,9 +1,11 @@
 # Community: your Grove inside Arynwood
 
-**Community** is where your people share a calendar, tasks, lists, notes, a board and a
-discussion. It lives on a **Grove**: [Arynwood Grove](https://github.com/Arynwood-Technology/arynwood-community),
+**Community** is where your people share a calendar, tasks, lists, notes, files, a board,
+messages and a website. It lives on a **Grove**: [Arynwood Grove](https://github.com/Arynwood-Technology/arynwood-community),
 a separate service that keeps the accounts and spaces. Since 0.4.9 the whole Community opens
-inside Arynwood, on the Community page, instead of in a browser.
+inside Arynwood, on the Community page, instead of in a browser. Since 0.5.2 its screens match
+Arynwood Grove 0.7.1, and they need a Grove on 0.7.1 or later: with an older Grove, the
+sections it doesn't have yet show errors until it is updated.
 
 A Grove can be:
 
@@ -41,15 +43,39 @@ Grove says it needs updating.
 To join a Grove someone invited you to, choose **Join with an invitation link** and paste
 it. If the link is for a different Grove, Arynwood asks before switching to it.
 
-The host also sees IRC rooms, private peer messages (NKN) and Mail. These are the host's own
-connections, configured on the Grove.
+## What's on the Community page
+
+Grove's menu runs down the left of the page:
+
+- **Talk:** Public chat (when the Grove opens an IRC room to its members; otherwise the host's
+  own IRC client), Messages between members, with photos and files, the space's updates log,
+  the Board, and Mail for the host.
+- **Organize:** Overview, Calendar, Tasks, Lists, Notes and Files. Files keeps versions, shows
+  pictures and text, and downloads go to your Downloads folder.
+- **Settings:** People & identity, Grove admin (owners and managers), Look & feel (owners) and
+  Workspace setup (space owners).
+- **Webmaster tools / Website preview:** the Grove's website, its site editor with a live
+  preview, and notes left on pages. **Visit the site** and a preview's **Open in a new tab**
+  open in your browser.
+
+A Grove's own look (Look & feel) colours the Community page only; Arynwood's window, title and
+icon stay Arynwood's. Notifications for new messages or Public chat, if you turn them on in
+People & identity, come from the desktop app.
+
+The host's IRC client and Mail are the host's own connections, configured on the Grove. Grove
+0.7 has no peer-to-peer messages; Messages replaces them.
 
 ## What Arynwood does with your Grove sign-in
 
 The Community page talks to your Grove through Arynwood's own backend, which keeps the Grove
 sign-in so you stay signed in after a restart. It contacts only the Grove you chose, and only
 the parts of it the Community page uses. It never forwards Arynwood's own API key or
-cookies, and it doesn't follow a Grove's redirects to another address.
+cookies, and it doesn't follow a Grove's redirects to another address. Files and photos keep
+the Grove's own content policy, so one opened from Arynwood's address can't run as a page.
+
+Website previews are signed addresses the Grove hands out, valid for an hour. Arynwood's
+backend serves them at the same address, without your Grove sign-in. They run sandboxed, as
+on the Grove, and only Arynwood's own page can show them in a frame.
 
 Anything on this computer that can use Arynwood's API can also act as your Grove account
 there. That is the same single-owner boundary as the rest of Arynwood; see

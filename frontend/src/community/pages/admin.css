@@ -1,0 +1,19 @@
+@scope (.grove-community) {
+.admin-wide { grid-column: 1 / -1; }
+.admin-field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--text); }
+.admin-filters { display: flex; flex-wrap: wrap; gap: 10px; }
+.admin-filters .admin-field { flex: 1 1 200px; }
+.role-label { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+.admin-people .role-select { flex-shrink: 0; }
+.admin-people .member-list li { flex-wrap: wrap; }
+.webmaster-check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); white-space: nowrap; }
+.activity-list, .wish-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.activity-list li { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+.activity-list time { color: var(--text-muted); white-space: nowrap; }
+.activity-list span { overflow-wrap: anywhere; }
+.wish-list li { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.wish-list p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.wish-list small { color: var(--text-muted); overflow-wrap: anywhere; }
+.activity-list li:last-child, .wish-list li:last-child { border-bottom: none; }
+@media (max-width: 560px) { .activity-list li { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+}

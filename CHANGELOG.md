@@ -9,6 +9,47 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+## [0.5.2] — release candidate
+
+### Added
+
+- **Community screens from Arynwood Grove 0.7.1** (they were 0.4.2). The Community page has
+  Grove's side menu and everything it added: Messages between members (photos and files,
+  unread count and optional notifications), Public chat when the Grove opens a room to
+  members, Lists with tabs, a space's Files with versions and previews, Webmaster tools and
+  the site editor with live previews and notes, Look & feel, Grove admin, workspace setup and
+  the wish lamp. Peer-to-peer messages are gone, as they are from Grove. Needs a Grove on 0.7.1
+  or later; with an older Grove the newer sections show errors until it is updated.
+
+### Fixed
+
+- **Desktop app: html-tools and media load again.** WebKitGTK sends the packaged app's iframes
+  and `<img>`/`<audio>`/`<video>` loads with `Sec-Fetch-Site: cross-site` and no `Origin`, so
+  the rule against cross-site requests refused Client Intake, Flowchart, Terminal Hub, Design
+  Center and media playback in every packaged build since 0.4.6. GET/HEAD of a short list of
+  read-only paths pass that rule now; html-tools pages may be framed only by the app.
+- **Website previews show their stylesheets and pictures in the desktop app** (and on a Grove in
+  Safari, fixed in Grove 0.7.2). In a sandboxed frame WebKit matched the preview policy's
+  `'self'` to nothing; the policy now names the preview's own address.
+- **The system prompt stays when `/api/show` fails.** A failed template check counted as "keeps
+  the system prompt", so hermes3's tool rounds went out without one. Each family's pinned answer
+  is used instead, with a warning.
+- **Context sizes show in Chat again.** Run evidence redacted `estimated_tokens` and
+  `budget_tokens` as if they were credentials, so "Context: ~X of Y tokens" never appeared.
+- **CPU chat** fits central's prompt into a small context (a compact profile at 4,096 tokens or
+  less), and a bare greeting gets a short reply instead of a tool round. Agent Config's **Use
+  tools** setting turns native tools, tool servers and automatic web search off in every chat,
+  gateway turns included.
+
+### Changed
+
+- The Community pass-through now also reaches Grove's Messages, Public chat, admin, look,
+  webmaster and wish areas, streams files instead of reading them whole (JSON answers keep
+  their 32 MB limit), keeps the Grove's own content policy on files and photos, and no longer
+  reaches the peer-message areas. Starting a local Grove no longer requires an `nkn/` folder.
+- The desktop app's content policy allows stylesheets and fonts from `http://localhost:*`, for
+  the site editor's preview of a page that isn't saved yet.
+
 ## [0.5.1] — 2026-10-10
 
 ### Added

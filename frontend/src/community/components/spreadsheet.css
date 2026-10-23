@@ -1,0 +1,11 @@
+@scope (.grove-community) {
+.modal:has(.spreadsheet-editor) { width: min(1500px, 96vw); max-width: 96vw; }
+.sheet-scroll { max-width: 100%; max-height: 55vh; overflow: auto; margin: 16px 0; border: 1px solid var(--border); }
+.sheet-scroll table { border-collapse: collapse; width: max-content; min-width: 100%; }
+.sheet-scroll th, .sheet-scroll td { border: 1px solid var(--border); padding: 5px; vertical-align: top; }
+.sheet-scroll thead { position: sticky; top: 0; background: var(--surface); z-index: 1; }
+.sheet-scroll input, .sheet-scroll textarea { width: 180px; min-width: 140px; margin: 0; padding: 8px; }
+.sheet-scroll textarea { resize: vertical; }
+.budget-totals { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
+.budget-totals th, .budget-totals td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
+}

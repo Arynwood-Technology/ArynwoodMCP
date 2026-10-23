@@ -87,6 +87,43 @@ def _fake_grove(seen: list) -> FastAPI:
                 await asyncio.sleep(0.05)
         return StreamingResponse(stream(), media_type="text/event-stream")
 
+    @app.get("/api/messages/events")
+    async def message_events(request: Request):
+        seen.append(("message-events", dict(request.headers), None))
+
+        async def stream():
+            yield "event: changed\ndata: 1\n\n"
+        return StreamingResponse(stream(), media_type="text/event-stream")
+
+    @app.get("/api/messages/unread")
+    def unread():
+        return {"unread": 2}
+
+    @app.get("/api/community/spaces/{space}/files/{file}/content")
+    async def content(space: str, file: str):
+        async def stream():
+            for _ in range(8):
+                yield b"x" * 1000
+        return StreamingResponse(stream(), media_type="application/octet-stream", headers={
+            "Content-Disposition": f'attachment; filename="{file}.bin"', "Content-Security-Policy": "sandbox"})
+
+    @app.get("/api/community/preview/{token}/{path:path}")
+    def preview(token: str, path: str, request: Request):
+        seen.append(("preview", dict(request.headers), path))
+        return Response(f"<link rel=stylesheet href=/api/community/preview/{token}/site.css><h1>{path or 'home'}</h1>",
+                        media_type="text/html", headers={
+                            "Content-Security-Policy": "sandbox allow-scripts; default-src 'none'; frame-ancestors 'self'",
+                            "X-Frame-Options": "SAMEORIGIN", "Access-Control-Allow-Origin": "*"})
+
+    @app.websocket("/api/chat/ws")
+    async def chat(ws: WebSocket):
+        if ws.cookies.get(COOKIE) != "token-1":
+            await ws.close(code=1008)
+            return
+        await ws.accept()
+        await ws.send_text("welcome to #public")
+        await ws.close()
+
     @app.websocket("/api/irc/ws")
     async def irc(ws: WebSocket):
         if ws.cookies.get(COOKIE) != "token-1":
@@ -209,9 +246,14 @@ def test_only_the_page_headers_are_forwarded(client, grove):
 
 # --- what can and can't be reached ---------------------------------------------------------------
 
-@pytest.mark.parametrize("path", ["grove/chat", "health", "source", "community/../grove/chat", "community//spaces"])
+@pytest.mark.parametrize("path", ["grove/chat", "health", "source", "community/../grove/chat", "community//spaces",
+                                  "p2p/wallet"])
 def test_only_the_community_pages_areas_are_reachable(client, grove, path):
     assert client.get(f"/api/community/grove/{path}").status_code == 404
+
+
+def test_the_areas_grove_0_7_added_are_reachable(client, grove):
+    assert client.get("/api/community/grove/messages/unread").json() == {"unread": 2}
 
 
 def test_downloads_keep_their_file_name_and_drop_grove_page_headers(client, grove):
@@ -219,6 +261,15 @@ def test_downloads_keep_their_file_name_and_drop_grove_page_headers(client, grov
     assert r.status_code == 200 and r.json() == {"space": "s1"}
     assert r.headers["content-disposition"] == 'attachment; filename="s1.json"'
     assert "x-frame-options" not in r.headers
+
+
+def test_files_stream_past_the_json_limit_and_keep_the_groves_sandbox(client, grove, monkeypatch):
+    monkeypatch.setattr(community, "MAX_RESPONSE_BYTES", 2000)
+    r = client.get("/api/community/grove/community/spaces/s1/files/f1/content")
+    assert r.status_code == 200 and r.content == b"x" * 8000
+    assert r.headers["content-disposition"] == 'attachment; filename="f1.bin"'
+    # Opened from this app's own address, the file still can't run as a page of it.
+    assert r.headers["content-security-policy"] == "sandbox"
 
 
 def test_a_compressed_answer_reaches_the_page_decoded(client, grove):
@@ -262,6 +313,14 @@ def test_live_notices_stream_through(client, grove):
     assert [h for kind, h, _ in grove["seen"] if kind == "events"][-1]["accept-encoding"] == "identity"
 
 
+def test_a_members_messages_notices_stream_through(client, grove):
+    _sign_in(client)
+    with client.stream("GET", "/api/community/grove/messages/events") as r:
+        assert r.headers["content-type"].startswith("text/event-stream")
+        assert "event: changed" in "".join(r.iter_text())
+    assert [h for kind, h, _ in grove["seen"] if kind == "message-events"][-1]["cookie"] == f"{COOKIE}=token-1"
+
+
 def test_live_notices_pass_a_refusal_through(client, grove):
     assert client.get("/api/community/grove/community/spaces/s1/events").status_code == 401
 
@@ -275,9 +334,50 @@ def test_host_socket_carries_the_sign_in_and_both_directions(client, grove):
     assert headers["cookie"] == f"{COOKIE}=token-1" and "origin" not in headers
 
 
+def test_public_chat_socket_reaches_the_grove(client, grove):
+    _sign_in(client)
+    with client.websocket_connect("/api/community/grove/chat/ws") as ws:
+        assert ws.receive_text() == "welcome to #public"
+
+
+# --- website previews ------------------------------------------------------------------------------
+
+TOKEN = "eyJzIjoxfQ." + "0" * 64
+
+
+def test_previews_answer_at_the_groves_own_address_without_the_sign_in(client, grove):
+    _sign_in(client)
+    r = client.get(f"/api/community/preview/{TOKEN}/about.html?x=1")
+    assert r.status_code == 200 and "<h1>about.html</h1>" in r.text
+    # The page's own links, rewritten by the Grove, lead back to this same address.
+    assert f"/api/community/preview/{TOKEN}/site.css" in r.text
+    _, headers, path = [entry for entry in grove["seen"] if entry[0] == "preview"][-1]
+    assert path == "about.html" and "cookie" not in headers
+    assert client.get(f"/api/community/preview/{TOKEN}/").text.endswith("<h1>home</h1>")
+
+
+def test_previews_run_sandboxed_and_only_this_app_may_frame_them(client, grove):
+    r = client.get(f"/api/community/preview/{TOKEN}/index.html")
+    policy = r.headers["content-security-policy"]
+    assert policy.startswith("sandbox allow-scripts ") and "default-src 'none'" in policy
+    assert "frame-ancestors 'self' " in policy and "tauri://localhost" in policy
+    # Its files are named by the preview's own address: WebKit matches 'self' in a sandboxed frame to nothing.
+    own = str(r.url.copy_with(path=f"/api/community/preview/{TOKEN}/", query=None))
+    assert f"style-src {own} 'unsafe-inline'" in policy and f"img-src {own} data:" in policy
+    assert "'self'" not in policy.split("frame-ancestors")[0]
+    assert "x-frame-options" not in r.headers and r.headers["access-control-allow-origin"] == "*"
+
+
+@pytest.mark.parametrize("path", [f"{TOKEN}/../../auth/me", f"{TOKEN}/a//b", "not-a-token/index.html",
+                                  f"{TOKEN[:-1]}g/index.html"])
+def test_previews_stay_inside_their_own_address(client, grove, path):
+    assert client.get(f"/api/community/preview/{path}").status_code == 404
+    assert not [entry for entry in grove["seen"] if entry[0] == "preview"]
+
+
 def test_other_sockets_and_signed_out_sockets_are_refused(client, grove):
     from starlette.websockets import WebSocketDisconnect
-    for path in ("community/ws", "irc/ws"):  # not a socket area; then not signed in
+    for path in ("community/ws", "p2p/ws", "irc/ws"):  # not socket areas; then not signed in
         with pytest.raises(WebSocketDisconnect):
             with client.websocket_connect(f"/api/community/grove/{path}") as ws:
                 ws.receive_text()

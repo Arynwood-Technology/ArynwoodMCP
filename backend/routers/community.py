@@ -7,7 +7,8 @@ spaces, calendars, tasks, notes and discussions people share. This router:
   ARYNWOOD_COMMUNITY_URL, else a Grove on this computer at :8018);
 * starts/stops a local copy and opens it in the system browser;
 * passes the Community page's requests through to that one Grove (`/grove/...`, plus its live
-  notices and the host's IRC/peer-message sockets), so the page works inside the desktop app.
+  notices and its IRC and Public chat sockets), so the page works inside the desktop app;
+* serves the Grove's website previews at the address the Grove gives them (`/preview/...`).
 
 The pass-through holds the Grove sign-in itself (`settings.community_session`). The desktop web
 view never sees the Grove's cookie: its page origin (tauri://localhost) is a different site from
@@ -30,6 +31,7 @@ and opened, but nothing is started or stopped on this machine.
 import asyncio
 import json
 import os
+import re
 import signal
 import subprocess
 import time
@@ -50,6 +52,7 @@ from backend import external_paths
 from backend.db import get_db
 from backend.external_paths import display_path
 from backend._frozen import sanitize_environ_for_children, xdg_data_dir
+from backend.services.auth import TRUSTED_BROWSER_ORIGINS
 
 router = APIRouter()
 
@@ -61,17 +64,33 @@ DEFAULT_URL = "http://127.0.0.1:8018"
 ADDRESS_SETTING = "community_url"
 SESSION_SETTING = "community_session"
 # The Grove API areas the Community page uses; nothing else on a Grove is reachable from here.
-GROVE_AREAS = ("auth", "community", "grove-setup", "mail", "irc", "p2p")
-GROVE_SOCKETS = ("irc/ws", "p2p/ws")
+GROVE_AREAS = ("auth", "community", "grove-setup", "mail", "irc", "chat", "messages", "admin", "brand",
+               "webmaster", "wishes")
+GROVE_SOCKETS = ("irc/ws", "chat/ws")
 FORWARD_REQUEST_HEADERS = ("content-type", "accept", "x-community-request")
-FORWARD_RESPONSE_HEADERS = ("content-type", "content-disposition")
-MAX_REQUEST_BYTES = 8 * 1024 * 1024    # a 2 MB photo travels as base64 JSON
-MAX_RESPONSE_BYTES = 32 * 1024 * 1024  # space exports
+# The Grove's own policy travels with each answer: files, photos and attachments come with
+# `sandbox`, so one opened from this app's address can't run as a page of it.
+FORWARD_RESPONSE_HEADERS = ("content-type", "content-disposition", "content-security-policy", "x-content-type-options")
+MAX_REQUEST_BYTES = 8 * 1024 * 1024    # a file goes up in pieces of at most 8 MB
+MAX_RESPONSE_BYTES = 32 * 1024 * 1024  # an answer read whole (JSON, such as a space export); files stream
+# A website preview: the Grove's signed address (`<payload>.<hmac>`), which is all the permission it needs.
+PREVIEW_TOKEN = re.compile(r"[A-Za-z0-9_-]{1,12000}\.[0-9a-f]{64}")
+
+
+def preview_policy(own: str) -> str:
+    """Grove's preview policy, framed by Arynwood's page instead of the Grove's. The page's files are named by the
+    preview's own address rather than 'self': in a sandboxed frame WebKit matches 'self' against the frame's opaque
+    origin, so with 'self' the desktop app showed previews without their stylesheets or pictures. It also keeps a
+    preview to its own files."""
+    return (f"sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox; default-src 'none'; "
+            f"script-src {own} 'unsafe-inline'; style-src {own} 'unsafe-inline'; img-src {own} data:; "
+            f"font-src {own}; media-src {own}; form-action 'none'; frame-ancestors 'self' "
+            + " ".join(TRUSTED_BROWSER_ORIGINS))
 MAX_SOCKET_MESSAGE = 8 * 1024 * 1024
 USER_AGENT = "Arynwood MCP"
 STARTUP_GRACE_SECONDS = 1.5
-# Mirrors the checks in Community's own start.sh — report them instead of letting it exit.
-SETUP_MARKERS = (".venv/bin/python", "frontend/dist/index.html", "nkn/node_modules")
+# Mirrors the checks in Grove's own start.sh — report them instead of letting it exit.
+SETUP_MARKERS = (".venv/bin/python", "frontend/dist/index.html")
 
 _proc: subprocess.Popen | None = None
 _failure: str | None = None
@@ -459,27 +478,90 @@ async def grove_passthrough(path: str, request: Request, db=Depends(get_db)):
     cookies = await _session_cookies(db, base)
     if cookies:
         headers["cookie"] = "; ".join(f"{k}={v}" for k, v in cookies.items())
-    if request.method == "GET" and path.startswith("community/spaces/") and path.endswith("/events"):
+    # A space's changes and a member's Messages each come as a notice stream.
+    if request.method == "GET" and path.endswith("/events"):
         return await _relay_events(base, target, headers)
     body = await _read_body(request) if request.method != "GET" else b""
-
-    try:
-        async with _client(base, httpx.Timeout(30.0, connect=5.0)) as client:
-            async with client.stream(request.method, target, headers=headers, content=body or None) as r:
-                data = bytearray()
-                # Decoded: a Grove behind Cloudflare or nginx answers gzip or brotli, and the page
-                # gets no Content-Encoding. The limit therefore applies to the decompressed size.
-                async for chunk in r.aiter_bytes():
-                    data += chunk
-                    if len(data) > MAX_RESPONSE_BYTES:
-                        raise HTTPException(502, "The Grove's answer was too large.")
-    except httpx.HTTPError as e:
-        raise _unreachable(base, e) from None
+    client, r = await _send(base, request.method, target, headers, body)
     await _remember_cookies(db, base, r.headers.get_list("set-cookie"))
+    return await _answer(base, client, r)
+
+
+async def _send(base: str, method: str, target: httpx.URL, headers: dict, body: bytes = b""):
+    """The Grove's answer, its body not read yet: the caller reads it whole or streams it on."""
+    client = _client(base, httpx.Timeout(30.0, connect=5.0))
+    try:
+        return client, await client.send(client.build_request(method, target, headers=headers, content=body or None),
+                                         stream=True)
+    except httpx.HTTPError as e:
+        await client.aclose()
+        raise _unreachable(base, e) from None
+
+
+async def _answer(base: str, client: httpx.AsyncClient, r: httpx.Response, headers: dict | None = None) -> Response:
+    """The Grove's answer for the page. JSON is read whole, within MAX_RESPONSE_BYTES; anything else (files,
+    photos, a folder's .zip, up to gigabytes) streams on as it arrives."""
+    passed = headers if headers is not None else {
+        name: r.headers[name] for name in FORWARD_RESPONSE_HEADERS if name in r.headers}
     if r.is_redirect:
+        await r.aclose()
+        await client.aclose()
         raise _moved(base, r)
-    passed = {name: r.headers[name] for name in FORWARD_RESPONSE_HEADERS if name in r.headers}
-    return Response(content=bytes(data), status_code=r.status_code, headers=passed)
+    kind = r.headers.get("content-type", "")
+    if not kind or kind.startswith("application/json"):
+        data = bytearray()
+        try:
+            # Decoded: a Grove behind Cloudflare or nginx answers gzip or brotli, and the page
+            # gets no Content-Encoding. The limit therefore applies to the decompressed size.
+            async for chunk in r.aiter_bytes():
+                data += chunk
+                if len(data) > MAX_RESPONSE_BYTES:
+                    raise HTTPException(502, "The Grove's answer was too large.")
+        except httpx.HTTPError as e:
+            raise _unreachable(base, e) from None
+        finally:
+            await r.aclose()
+            await client.aclose()
+        return Response(content=bytes(data), status_code=r.status_code, headers=passed)
+
+    async def relay():
+        try:
+            async for chunk in r.aiter_bytes():
+                yield chunk
+        except httpx.HTTPError:
+            return  # the Grove went away mid-file; the page sees a short download, not a hang
+        finally:
+            await r.aclose()
+            await client.aclose()
+
+    return StreamingResponse(relay(), status_code=r.status_code, headers=passed)
+
+
+def _preview_path(path: str) -> str:
+    """A page or file inside a preview: a folder (ending in /) or a file, never outside it."""
+    segments = path.split("/")
+    if (len(path) > 4200 or any(c in path for c in "\\?#") or any(ord(c) < 32 for c in path)
+            or any(seg in (".", "..") for seg in segments) or any(not seg for seg in segments[:-1])):
+        raise HTTPException(404, "File not found.")
+    return path
+
+
+@router.get("/preview/{token}/{path:path}")
+async def grove_preview(token: str, path: str, request: Request, db=Depends(get_db)):
+    """A Grove website preview, at the address the Grove gives it: `/api/community/preview/<signed>/…` is
+    this router's prefix too, so the addresses the Grove rewrote inside the pages lead back here. The
+    signed address is the whole permission, so no Grove sign-in goes with it, and only this app's own
+    page may frame it. The page itself runs sandboxed, as on the Grove."""
+    if not PREVIEW_TOKEN.fullmatch(token):
+        raise HTTPException(404, "Preview expired or unavailable. Open it again.")
+    base = await grove_url(db)
+    target = httpx.URL(base).copy_with(path=f"/api/community/preview/{token}/{_preview_path(path)}",
+                                       query=request.url.query.encode() or None)
+    client, r = await _send(base, "GET", target, {"user-agent": USER_AGENT})
+    passed = {name: r.headers[name] for name in ("content-type", "x-content-type-options") if name in r.headers}
+    own = f"{request.url.scheme}://{request.url.netloc}/api/community/preview/{token}/"
+    passed |= {"content-security-policy": preview_policy(own), "access-control-allow-origin": "*"}
+    return await _answer(base, client, r, passed)
 
 
 async def _relay_events(base: str, target: httpx.URL, headers: dict) -> Response:
@@ -518,8 +600,8 @@ async def _relay_events(base: str, target: httpx.URL, headers: dict) -> Response
 
 @router.websocket("/grove/{path:path}")
 async def grove_socket(websocket: WebSocket, path: str):
-    """The Grove host's IRC and peer-message connections (Grove allows them to its host
-    account only). Opens the Grove's socket first, so a refusal there refuses this one."""
+    """The Grove host's IRC connection (its host account only) and Public chat (any member, when the
+    Grove has a room). Opens the Grove's socket first, so a refusal there refuses this one."""
     if path not in GROVE_SOCKETS:
         await websocket.close(code=1008)
         return

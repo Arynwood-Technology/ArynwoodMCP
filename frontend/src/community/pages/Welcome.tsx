@@ -1,12 +1,14 @@
+import { BrandLogo, BrandLinks, BrandCredit } from '../components/Brand'
 import { useContext, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, MessageCircle, CalendarDays, CheckSquare } from 'lucide-react'
-import { Logo } from '../components/Logo'
+import { useBrand, brandStyle, type Brand } from '../lib/brand'
 import { api, type User } from '../lib/community'
 import { JoinByLink } from '../components/JoinByLink'
 import { GroveContext } from '../lib/grove'
 
-export function Welcome({ onLogin }: { onLogin: (user: User, usedInvite: boolean) => void }) {
+export function Welcome({ onLogin, brand: suppliedBrand }: { brand?: Brand; onLogin: (user: User, usedInvite: boolean) => void }) {
+  const loadedBrand=useBrand(!suppliedBrand), brand=suppliedBrand??loadedBrand
   const invite = new URLSearchParams(location.search).get('invite') || ''
   // The server installer prints a link carrying the setup code for the host account.
   const setupCode = new URLSearchParams(location.search).get('setup') || ''
@@ -36,14 +38,14 @@ export function Welcome({ onLogin }: { onLogin: (user: User, usedInvite: boolean
     }
     catch (e) { setError((e as Error).message) } finally { setBusy(false) }
   }
-  return <div className="welcome">
-    <section className="welcome-story"><div className="brand"><span>arynwood <b>Grove</b></span></div>
-      <div><Logo className="welcome-logo" label="Arynwood" /><span className="eyebrow">A place for your people</span><h1>Life, together.</h1><p>Stay in touch. Make plans. Keep things in order.</p>
+  return <div className="welcome" style={brandStyle(brand)}>
+    <section className={'welcome-story'+(brand.picture_url?' with-picture':'')}><div className="brand"><span>{brand.branded?brand.name:<>arynwood <b>Grove</b></>}</span></div>
+      <div><BrandLogo brand={brand} welcome/><span className="eyebrow">{brand.branded?brand.tagline:"A place for your people"}</span><h1>{brand.branded?brand.name:"Life, together."}</h1>{!brand.branded&&<p>Stay in touch. Make plans. Keep things in order.</p>}{brand.branded&&<BrandLinks brand={brand}/>}
         <div className="welcome-features"><span><MessageCircle /> Conversations</span><span><CalendarDays /> Shared plans</span><span><CheckSquare /> Everyday life</span></div></div>
-      <small>Your space. Your data.</small>
+      {brand.branded?<BrandCredit/>:<small>Your space. Your data.</small>}
     </section>
-    <section className="welcome-form"><span className="badge">Grove{grove.version ? ` ${grove.version}` : ''}</span><h2>{setup && !invite && !creating ? 'Welcome to a new Grove' : setup ? 'Create your Grove' : joining ? 'Join this Grove' : 'Welcome back'}</h2>
-      <p className="muted-text">{server ? `This Grove keeps accounts and spaces on its server, ${server}.` : grove.local ? 'This Grove keeps accounts and spaces on this computer.' : `This Grove keeps accounts and spaces at ${new URL(grove.url).host}.`}</p>
+    <section className="welcome-form"><span className="badge">{brand.branded?brand.name:"Arynwood Grove"}</span><h2>{setup && !invite && !creating ? 'Welcome to a new Grove' : setup ? 'Create your Grove' : joining ? 'Join this Grove' : 'Welcome back'}</h2>
+      <p className="muted-text">{brand.branded ? 'A place to stay in touch with your people.' : server ? `This Grove keeps accounts and spaces on its server, ${server}.` : grove.local ? 'This Grove keeps accounts and spaces on this computer.' : `This Grove keeps accounts and spaces at ${new URL(grove.url).host}.`}</p>
       {setup && !invite && !creating ? <div className="setup-choices">
         <section><h3>Join a Grove</h3><p className="muted-text">Someone invited you? Paste the invitation link they sent.</p><JoinByLink /></section>
         <section><h3>Create your Grove</h3><p className="muted-text">Make the host account for this server. Afterwards you can move it to your own domain in Settings.</p><button className="primary" onClick={() => setCreating(true)}>Create your Grove <ArrowRight size={16} /></button></section>
@@ -55,10 +57,11 @@ export function Welcome({ onLogin }: { onLogin: (user: User, usedInvite: boolean
         <label>Email<input type="email" name="email" autoComplete="username" required maxLength={254} /></label>
         <label>Password<input type="password" name="password" minLength={12} maxLength={256} autoComplete={signup ? 'new-password' : 'current-password'} required /></label>
         {signup && <small>Use at least 12 characters.</small>}
+        {signup && invite && <p className="muted-text">This Grove's owners and managers can see everything shared there, and a log of activity, including what is posted and deleted. Private notes stay private: they see only that they exist.</p>}
         {error && <p className="error" role="alert">{error}</p>}
         <button className="primary" disabled={busy}>{busy ? 'Please wait' : signup ? 'Create account' : 'Sign in'} <ArrowRight size={16} /></button>
         {invite && !setup && !joining && <p className="muted-text">Sign in to join the space you were invited to.</p>}
-        {!setup && <button type="button" className="text-button" onClick={() => { setMode(signup ? 'login' : 'signup'); setJoining(!signup && Boolean(invite)) }}>{signup ? 'I already have an account' : 'Create an account'}</button>}
+        {!setup && (!brand.branded || invite) && <button type="button" className="text-button" onClick={() => { setMode(signup ? 'login' : 'signup'); setJoining(!signup && Boolean(invite)) }}>{signup ? 'I already have an account' : 'Create an account'}</button>}
         {!signup&&<button type="button" className="text-button" onClick={()=>setRecovering(true)}>Forgot password?</button>}
         {setup && !invite && <button type="button" className="text-button" onClick={() => setCreating(false)}>Back</button>}
         {!setup && !invite && <button type="button" className="text-button" onClick={() => setPasting(p => !p)}>Join with an invitation link</button>}
@@ -82,7 +85,7 @@ function PasswordRecovery({onBack}:{onBack:()=>void}) {
   return <section aria-label="Password recovery"><h3>Reset your password</h3>
     {done?<><p role="status">Password reset. All previous sessions are signed out. Sign in with your new password.</p><button className="primary" onClick={onBack}>Back to sign in</button></>:<>
       <p className="muted-text">Ask the host for a one-use reset code. It expires in 15 minutes. No reset email is sent by this instance.</p>
-      <details><summary>I manage this host</summary><p>Run this from the Community backend directory on the host machine, replacing the email with your account:</p><code>python -m backend.community.recovery your-email@example.com</code><p>Use the backend’s Python environment. Keep the code private.</p></details>
+      <details><summary>I manage this host</summary><p>Run this on the server, replacing the email with your account:</p><code>sudo arynwood-grove recovery-code person@example.com</code><p>Keep the code private.</p></details>
       <form onSubmit={submit}>
         <label>Reset code<input name="token" required maxLength={128} autoComplete="off" spellCheck={false}/></label>
         <label>New password<input type="password" name="password" required minLength={12} maxLength={256} autoComplete="new-password"/></label>

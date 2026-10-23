@@ -60,9 +60,9 @@ See [docs/gateway.md](docs/gateway.md).
 communities, with no ads and no sales, kept on a Grove: the standalone
 [Arynwood Grove](https://github.com/Arynwood-Technology/arynwood-community) service, which
 has no AI features, and since 0.4.9 the Community page inside Arynwood MCP. Arynwood MCP is
-how you talk to your own AI; Community is how people talk to each other. Peer-to-peer
-messages are a host-only alpha feature, and their delivery and encryption are not yet
-verified.
+how you talk to your own AI; Community is how people talk to each other. Messages between
+members are kept on the Grove's server and shown only to the two people in the conversation;
+they are not end-to-end encrypted.
 
 ---
 

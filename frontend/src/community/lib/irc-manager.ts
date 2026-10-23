@@ -4,10 +4,13 @@
  */
 import { useAppStore, type IRCMsg, type WhoisInfo } from '../store/useAppStore'
 import { groveSocketUrl } from './grove'
+import { notify, notifyPrefs } from './notify'
 
 let ws: WebSocket | null = null
 let selfNick = 'mcp'
 let whoisAccum: Partial<WhoisInfo> = {}
+// Public chat's room, which it never leaves; '' for the host's own client.
+let room = ''
 
 function store() { return useAppStore.getState() }
 function set(p: Partial<ReturnType<typeof useAppStore.getState>>) { useAppStore.setState(p) }
@@ -53,6 +56,14 @@ function pushMsg(channel: string, m: IRCMsg) {
       ircUnread: store().ircUnread + 1,
     })
   }
+}
+
+/** A notification for someone else's chat message, when the person asked for one and isn't already reading that room. */
+function alertFor(m: IRCMsg, direct: boolean) {
+  const choice = notifyPrefs().chat, { ircPageVisible, ircActiveChannel, ircIgnored } = store()
+  if (choice === 'off' || (choice === 'mentions' && !direct && m.type !== 'mention')) return
+  if ((!document.hidden && ircPageVisible && ircActiveChannel === m.channel) || (m.nick && ircIgnored.includes(m.nick))) return
+  notify(direct ? `${m.nick} wrote to you` : `${m.nick} in ${m.channel}`, m.text, '/community/irc', 'grove-chat-' + m.channel)
 }
 
 function ensureChannel(ch: string) {
@@ -292,6 +303,7 @@ function handleIRCLine(raw: string) {
       const isMention = text.toLowerCase().includes(selfNick.toLowerCase())
       m = { id: Date.now() + Math.random(), type: isMention ? 'mention' : 'chat', nick, channel, text, ts: now }
     }
+    if (nick !== selfNick) alertFor(m, isDM)
   } else if (command === 'NOTICE') {
     const target = params[0] ?? 'server'
     const text = stripIRC(params[1] ?? '')
@@ -342,6 +354,14 @@ export function ircProcess(input: string) {
   const rest = spaceIdx === -1 ? '' : input.slice(spaceIdx + 1).trim()
   const args = rest ? rest.split(' ') : []
   const now = ts()
+
+  // Public chat stays in its room. The Grove's server refuses the rest too; this just says so in place.
+  if (room) {
+    const elsewhere = (target = '') => /^[#&+!]/.test(target) && target.toLowerCase() !== room.toLowerCase()
+    const refusal = ['cs', 'chanserv'].includes(cmd) ? 'ChanServ is not open from Public chat.'
+      : ['list', 'invite', 'quote', 'raw'].includes(cmd) || (cmd === 'join' && args[0]?.toLowerCase() !== room.toLowerCase()) || (['msg', 'query'].includes(cmd) && elsewhere(args[0])) ? `Public chat stays in ${room}.` : ''
+    if (refusal) { pushMsg(active || 'server', sysMsg(refusal)); return }
+  }
 
   switch (cmd) {
     case 'me':
@@ -467,7 +487,7 @@ export function ircProcess(input: string) {
       break
 
     case 'quit':
-      ircSend(`QUIT :${rest || 'Arynwood Hub'}`)
+      ircSend(`QUIT :${rest || 'Left Arynwood Grove'}`)
       setTimeout(ircDisconnect, 500)
       break
 
@@ -486,11 +506,21 @@ export function ircProcess(input: string) {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
+/** A member's Public chat nickname: the one they chose before, else the Grove's pattern with each # a random digit. */
+export function publicNick(pattern: string) {
+  try { const saved = localStorage.getItem('grove_chat_nick'); if (saved) return saved } catch { /* private window */ }
+  return pattern.replace(/#/g, () => String(Math.floor(Math.random() * 10)))
+}
+export function rememberNick(nick: string) { try { localStorage.setItem('grove_chat_nick', nick) } catch { /* private window */ } }
+
 export function ircConnect(config: {
   host: string; port: number; nick: string; channels: string[]; realname?: string; socks5_proxy?: string; nick_password?: string
+  /** Public chat: the server picks the server and room, so only the nickname is sent. */
+  publicChat?: boolean
 }) {
   if (ws) { ws.onclose = null; ws.close() }
   selfNick = config.nick
+  room = config.publicChat ? config.channels[0] ?? '' : ''
 
   set({
     ircConnecting: true, ircConnected: false, ircNick: config.nick, ircAway: false,
@@ -500,9 +530,9 @@ export function ircConnect(config: {
     ircActiveChannel: config.channels[0] ?? 'server',
   })
 
-  ws = new WebSocket(groveSocketUrl('/irc/ws'))
+  ws = new WebSocket(groveSocketUrl(config.publicChat ? '/chat/ws' : '/irc/ws'))
 
-  ws.onopen = () => ws!.send(JSON.stringify({
+  ws.onopen = () => ws!.send(JSON.stringify(config.publicChat ? { nick: config.nick } : {
     host: config.host, port: config.port, nick: config.nick,
     channels: config.channels, realname: config.realname ?? 'Arynwood Grove',
     ...(config.socks5_proxy ? { socks5_proxy: config.socks5_proxy } : {}),
@@ -548,6 +578,9 @@ export function ircSwitchChannel(ch: string) {
     ircUnread: Math.max(0, ircUnread - cleared),
   })
 }
+
+/** Commands Public chat doesn't offer: they'd reach beyond its room. */
+export const OTHER_ROOMS = ['/join', '/list', '/invite', '/quote', '/cs']
 
 export const IRC_COMMANDS = [
   { cmd: '/me',       args: '<action>',          desc: 'Send action' },

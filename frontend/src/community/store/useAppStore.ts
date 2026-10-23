@@ -5,10 +5,6 @@ interface AppState {
   mailUnread: number
   setMailUnread: (n: number) => void
 
-  // P2P unread counts — keyed by addr or "group:<id>"
-  p2pUnread: Record<string, number>
-  setP2pUnread: (u: Record<string, number>) => void
-
   // IRC — persisted across navigation
   ircConnected: boolean
   ircConnecting: boolean
@@ -60,9 +56,6 @@ export interface WhoisInfo {
 export const useAppStore = create<AppState>((set) => ({
   mailUnread: 0,
   setMailUnread: (mailUnread) => set({ mailUnread }),
-
-  p2pUnread: {},
-  setP2pUnread: (p2pUnread) => set({ p2pUnread }),
 
   ircConnected: false,
   ircConnecting: false,

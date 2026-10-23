@@ -1,0 +1,68 @@
+@scope (.grove-community) {
+/* Lists: whose-lists tabs across the top, that tab's lists down the side, one list open. */
+.lists-page { display: flex; flex-direction: column; gap: 18px; min-width: 0; container-type: inline-size; }
+.lists-bar { display: flex; align-items: flex-end; gap: 10px; border-bottom: 1px solid var(--border); min-width: 0; }
+.lists-tabs { display: flex; gap: 2px; overflow-x: auto; overflow-y: hidden; min-width: 0; scrollbar-width: thin; }
+.lists-tab {
+  display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; margin-bottom: -1px; white-space: nowrap;
+  border: none; border-bottom: 3px solid transparent; border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: none; color: var(--text-muted); font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.lists-tab:hover { color: var(--text); background: var(--surface2); }
+.lists-tab[aria-selected="true"] { color: var(--accent-text); border-bottom-color: var(--accent); }
+.lists-tab:focus-visible { outline-offset: -3px; }
+.tab-face { width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--plum-soft); color: var(--text); font-size: 12px; font-weight: 700; }
+.tab-count { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--surface2); color: var(--text-muted); font-size: 12px; text-align: center; }
+.lists-tab[aria-selected="true"] .tab-count { background: var(--accent-soft); color: var(--accent-text); }
+.lists-someone { margin: 0 0 6px auto; flex-shrink: 0; font-size: 14px !important; padding: 7px 10px !important; }
+
+.lists-body { display: grid; grid-template-columns: minmax(200px, 260px) minmax(0, 1fr); gap: 18px; align-items: start; }
+.list-picker { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 16px; min-width: 0; }
+.list-picks { display: flex; flex-direction: column; gap: 2px; max-height: 62vh; overflow-y: auto; }
+.list-pick {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 12px; text-align: left; cursor: pointer;
+  border: 1px solid transparent; border-radius: var(--radius-sm); background: none; color: var(--text); font-size: 14px;
+}
+.list-pick span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.list-pick small { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+.list-pick:hover { background: var(--surface2); }
+.list-pick.open { background: var(--accent-soft); border-color: rgba(var(--brand-rgb, 68, 212, 208), .35); font-weight: 600; }
+.new-list { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; }
+.new-list input[name="title"] { flex: 1; min-width: 0; }
+.only-me { flex-direction: row !important; align-items: center; gap: 6px !important; font-weight: 500 !important; color: var(--text-muted) !important; }
+
+.list-sheet { gap: 10px; }
+.list-head { display: flex; align-items: flex-start; gap: 4px; }
+.list-head > div { flex: 1; min-width: 0; }
+.list-head h2 { overflow-wrap: anywhere; }
+.list-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+.list-details { white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-muted); font-size: 14px; }
+.list-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.list-item { display: flex; align-items: center; gap: 6px; min-height: 46px; padding: 3px 0; border-bottom: 1px solid var(--border); }
+.list-item:last-child { border-bottom: none; }
+.item-text { flex: 1; min-width: 0; padding: 7px 8px; text-align: left; overflow-wrap: anywhere; border: none; border-radius: 6px; background: none; color: inherit; cursor: text; }
+.item-text:hover { background: var(--surface2); }
+.item-input { flex: 1; }
+.list-item .icon-button { width: 32px; height: 32px; opacity: .7; }
+.list-item:hover .icon-button, .list-item .icon-button:focus-visible { opacity: 1; }
+.list-empty { color: var(--text-muted); font-size: 14px; padding: 4px 0; }
+.add-item { flex-direction: row; align-items: center; gap: 8px; padding-top: 4px; }
+.add-item input { flex: 1; }
+.list-done-toggle { align-self: flex-start; }
+.list-none { align-items: center; text-align: center; color: var(--text-muted); padding: 40px 20px; }
+.list-none p:first-of-type { color: var(--text); font-weight: 600; }
+
+/* Narrow, on a phone or beside the Calendar: the lists become a row of chips above the open one. */
+@container (max-width: 620px) {
+  .lists-bar { flex-wrap: wrap; }
+  .lists-tabs { flex: 1 1 100%; }
+  .lists-someone { margin: 0 0 8px; }
+  .lists-body { grid-template-columns: minmax(0, 1fr); }
+  .list-picker { position: static; }
+  .list-picks { flex-direction: row; overflow-x: auto; max-height: none; padding-bottom: 4px; }
+  .list-pick { width: auto; max-width: 16em; flex-shrink: 0; border-color: var(--border); }
+}
+/* Beside the Calendar the lists already sit in a panel. */
+.planner-lists .lists-page { gap: 12px; }
+.planner-lists .list-sheet, .planner-lists .list-none { padding: 0; border: none; background: none; box-shadow: none; }
+}

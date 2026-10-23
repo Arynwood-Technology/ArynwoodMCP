@@ -1,0 +1,32 @@
+@scope (.grove-community) {
+/* Arynwood only: the Grove's members' page fills a browser window (100vh), but inside Arynwood it fills
+   the Community page, below the app's own bars. This box is the size those heights mean here (100cqh),
+   so the menu reaches its last item and the page beside it scrolls on its own.
+   Every rule starts with :scope to outweigh the Grove's own, including the stylesheets that arrive later
+   with the site editor. */
+
+:scope { height: 100%; overflow-y: auto; container-type: size; }
+/* The room the Grove leaves under its page for the wish lamp goes under the scrolling page instead. */
+:scope.grove-community:has(> .grove-shell) { padding-bottom: 0; }
+:scope .grove-shell { height: 100%; min-height: 0; align-items: stretch; }
+:scope .shell-main { height: 100%; overflow-y: auto; padding-bottom: 64px; }
+:scope .grove-shell.focus .shell-main { padding-bottom: 0; }
+/* Beside the page, not floating over it (below 861px the Grove's own sliding menu takes over). */
+@media (min-width: 861px) {
+  :scope .sidebar { position: static; height: 100%; }
+}
+
+:scope .site-studio { height: 100cqh; }
+:scope .grove-shell.focus .site-studio { height: calc(100cqh - 49px); }  /* the bar above it, and its border */
+:scope .review-preview .preview-stage { height: calc(100cqh - 150px); }
+:scope .site-review .notes-panel { max-height: calc(100cqh - 28px); }
+:scope .chat-panel { height: calc(100cqh - 60px - 190px); }
+/* Photos in Messages are sized to the window (62vw); here Arynwood's own menu takes part of it, so they keep to their bubble. */
+:scope .message-photos { max-width: calc(100% + 12px); }
+@media (max-width: 1100px) {
+  :scope .studio-code, :scope .studio-preview { height: calc(100cqh - 150px); }
+}
+@media (max-width: 860px) {
+  :scope .chat-panel { height: calc(100cqh - 56px - 170px); }
+}
+}

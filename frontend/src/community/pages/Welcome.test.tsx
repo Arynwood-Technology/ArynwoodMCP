@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, expect, it, vi } from 'vitest'
 import { Welcome } from './Welcome'
+import { defaultBrand } from '../lib/brand'
 import { api } from '../lib/community'
 vi.mock('../lib/community',()=>({api:vi.fn()}))
 afterEach(()=>{cleanup();vi.mocked(api).mockReset()})
@@ -10,6 +11,7 @@ it('resets through a host code, requires matching passwords, and returns to sign
  render(<MemoryRouter><Welcome onLogin={vi.fn()}/></MemoryRouter>)
  fireEvent.click(await screen.findByRole('button',{name:'Forgot password?'}))
  expect(screen.getByText(/No reset email/)).toBeInTheDocument()
+ expect(screen.getByText('sudo arynwood-grove recovery-code person@example.com')).toBeInTheDocument()
  fireEvent.change(screen.getByLabelText('Reset code'),{target:{value:' fixture-code '}})
  fireEvent.change(screen.getByLabelText('New password'),{target:{value:'new fixture password'}})
  fireEvent.change(screen.getByLabelText('Confirm new password'),{target:{value:'different password'}})
@@ -59,4 +61,68 @@ it('a new Grove first asks whether to join one or create this one',async()=>{
  expect(screen.getByLabelText('Setup code')).toBeInTheDocument()
  fireEvent.click(screen.getByRole('button',{name:'Back'}))
  expect(screen.getByRole('heading',{name:'Welcome to a new Grove'})).toBeInTheDocument()
+})
+
+it('keeps the unbranded welcome and artwork',async()=>{
+ vi.mocked(api).mockResolvedValue({setup:false})
+ render(<MemoryRouter><Welcome onLogin={vi.fn()}/></MemoryRouter>)
+ expect(await screen.findByText('Life, together.')).toBeInTheDocument()
+ expect(screen.getByText('Arynwood Grove')).toBeInTheDocument()
+ expect(screen.getByRole('img',{name:'Arynwood'})).toBeInTheDocument()
+ expect(screen.queryByText('Runs on Arynwood Grove')).toBeNull()
+})
+it('loads a branded welcome with its logo, links, title and accent',async()=>{
+ const brand={...defaultBrand,branded:true,name:'Festival Friends',tagline:'Films and friends',accent:'#aaffcc',site_url:'https://festival.example',shop_url:'https://shop.example',logo_url:'/api/brand/logo'}
+ vi.mocked(api).mockImplementation(async(path)=>path==='/brand'?brand:{setup:false})
+ render(<MemoryRouter><Welcome onLogin={vi.fn()}/></MemoryRouter>)
+ expect(await screen.findByRole('heading',{name:'Festival Friends'})).toBeInTheDocument()
+ expect(screen.getByText('Films and friends')).toBeInTheDocument()
+ expect(screen.getByRole('img',{name:'Festival Friends'})).toHaveAttribute('src','/api/community/grove/brand/logo')
+ expect(screen.getByRole('link',{name:'Website'})).toHaveAttribute('href','https://festival.example')
+ expect(screen.getByRole('link',{name:'Shop'})).toHaveAttribute('href','https://shop.example')
+ expect(screen.getByRole('link',{name:'Runs on Arynwood Grove'})).toHaveAttribute('href','https://arynwood.com/community/')
+ // Inside Arynwood the window keeps the app's own title.
+ expect(document.title).not.toBe('Festival Friends')
+ expect(document.querySelector('.welcome')).toHaveStyle({'--accent':'#aaffcc'})
+ expect(screen.queryByText('Life, together.')).toBeNull()
+ expect(screen.queryByText('Arynwood Grove')).toBeNull()
+ expect(screen.queryByText(/community\.arynwood\.com/)).toBeNull()
+ expect(screen.queryByRole('button',{name:'Create an account'})).toBeNull()
+})
+it('never substitutes the Arynwood tree for a missing branded logo',()=>{
+ vi.mocked(api).mockResolvedValue({setup:false})
+ render(<MemoryRouter><Welcome brand={{...defaultBrand,branded:true,name:'Festival'}} onLogin={vi.fn()}/></MemoryRouter>)
+ expect(screen.queryByRole('img')).toBeNull()
+})
+const policy="This Grove's owners and managers can see everything shared there, and a log of activity, including what is posted and deleted. Private notes stay private: they see only that they exist."
+it('shows the exact policy only while signing up with an invitation',async()=>{
+ window.history.pushState({},'','/community?invite=fixture')
+ vi.mocked(api).mockResolvedValue({setup:false})
+ render(<MemoryRouter><Welcome onLogin={vi.fn()}/></MemoryRouter>)
+ expect(await screen.findByText(policy)).toBeInTheDocument()
+ fireEvent.click(screen.getByRole('button',{name:'I already have an account'}))
+ expect(screen.queryByText(policy)).toBeNull()
+ fireEvent.click(screen.getByRole('button',{name:'Create an account'}))
+ expect(screen.getByText(policy)).toBeInTheDocument()
+ window.history.pushState({},'','/')
+})
+it('omits the invitation policy from host creation and ordinary signup',async()=>{
+ vi.mocked(api).mockResolvedValue({setup:true})
+ const view=render(<MemoryRouter><Welcome onLogin={vi.fn()}/></MemoryRouter>)
+ fireEvent.click(await screen.findByRole('button',{name:/Create your Grove/}))
+ expect(screen.queryByText(policy)).toBeNull()
+ view.unmount()
+ vi.mocked(api).mockResolvedValue({setup:false})
+ render(<MemoryRouter><Welcome onLogin={vi.fn()}/></MemoryRouter>)
+ fireEvent.click(await screen.findByRole('button',{name:'Create an account'}))
+ expect(screen.getByLabelText('Your name')).toBeInTheDocument()
+ expect(screen.queryByText(policy)).toBeNull()
+})
+
+it('applies a full server theme to the welcome page',async()=>{
+ const theme={'--bg':'#091c32','--surface':'#0c2441','--text':'#f4eee8','--accent':'#e02767','--accent-text':'#e96794','--on-accent':'#ffffff'}
+ vi.mocked(api).mockImplementation(async(path)=>path==='/brand'?{...defaultBrand,branded:true,name:'RogueFest',theme}:{setup:false})
+ render(<MemoryRouter><Welcome onLogin={vi.fn()}/></MemoryRouter>)
+ await screen.findByRole('heading',{name:'RogueFest'})
+ expect(document.querySelector('.welcome')).toHaveStyle(theme)
 })

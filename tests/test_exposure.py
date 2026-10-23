@@ -91,6 +91,8 @@ async def test_cross_site_get_without_origin_cannot_start_install(monkeypatch):
     '/html-tools/client-intake.html', '/html-tools/fonts/fonts.css',
     '/api/tools/jobs/0123abcd/file', '/api/music/assets/0123abcd/audio', '/api/studio/stems/0123abcd/vocals',
     '/api/studio/voice/convert/0123abcd/result', '/api/video/music/proxy',
+    '/api/community/grove/brand/logo', '/api/community/grove/messages/photos/0123abcd',
+    '/api/community/grove/community/spaces/s1/files/0123abcd/content', '/api/community/preview/abc.0123/index.html',
 ])
 async def test_desktop_app_iframes_and_media_load_cross_site(monkeypatch, path):
     inner, send = await invoke(monkeypatch, peer='127.0.0.1', path=path, headers=[(b'sec-fetch-site', b'cross-site')])
@@ -101,9 +103,28 @@ async def test_desktop_app_iframes_and_media_load_cross_site(monkeypatch, path):
 @pytest.mark.parametrize('method,path', [
     ('GET', '/api/memory'), ('GET', '/api/tools/jobs/0123abcd/file/extra'), ('GET', '/api/studio/stems/0123abcd'),
     ('GET', '/html-tools/'), ('GET', '/social-media/private.png'), ('POST', '/api/tools/jobs/0123abcd/file'),
+    ('GET', '/api/community/grove/auth/me'), ('GET', '/api/community/grove/messages/files/0123abcd'),
+    ('GET', '/api/community/grove/community/spaces/s1/files/0123abcd/zip'), ('POST', '/api/community/grove/brand/logo'),
 ])
 async def test_cross_site_without_origin_still_denied_elsewhere(monkeypatch, method, path):
     inner, send = await invoke(monkeypatch, peer='127.0.0.1', path=path, method=method, headers=[(b'sec-fetch-site', b'cross-site')])
+    inner.assert_not_awaited()
+    assert send.call_args_list[0].args[0]['status'] == 403
+
+
+# A Grove website preview runs sandboxed: its fonts and module scripts arrive with Origin: null.
+async def test_a_sandboxed_preview_may_load_its_own_files(monkeypatch):
+    inner, send = await invoke(monkeypatch, peer='127.0.0.1', path='/api/community/preview/abc.0123/fonts/a.woff2',
+                               headers=[(b'origin', b'null'), (b'sec-fetch-site', b'cross-site')])
+    inner.assert_awaited_once()
+    send.assert_not_awaited()
+
+
+@pytest.mark.parametrize('method,path', [
+    ('GET', '/api/memory'), ('GET', '/api/community/grove/auth/me'), ('POST', '/api/community/preview/abc.0123/x'),
+])
+async def test_an_opaque_origin_is_refused_everywhere_else(monkeypatch, method, path):
+    inner, send = await invoke(monkeypatch, peer='127.0.0.1', path=path, method=method, headers=[(b'origin', b'null')])
     inner.assert_not_awaited()
     assert send.call_args_list[0].args[0]['status'] == 403
 

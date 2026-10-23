@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { Check, Copy, Globe } from 'lucide-react'
 import { api } from '../lib/community'
+import { GroveContext, openOutside } from '../lib/grove'
 
 interface Address { address: string | null; host: string | null; temporary: boolean; server_ip: string | null; can_change: boolean
   pending: string | null; result: { status: 'done' | 'failed'; domain: string; message: string; finished?: number } | null }
@@ -8,6 +9,7 @@ interface Lookup { domain: string; addresses: string[]; points_here: boolean; re
 
 /** Host only: move the Grove from its first (often temporary) address to the host's own domain. */
 export function GroveAddress() {
+  const grove = useContext(GroveContext)
   const [info, setInfo] = useState<Address | null>(null), [lookup, setLookup] = useState<Lookup | null>(null)
   const [domain, setDomain] = useState(''), [email, setEmail] = useState(''), [confirming, setConfirming] = useState(false)
   const [moving, setMoving] = useState(''), [movedTo, setMovedTo] = useState(''), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false)
@@ -40,7 +42,7 @@ export function GroveAddress() {
   async function copy(text: string) { try { await navigator.clipboard.writeText(text); setCopied(true) } catch { /* the value stays selectable */ } }
 
   if (!info) return error ? <section className="panel"><h2>Your Grove's address</h2><p className="error" role="alert">{error}</p></section> : null
-  const scheme = info.address?.split('://')[0] ?? location.protocol.replace(':', '')
+  const scheme = info.address?.split('://')[0] ?? new URL(grove.url).protocol.replace(':', '')
   // A failed attempt is worth showing for a while; a finished move is announced in the page that made it.
   const failed = info.result?.status === 'failed' && checkedAt / 1000 - (info.result.finished ?? 0) < 3600 ? info.result : null
   return <section className="panel grove-address" aria-label="Your Grove's address">
@@ -48,7 +50,7 @@ export function GroveAddress() {
     <p>Members open <strong>{info.address ?? 'this computer only'}</strong>{info.temporary && info.address ? ' — a temporary address' : ''}.</p>
     {!info.can_change ? <p className="muted-text">This Grove's address is set on its server (GROVE_PUBLIC_URL in its settings).</p> : <>
       {moving ? <p className="notice" role="status">Moving your Grove to {moving}. This takes about a minute; keep this page open.</p>
-      : movedTo ? <p className="notice" role="status">Your Grove is now at <a href={`${scheme}://${movedTo}/community`}>{scheme}://{movedTo}</a>. Open it there and sign in again; the old address forwards to it.</p>
+      : movedTo ? <p className="notice" role="status">Your Grove is now at <a href={`${scheme}://${movedTo}/community`} onClick={openOutside}>{scheme}://{movedTo}</a>. Open it there and sign in again; the old address forwards to it.</p>
       : <>
         {failed && <p className="error" role="alert">Moving to {failed.domain} did not work: {failed.message} Nothing was changed.</p>}
         <p className="muted-text">Make the Grove your own space at a domain you own, such as grove.yourname.com. You'll add one DNS record where you bought the domain, then switch here; the certificate for HTTPS is set up for you.</p>

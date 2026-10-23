@@ -1,6 +1,6 @@
 {
   "productName": "arynwood-mcp",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "identifier": "com.arynwood.mcp",
   "build": {
     "frontendDist": "../dist",
@@ -24,7 +24,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' http://localhost:* ws://localhost:* 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: blob: https: http:; media-src 'self' blob: data: http://localhost:*; font-src 'self' data:; style-src 'self' 'unsafe-inline'; connect-src 'self' ipc://localhost http://ipc.localhost http://localhost:* ws://localhost:* https: blob: data:;"
+      "csp": "default-src 'self' http://localhost:* ws://localhost:* 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: blob: https: http:; media-src 'self' blob: data: http://localhost:*; font-src 'self' data: http://localhost:*; style-src 'self' 'unsafe-inline' http://localhost:*; connect-src 'self' ipc://localhost http://ipc.localhost http://localhost:* ws://localhost:* https: blob: data:;"
     }
   },
   "bundle": {
