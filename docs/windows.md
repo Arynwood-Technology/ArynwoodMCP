@@ -17,6 +17,10 @@ for a Tauri/WebView2 app with a bundled Python backend. It is an alpha. Read the
    if ($actual -eq $expected) { 'OK: checksum matches' } else { 'MISMATCH: do not run this file' }
    ```
 
+   From 0.5.4 on, you can also check where the installer was built, with the
+   [GitHub CLI](https://cli.github.com/):
+   `gh attestation verify .\arynwood-mcp_<version>_x64-setup.exe -R Arynwood-Technology/ArynwoodMCP`
+
 3. Run the installer. It installs for your user account only. If WebView2 is
    missing, it downloads Microsoft's bootstrapper and installs it.
    The installer is unsigned, so Microsoft Defender SmartScreen may say

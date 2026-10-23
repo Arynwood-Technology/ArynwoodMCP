@@ -9,6 +9,14 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Added
+
+- **Build provenance for every package.** The AppImage, `.deb` and Windows installer each get a
+  GitHub build attestation from the workflow that built them, and release verification refuses
+  a package without one made from the tag being released. Check a download with
+  `gh attestation verify <file> -R Arynwood-Technology/ArynwoodMCP`. The packages are still not
+  code-signed.
+
 ## [0.5.3] — 2026-10-23
 
 ### Security

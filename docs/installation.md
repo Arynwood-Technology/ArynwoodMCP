@@ -106,6 +106,17 @@ the download before running it (missing packages are skipped):
 sha256sum --ignore-missing -c SHA256SUMS.txt
 ```
 
+From 0.5.4 on, each package also has a GitHub build attestation: a signed record, made by the
+release workflow, of the exact file it built and the tag it was built from. With the
+[GitHub CLI](https://cli.github.com/) installed, check one with:
+
+```bash
+gh attestation verify arynwood-mcp_*_amd64.AppImage -R Arynwood-Technology/ArynwoodMCP
+```
+
+The packages are not code-signed. An attestation proves where a file was built; it doesn't
+change what your system shows when you open it.
+
 ### Where the app stores its data
 
 Mutable state lives outside the install location, under `~/.local/share/arynwood-mcp/`

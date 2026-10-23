@@ -18,6 +18,7 @@ on:
 
 permissions:
   actions: read
+  attestations: read
   contents: write
 
 jobs:
@@ -71,6 +72,15 @@ jobs:
           test "$(dpkg-deb -f "artifacts/linux/arynwood-mcp_${version}_amd64.deb" Version)" = "$version"
           test -f "artifacts/windows/arynwood-mcp_${version}_x64-setup.exe"
           cat artifacts/linux/SHA256SUMS.txt artifacts/windows/SHA256SUMS-windows.txt | tr -d '\r' > artifacts/SHA256SUMS-all.txt
+      # Releases from 0.5.4 on: every package must carry an attestation made by this repository's
+      # workflows from the tag being released, on a GitHub-hosted runner.
+      - name: Verify build provenance attestations
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in artifacts/linux/*.AppImage artifacts/linux/*.deb artifacts/windows/*-setup.exe; do
+            gh attestation verify "$f" --repo "$GITHUB_REPOSITORY" --source-ref "refs/tags/$RELEASE_TAG" --deny-self-hosted-runners
+          done
       - name: Install isolated verification dependencies
         run: |
           sudo apt-get update

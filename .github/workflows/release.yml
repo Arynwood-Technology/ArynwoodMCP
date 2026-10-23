@@ -4,7 +4,9 @@ name: Release (Linux)
 # SHA-256 checksums, and publishes a draft GitHub Release with notes pulled from
 # CHANGELOG.md. No code-signing/notarization step — this environment has no signing
 # keys/certs. Add one later as a separate step once real signing credentials exist;
-# don't add a signing step that silently no-ops without them.
+# don't add a signing step that silently no-ops without them. Until then, tagged packages get
+# a GitHub build-provenance attestation (free, keyless): anyone can check that a file was built
+# here from the tag with `gh attestation verify <file> -R Arynwood-Technology/ArynwoodMCP`.
 
 on:
   workflow_dispatch:
@@ -22,6 +24,10 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      id-token: write      # the attestation is signed with this run's GitHub identity
+      attestations: write
     steps:
       - uses: actions/checkout@v4
 
@@ -105,6 +111,14 @@ jobs:
           cd frontend/src-tauri/target/release/bundle
           sha256sum appimage/*.AppImage deb/*.deb | sed 's@  .*/@  @' > SHA256SUMS.txt
           cat SHA256SUMS.txt
+
+      - name: Attest build provenance
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: |
+            frontend/src-tauri/target/release/bundle/appimage/*.AppImage
+            frontend/src-tauri/target/release/bundle/deb/*.deb
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
