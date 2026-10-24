@@ -21,7 +21,7 @@ prometheus-fastapi-instrumentator~=8.1.0
 prometheus_client~=0.26.0
 ddgs~=9.14.4
 beautifulsoup4~=4.15.0
-python-dotenv~=1.2.2
+python-dotenv~=1.2.4
 Pillow~=13.0.0
 openpyxl~=3.1.5
 
