@@ -198,16 +198,23 @@ export function IRC({ chat = null }: { chat?: PublicChat | null }) {
     return () => setIrcState({ ircPageVisible: false })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Connection config — persisted to localStorage
-  const savedCfg = locked ? {} : (() => { try { return JSON.parse(localStorage.getItem('grove_irc_config') ?? '{}') } catch { return {} } })()
+  // Connection config — persisted to localStorage, except the NickServ password, which is kept only
+  // for this visit. One saved by an earlier version is removed here.
+  const savedCfg = locked ? {} : (() => {
+    try {
+      const cfg = JSON.parse(localStorage.getItem('grove_irc_config') ?? '{}')
+      if ('nickPassword' in cfg) { delete cfg.nickPassword; localStorage.setItem('grove_irc_config', JSON.stringify(cfg)) }
+      return cfg
+    } catch { return {} }
+  })()
   const [host, setHost]               = useState<string>(savedCfg.host         ?? 'irc.arynwood.com')
   const [port, setPort]               = useState<string>(savedCfg.port         ?? '6697')
   const [nick, setNick]               = useState<string>(() => locked ? publicNick(chat.nick) : savedCfg.nick ?? 'arynwood-hub')
-  const [nickPassword, setNickPassword] = useState<string>(savedCfg.nickPassword ?? '')
+  const [nickPassword, setNickPassword] = useState<string>('')
   const [channels, setChannels]       = useState<string>(savedCfg.channels     ?? chat?.channel ?? '#general')
 
-  const saveCfg = (h = host, p = port, n = nick, ch = channels, pw = nickPassword) =>
-    localStorage.setItem('grove_irc_config', JSON.stringify({ host: h, port: p, nick: n, channels: ch, nickPassword: pw }))
+  const saveCfg = (h = host, p = port, n = nick, ch = channels) =>
+    localStorage.setItem('grove_irc_config', JSON.stringify({ host: h, port: p, nick: n, channels: ch }))
 
   // Load backend client config to prefill the connect form — does NOT auto-connect
   useEffect(() => {
@@ -346,7 +353,7 @@ export function IRC({ chat = null }: { chat?: PublicChat | null }) {
               <input aria-label="Nickname" value={nick} onChange={e => { setNick(e.target.value); saveCfg(host, port, e.target.value) }} placeholder="nick" style={{ ...inp, fontSize: 12 }} disabled={connected} />
               <input aria-label="Port" inputMode="numeric" value={port} onChange={e => { setPort(e.target.value); saveCfg(host, e.target.value) }} placeholder="6697" style={{ ...inp, fontSize: 12 }} disabled={connected} />
             </div>
-            <input aria-label="NickServ password" autoComplete="off" value={nickPassword} onChange={e => { setNickPassword(e.target.value); saveCfg(host, port, nick, channels, e.target.value) }} placeholder="nickserv password" type="password" style={{ ...inp, fontSize: 12 }} disabled={connected} />
+            <input aria-label="NickServ password" autoComplete="off" value={nickPassword} onChange={e => setNickPassword(e.target.value)} placeholder="nickserv password" type="password" style={{ ...inp, fontSize: 12 }} disabled={connected} />
             <input aria-label="Channels" value={channels} onChange={e => { setChannels(e.target.value); saveCfg(host, port, nick, e.target.value) }} placeholder="#channel" style={{ ...inp, fontSize: 12 }} disabled={connected} />
             <NotifyChat style={alerts} selectStyle={{ ...inp, fontSize: 12 }} />
             </>}

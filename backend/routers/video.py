@@ -8,7 +8,6 @@ import tempfile
 import time
 import uuid
 from typing import Optional
-from urllib.parse import urlparse
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
@@ -219,11 +218,14 @@ JAMENDO_CLIENT_ID = os.environ.get("JAMENDO_CLIENT_ID", "")
 
 
 def _is_jamendo_host(url: str) -> bool:
+    """jamendo.com or one of its own subdomains, read by the parser the request itself uses. A bare
+    endswith("jamendo.com") also let evil-jamendo.com through, which made the proxy an open one."""
     try:
-        host = urlparse(url).hostname or ""
-    except ValueError:
+        parts = httpx.URL(url)
+    except (httpx.InvalidURL, TypeError):
         return False
-    return host.endswith("jamendo.com")
+    host = parts.host.lower()
+    return parts.scheme in ("http", "https") and (host == "jamendo.com" or host.endswith(".jamendo.com"))
 
 
 @router.get("/music/search")

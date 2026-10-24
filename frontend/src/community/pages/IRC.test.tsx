@@ -29,6 +29,19 @@ it('gives the host the full client only on a Grove without a room', () => {
   expect(screen.getByLabelText('NickServ password')).toBeInTheDocument()
 })
 
+it('never keeps the NickServ password in the browser', () => {
+  localStorage.setItem('grove_irc_config', JSON.stringify({ host: 'irc.example.test', nick: 'host', nickPassword: 'old-secret' }))
+  render(<IRC />)
+  expect(screen.getByLabelText('NickServ password')).toHaveValue('')
+  expect(localStorage.getItem('grove_irc_config')).not.toContain('old-secret')
+  fireEvent.change(screen.getByLabelText('NickServ password'), { target: { value: 'new-secret' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Connect' }))
+  expect(ircConnect).toHaveBeenCalledWith(expect.objectContaining({ host: 'irc.example.test', nick_password: 'new-secret' }))
+  const stored = Array.from({ length: localStorage.length }, (_, i) => localStorage.getItem(localStorage.key(i)!))
+  expect(stored.join()).toContain('irc.example.test')
+  expect(stored.join()).not.toContain('secret')
+})
+
 it('says whether the room is private, and offers nothing that leaves it', () => {
   useAppStore.setState({ ircConnected: true, ircActiveChannel: '#RogueFest' })
   render(<IRC chat={{ ...chat, private: true }} />)

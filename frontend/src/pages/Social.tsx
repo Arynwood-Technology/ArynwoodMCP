@@ -467,9 +467,10 @@ export function Social() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAll()
 
-    // Listen for OAuth popup completing
+    // Listen for OAuth popup completing. Only the popup this page opened counts: its page comes from
+    // the backend's public callback address, so its origin isn't known here, but its window is.
     const handler = (e: MessageEvent) => {
-      if (e.data?.type === 'oauth_complete') {
+      if (e.source === popupRef.current && e.data?.type === 'oauth_complete') {
         setConnecting(null)
         if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
         fetchAll()
