@@ -57,7 +57,7 @@ jobs:
 
       # Backend sidecar: bundled as a standalone binary and placed where Tauri's
       # `externalBin` config (frontend/src-tauri/tauri.conf.json) expects it. See
-      # docs/release-readiness-audit.md §3 for why this step exists at all — the
+      # docs/internal/release-readiness-audit.md §3 for why this step exists at all — the
       # packaged desktop app can't just spawn `python3` the way dev launchers do.
       - name: Build backend sidecar
         run: |

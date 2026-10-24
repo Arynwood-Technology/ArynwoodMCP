@@ -83,7 +83,7 @@ there. That is the same single-owner boundary as the rest of Arynwood; see
 
 ## FAQ
 
-**Can I use Arynwood Community without running a server?**
+**Can I use Arynwood Grove without running a server?**
 Yes. A Grove on this computer works for you and anyone using this computer. To include people
 elsewhere, run the Grove on a server with HTTPS and choose its address with Change Grove.
 

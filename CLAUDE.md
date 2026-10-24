@@ -1,3 +1,6 @@
+> These are the instructions I give AI assistants in this repository, kept public on purpose.
+> See [How we build](https://github.com/Arynwood-Technology/.github/blob/main/HOW-WE-BUILD.md).
+
 # CLAUDE.md
 
 Guidance for Claude Code when working in this repository.

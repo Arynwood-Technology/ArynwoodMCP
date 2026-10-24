@@ -17,7 +17,7 @@ later work doesn't rediscover it the hard way.
 
 > **Packaging update 2026-09-26:** version 0.4.4 adds archive-level launcher permission
 > verification and Ubuntu 22.04 release builds (glibc 2.35 baseline). See
-> [the current release checklist](releases/0.4.4.md); the findings below remain a historical audit.
+> [the current release checklist](../releases/0.4.4.md); the findings below remain a historical audit.
 
 ## 0. Open decision this audit cannot make: license and distribution model
 

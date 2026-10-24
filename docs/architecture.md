@@ -363,6 +363,24 @@ on every backend startup.
 
 ---
 
+### Table purposes
+
+| Table | Contents |
+|-------|----------|
+| `servers` | Ollama/API server registry |
+| `conversations` | Chat conversation metadata |
+| `messages` | Chat message history |
+| `settings` | Key-value config |
+| `deploy_targets` | Publish SSH/SFTP targets |
+| `arynwood_memory` | Arynwood's remembered facts - each has a confirmation status (provisional/confirmed), durable/transient volatility, and an optional flagged conflict with another memory |
+| `knowledge_sources` | Knowledge base source registry - versioned, so re-learning a URL/file supersedes the old version instead of duplicating it |
+| `social_accounts` / `social_posts` | Social media OAuth accounts and post history |
+| `lora_projects` | LoRA training job state |
+| `youtube_uploads` / `content_projects` | Video publish pipeline |
+| `music_assets` | Music Lab audio library - generated ideas, jam responses, stems, recordings |
+| `music_generation_jobs` | Music Lab generation job tracking (status, progress, provider) |
+| `projects` | Optional lightweight project (name/description) that conversations, memories, and knowledge sources can link to - separate from `lora_projects`/`content_projects`, which aren't unified with it |
+
 ## Persona System
 
 Defined in `mcp/config/models.json`. Loaded at chat time and injected into the system prompt.
@@ -439,6 +457,21 @@ prompt, with a standing system-prompt rule never to treat delimited content as
 instructions.
 
 ---
+
+## Stack and ports
+
+
+| Layer | Tech |
+|-------|------|
+| Backend | FastAPI + aiosqlite (port 8010) |
+| Frontend | React 19 + Vite + Tailwind v4 + Zustand (port 5180) |
+| Desktop | Tauri (native window; wraps the dev server in dev mode, a bundled sidecar backend in the packaged AppImage/`.deb`) |
+| LLMs | Ollama (local + remote, port 11434) |
+| GPU tools | Stable Diffusion A1111 (7860), TortoiseTTS (5003) |
+| Monitoring | Prometheus (9090) |
+| Vector DB | Qdrant (6333) - required for Knowledge Base |
+| Studio sidecars | voice (8001), audio-fx (8002), song-gen (8003), stem-sep (8004), video-ai (8005) |
+| MCP tool servers | mcp-kdenlive (8420) - see [MCP Tool Servers](features.md#mcp-tool-servers) |
 
 ## External Service Map
 

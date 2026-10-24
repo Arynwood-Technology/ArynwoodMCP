@@ -94,9 +94,11 @@ Studio page. Older packaged builds could not start them at all — the bundle's 
 were passed down and broke every sidecar. If one won't start now, the Studio page shows the reason
 and the log is in `~/.local/share/arynwood-mcp/logs/` (see `troubleshooting.md`).
 
-Everything else — chat across all 5 personas, memory, knowledge base (needs
+The original setup notes described the remaining features as equivalent between source and packages.
+TODO(Lorelei): verify that broad claim against current packaged builds and the Tier 2/3 caveats.
+The examples were chat across all 5 personas, memory, knowledge base (needs
 Qdrant + Ollama reachable), social publishing — works the same as running from
-source. See `docs/release-readiness-audit.md` §3 for the technical reason (these
+source. See [the historical audit](internal/release-readiness-audit.md) §3 for the technical reason (these
 features assume a live git checkout + `venv`, which packaging doesn't change).
 
 Save the package and `SHA256SUMS.txt` from the same release in one folder, then verify
@@ -161,6 +163,123 @@ This is the path this repo actually supports today — see the main
 [README Quick Start](../README.md#quick-start) for full steps: clone, `venv` +
 `pip install -r requirements.txt`, `npm install` in `frontend/`, `cp .env.example
 .env`, pull the Ollama models you need, then `./start.sh`.
+
+### Source setup
+
+#### Prerequisites
+
+- Python 3.11+
+- Node.js 20.19+ or 22.12+
+- [Ollama](https://ollama.com) running locally or on a remote server
+
+#### 1. Clone & set up
+
+```bash
+git clone https://github.com/Arynwood-Technology/ArynwoodMCP.git
+cd ArynwoodMCP
+
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+cd frontend && npm install && cd ..
+```
+
+#### 2. Configure environment
+
+```bash
+cp .env.example .env
+# Edit .env with your credentials
+```
+
+#### 3. Pull the models the default personas actually use
+
+```bash
+ollama pull hermes3:8b          # every bundled persona, and the tool-calling model
+ollama pull nomic-embed-text    # knowledge base + memory retrieval embeddings
+```
+Swap any of these for whatever you'd rather run by editing
+`mcp/config/models.json` - it hot-reloads, no restart needed.
+
+#### 4. Start
+
+```bash
+./start.sh
+```
+
+- App → http://localhost:5180
+- API → http://localhost:8010
+- API docs → http://localhost:8010/docs
+
+Both the backend and Ollama bind to `127.0.0.1` (loopback) by default - set
+`ARYNWOOD_BIND_HOST=0.0.0.0` and `OLLAMA_HOST=0.0.0.0` in `.env` to expose them to
+your LAN deliberately, and set `ARYNWOOD_API_KEY` too if you do (see
+[Environment Variables](#environment-variables)).
+
+#### Desktop launcher (Tauri, dev mode)
+
+```bash
+./arynwood-desktop.sh
+```
+
+Opens a native window connected to the Vite dev server with hot reload.
+
+### Environment variables
+
+Copy `.env.example` to `.env` and fill in values. The file is gitignored.
+
+| Variable | Description |
+|----------|-------------|
+| `FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET` | Meta app credentials - Facebook + Instagram publishing |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | YouTube Data API v3 OAuth credentials |
+| `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET` | LinkedIn OAuth credentials |
+| `SOCIAL_REDIRECT_BASE` | Base URL for OAuth callbacks - change if running behind a reverse proxy |
+| `ARYNWOOD_API_KEY` | Optional for loopback use; required for remote clients/non-loopback binding. Configured keys protect APIs, metrics and social-media files. Clients must send the key; a full desktop login/media authentication flow remains pending. |
+| `ARYNWOOD_ALLOWED_HOSTS` | Exact additional Host names/IPs for authenticated remote clients. No wildcards or ports. Defaults allow localhost, 127.0.0.1 and ::1. |
+
+See `.env.example` for the full list and where to obtain each credential.
+
+### Knowledge base setup
+
+The Knowledge page requires two external services.
+
+### 1. Start Qdrant
+
+```bash
+docker run -d --name qdrant -p 127.0.0.1:6333:6333 --restart unless-stopped \
+  -v qdrant_storage:/qdrant/storage qdrant/qdrant
+```
+
+Qdrant is the vector database that stores and searches embedded knowledge chunks. The collection (`arynwood_knowledge`) is created automatically on first use.
+
+### 2. Ensure nomic-embed-text is available
+
+```bash
+ollama pull nomic-embed-text
+```
+
+### 3. Check Ollama is reachable
+
+> **Unverified historical advice:** the crash-loop described below was not found in
+> 60 days of logs recorded in CLAUDE.md. Loopback is the default.
+> TODO(Lorelei): confirm or retire this diagnosis and broad bind-address workaround.
+> The preserved commands expose Ollama beyond loopback; they are not a default setup step.
+
+If `ollama.service` is crash-looping (e.g. due to a Tailscale IP that isn't currently assigned):
+
+```bash
+systemctl status ollama
+# Look for: "bind: cannot assign requested address"
+
+# Fix: override the bind address
+sudo systemctl edit ollama
+# Add under [Service]:
+# Environment="OLLAMA_HOST=0.0.0.0:11434"
+
+sudo systemctl restart ollama
+```
+
+Once both services are up and reachable, the Knowledge page will show `embedding_model_available: true` and the Knowledge page form will work.
 
 ### Uninstalling a source checkout
 
