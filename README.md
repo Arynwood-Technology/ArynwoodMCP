@@ -2,7 +2,11 @@
 
 <p align="center"><img src="frontend/src-tauri/icons/128x128@2x.png" width="128" height="128" alt="The Arynwood tree" /></p>
 
-A local-first AI and creative workspace for one person's Linux or Windows desktop.
+A local-first personal AI and creative workspace for Linux and Windows desktops: chat with
+local Ollama models, knowledge search and memory over your own documents, a design canvas, and
+Model Context Protocol (MCP) tool integrations, including Kdenlive editing through Cutroom's MCP server.
+
+**Website:** [arynwood.com/mcp](https://arynwood.com/mcp/) (requirements, setup steps and FAQ)
 
 [![CI](https://github.com/Arynwood-Technology/ArynwoodMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/Arynwood-Technology/ArynwoodMCP/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/Arynwood-Technology/ArynwoodMCP)](https://github.com/Arynwood-Technology/ArynwoodMCP/releases/latest)
@@ -16,7 +20,7 @@ are installed separately. See [security boundaries](SECURITY.md).
 **[Try the browser demo](https://arynwood-technology.github.io/ArynwoodMCP/)** — the real UI
 with scripted conversations and clearly marked demo data, without a backend or live AI.
 
-TODO(Lorelei): screenshot
+![The Chat page in the browser demo, with the demo banner at the top](docs/images/arynwood-mcp-demo.png)
 
 ## Status
 
@@ -30,9 +34,9 @@ TODO(Lorelei): screenshot
 | GPU scripts, LoRA and project file browser | Tier 3: source checkout only |
 | Gateway | Experimental, source only, off by default; owner-only remote control |
 
-These tiers retain the [0.4.3 feature review](docs/known-limitations.md); they do not imply
-new validation. [Packaged-build exclusions](docs/installation.md#features-that-dont-work-in-the-packaged-build)
-explain exactly what needs source or a separate service.
+The tiers come from the [feature review](docs/known-limitations.md), last done against 0.4.3.
+[Packaged-build exclusions](docs/installation.md#features-that-dont-work-in-the-packaged-build)
+list what needs a source checkout or a separate service.
 
 ## Install the packaged alpha
 
@@ -76,6 +80,11 @@ file for your setup. The UI is at http://localhost:5180 and API at http://localh
 Backend and Ollama default to loopback. See [source setup](docs/installation.md#running-from-source-current-always-available)
 for configuration, knowledge services and the development desktop launcher.
 
+### Knowledge base setup
+
+Knowledge search needs Qdrant and the `nomic-embed-text` embedding model:
+[setup steps](docs/installation.md#knowledge-base-setup).
+
 ## What's inside
 
 - **Dashboard and navigation:** service health, command palette and status drawer — [feature guide](docs/features.md#getting-around).
@@ -94,9 +103,11 @@ for configuration, knowledge services and the development desktop launcher.
 
 ## History
 
-The public repository opened on 2026-09-10 with the first Linux desktop alpha, after private
-development. Windows shipped in 0.4.5; the Community page shipped in 0.4.9 and connects to
-the separate Arynwood Grove service. [History and release timeline](docs/history.md).
+Arynwood MCP grew out of ArynCore, an earlier project developed in private. This public
+repository opened on 2026-09-10 with the first Linux desktop alpha (0.4.0), imported in a single
+commit. Windows shipped in 0.4.5. The Community page shipped in 0.4.9; it connects to
+[Arynwood Grove](https://github.com/Arynwood-Technology/arynwood-community), a separate service.
+[History and release timeline](docs/history.md).
 
 ## How this is built
 
@@ -111,8 +122,10 @@ mode. Read [SECURITY.md](SECURITY.md) for protections, known gaps and private re
 
 ## License
 
-Arynwood MCP uses a [custom source-available license](LICENSE), not an OSI license.
-Read its terms before using or redistributing it; GitHub classifies it as Other.
+Arynwood MCP uses a [custom source-available license](LICENSE). It is not an open-source
+license, and GitHub lists it as "Other". You may run unmodified builds, and read and modify
+the source, for your own personal or internal use. Redistributing it, or offering it as a
+hosted service, needs written permission.
 
 ## Contributing
 

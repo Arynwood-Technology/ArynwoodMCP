@@ -4,45 +4,45 @@ The public repo was opened on 2026-09-10 with a single import commit, after deve
 
 ## ArynCore and private development
 
-TODO(Lorelei): ArynCore origins, dates and milestones before 2026-09-10.
-TODO(Lorelei): decide whether to link aryncore-mcp or publish its history in an archive repository.
-The public import does not represent the start of development.
+Arynwood MCP grew out of ArynCore, an earlier project, and was developed in private before the
+public import. The import commit is where the public history starts, not where development started.
+
+TODO(Lorelei): ArynCore's origins, dates and milestones before 2026-09-10, and the date and context
+of the changelog's undated "0.1.0 — initial release" entry.
+TODO(Lorelei): decide whether to link the older aryncore-mcp repo or publish its history as an archive repo.
 
 ## Arynwood MCP
 
-The first public commit is `c789b1a`, 2026-09-10, “Initial public release”.
-The changelog calls 0.4.0 the “First Linux desktop alpha”. Its undated “0.1.0 — initial release”
-entry is not evidence of an earlier public release date.
-TODO(Lorelei): date and context for 0.1.0; leave all pre-2026-09-10 history unresolved.
+The first public commit is `c789b1a`, 2026-09-10, "Initial public release".
 
-| Version | Published (UTC) | Notes |
+Dates are when the GitHub release was published (UTC). 0.4.0 and 0.4.1 have no GitHub
+release, so their dates come from [CHANGELOG.md](../CHANGELOG.md).
+
+| Version | Date | What changed |
 |---|---|---|
-| 0.4.0 | 2026-09-10 | First Linux desktop alpha (CHANGELOG.md) |
-| 0.4.1 | 2026-09-11 | CHANGELOG.md |
-| 0.4.2 | 2026-09-11 | [Changelog](../CHANGELOG.md) |
-| 0.4.3 | 2026-09-22 | [Changelog](../CHANGELOG.md) |
-| 0.4.4 | 2026-09-27 | [Release notes](releases/0.4.4.md) |
-| 0.4.5 | 2026-09-30 | [Release notes](releases/0.4.5.md) |
-| 0.4.6 | 2026-10-04 | [Release notes](releases/0.4.6.md) |
-| 0.4.7 | 2026-10-09 | [Release notes](releases/0.4.7.md) |
-| 0.4.8 | 2026-10-09 | [Release notes](releases/0.4.8.md) |
-| 0.4.9 | 2026-10-10 | [Release notes](releases/0.4.9.md) |
-| 0.5.0 | 2026-10-10 | [Release notes](releases/0.5.0.md) |
-| 0.5.1 | 2026-10-10 | [Release notes](releases/0.5.1.md) |
-| 0.5.2 | 2026-10-23 | [Release notes](releases/0.5.2.md) |
-| 0.5.3 | 2026-10-23 | [Release notes](releases/0.5.3.md) |
+| 0.4.0 | 2026-09-10 | First Linux desktop alpha: AppImage and `.deb`, backend bundled as a sidecar, test suites |
+| 0.4.1 | 2026-09-11 | The packaged Linux app can reach its own backend (CORS origin fix) |
+| 0.4.2 | 2026-09-11 | Story-specific co-writer personas removed from the public build |
+| 0.4.3 | 2026-09-22 | Packaged-app fixes: audio, video, downloads and recording; sidecars start; your own personas |
+| 0.4.4 | 2026-09-27 | Release packaging fixes: launcher permissions, Ubuntu 22.04 / glibc 2.35 baseline ([notes](releases/0.4.4.md)) |
+| 0.4.5 | 2026-09-30 | Windows x64 desktop alpha alongside Linux ([notes](releases/0.4.5.md)) |
+| 0.4.6 | 2026-10-04 | Security fixes; Hermes 3 as the default model ([notes](releases/0.4.6.md)) |
+| 0.4.7 | 2026-10-09 | CPU mode, chat and image endpoints, MCP hardening ([notes](releases/0.4.7.md)) |
+| 0.4.8 | 2026-10-09 | Update notices ([notes](releases/0.4.8.md)) |
+| 0.4.9 | 2026-10-10 | The Community page shows your Grove's spaces inside the app ([notes](releases/0.4.9.md)) |
+| 0.5.0 | 2026-10-10 | Community with a Grove on a server; contrast pass; security updates ([notes](releases/0.5.0.md)) |
+| 0.5.1 | 2026-10-10 | Managing Community spaces ([notes](releases/0.5.1.md)) |
+| 0.5.2 | 2026-10-23 | Community screens from Arynwood Grove 0.7.1 ([notes](releases/0.5.2.md)) |
+| 0.5.3 | 2026-10-23 | Security release: Pillow 13, checked social uploads, Python 3.11+ ([notes](releases/0.5.3.md)) |
 
-Windows x64 packages joined the Linux packages in 0.4.5. The Community page shipped in
-0.4.9; this feature name remains Community, and it connects to a Grove.
-Attestations were added after 0.5.3; 0.5.4 will be the first release to carry them.
+The Community page in Arynwood MCP is a client for Arynwood Grove, which is a separate service.
+Build provenance attestations were added after 0.5.3; 0.5.4 will be the first release to carry them.
 
 ## From Community to Grove
 
-Arynwood Grove is a separate, non-AI community service. Its first commit, `8aa6fbd`, is dated
-2026-09-23, “Initial Arynwood Community release”. Community 0.3 upgrades in place.
-The v0.4.0 tag dates to 2026-10-08; v0.7.3 was released on 2026-10-23.
-[Its notes](https://github.com/Arynwood-Technology/arynwood-community/blob/main/docs/PRERELEASE.md)
-cover 0.3.0–0.7.3; 0.3.0, 0.5.0 and 0.7.0 have notes but no tag.
-
-The GitHub API reports 0.5.2 published on 2026-10-23 UTC, while the review brief says
-2026-10-22. TODO(Lorelei): reconcile the intended date; this table uses published_at.
+Arynwood Grove is a separate community service with no AI features. Its repository's first
+commit, `8aa6fbd` on 2026-09-23, is "Initial Arynwood Community release" (Community 0.3).
+Grove 0.4.0 renamed it and added the one-command server install; a Community 0.3 server
+upgrades in place. v0.4.0 was tagged on 2026-10-08, and the latest release is v0.7.3
+(2026-10-23). Each version is described in
+[Grove's release notes](https://github.com/Arynwood-Technology/arynwood-community/blob/main/docs/PRERELEASE.md).

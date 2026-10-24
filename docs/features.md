@@ -1,9 +1,9 @@
 # Feature guide
 
-Feature maturity was reviewed against 0.4.3; this move does not raise any status.
-Video Studio, Music Lab and social publishing remain Tier 2, with caveats.
-Stem separation, RVC, audio FX, GPU scripts and LoRA remain Tier 3.
-Read [known limitations](known-limitations.md) and [packaged-build exclusions](installation.md#features-that-dont-work-in-the-packaged-build).
+How much to rely on each feature is in [known limitations](known-limitations.md) (reviewed
+against 0.4.3): Video Studio, Music Lab and social publishing are Tier 2, with caveats; stem
+separation, RVC, audio FX, GPU scripts and LoRA are Tier 3. Some features need a source checkout:
+see [packaged-build exclusions](installation.md#features-that-dont-work-in-the-packaged-build).
 
 ### Getting Around
 
@@ -178,7 +178,7 @@ generation that this computer can't: see [docs/endpoints.md](endpoints.md).
 
 ### Studio
 
-Audio production tools powered by the MusicStudio ([public setup location pending](studio.md)) sidecars. The sidecars are independent FastAPI servers that live in `~/GitHub/MusicStudio/sidecars/` and are proxied through the Arynwood MCP backend.
+Audio production tools powered by the [MusicStudio](https://github.com/SkyeVault/MusicStudio) sidecars ([setup](studio.md)). The sidecars are independent FastAPI servers that live in `~/GitHub/MusicStudio/sidecars/` and are proxied through the Arynwood MCP backend.
 
 The Studio page shows a **sidecar status bar** at the top with live health polling every 5 seconds. Each sidecar can be started and stopped directly from the UI using the ▶ / ■ buttons.
 

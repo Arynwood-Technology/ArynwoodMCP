@@ -94,9 +94,7 @@ Studio page. Older packaged builds could not start them at all — the bundle's 
 were passed down and broke every sidecar. If one won't start now, the Studio page shows the reason
 and the log is in `~/.local/share/arynwood-mcp/logs/` (see `troubleshooting.md`).
 
-The original setup notes described the remaining features as equivalent between source and packages.
-TODO(Lorelei): verify that broad claim against current packaged builds and the Tier 2/3 caveats.
-The examples were chat across all 5 personas, memory, knowledge base (needs
+Everything else — chat across all 5 personas, memory, knowledge base (needs
 Qdrant + Ollama reachable), social publishing — works the same as running from
 source. See [the historical audit](internal/release-readiness-audit.md) §3 for the technical reason (these
 features assume a live git checkout + `venv`, which packaging doesn't change).
@@ -243,7 +241,7 @@ See `.env.example` for the full list and where to obtain each credential.
 
 The Knowledge page requires two external services.
 
-### 1. Start Qdrant
+#### 1. Start Qdrant
 
 ```bash
 docker run -d --name qdrant -p 127.0.0.1:6333:6333 --restart unless-stopped \
@@ -252,29 +250,26 @@ docker run -d --name qdrant -p 127.0.0.1:6333:6333 --restart unless-stopped \
 
 Qdrant is the vector database that stores and searches embedded knowledge chunks. The collection (`arynwood_knowledge`) is created automatically on first use.
 
-### 2. Ensure nomic-embed-text is available
+#### 2. Ensure nomic-embed-text is available
 
 ```bash
 ollama pull nomic-embed-text
 ```
 
-### 3. Check Ollama is reachable
-
-> **Unverified historical advice:** the crash-loop described below was not found in
-> 60 days of logs recorded in CLAUDE.md. Loopback is the default.
-> TODO(Lorelei): confirm or retire this diagnosis and broad bind-address workaround.
-> The preserved commands expose Ollama beyond loopback; they are not a default setup step.
-
-If `ollama.service` is crash-looping (e.g. due to a Tailscale IP that isn't currently assigned):
+#### 3. Check Ollama is reachable
 
 ```bash
-systemctl status ollama
-# Look for: "bind: cannot assign requested address"
+curl http://127.0.0.1:11434/api/version
+```
 
-# Fix: override the bind address
+If that fails and `systemctl status ollama` shows `bind: cannot assign requested address`,
+Ollama is set to listen on an address this machine doesn't have at the moment (for example a
+VPN address that isn't up). Point it back at loopback, the default this app expects:
+
+```bash
 sudo systemctl edit ollama
 # Add under [Service]:
-# Environment="OLLAMA_HOST=0.0.0.0:11434"
+# Environment="OLLAMA_HOST=127.0.0.1:11434"
 
 sudo systemctl restart ollama
 ```

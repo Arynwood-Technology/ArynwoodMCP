@@ -1,10 +1,11 @@
 # Studio setup and working roadmap
 
-Music Lab is Tier 2; stem separation, RVC and audio FX are Tier 3.
-The roadmap below is a working list, not a scope commitment.
-TODO(Lorelei): reconcile this older implementation-status table with current source.
-The old https://github.com/arynwood/MusicStudio link returned 404 on 2026-10-24;
-TODO(Lorelei): supply a public MusicStudio source/setup location.
+The Studio's audio tools run as separate sidecars from [MusicStudio](https://github.com/SkyeVault/MusicStudio).
+How to use them is in the [feature guide](features.md#studio). In the
+[known limitations](known-limitations.md), Music Lab is Tier 2, and stem separation, RVC and audio FX are Tier 3.
+
+The status table and the roadmap below moved here from the README unchanged. The roadmap is a
+working list, not a commitment.
 
 ### One-time venv setup
 
