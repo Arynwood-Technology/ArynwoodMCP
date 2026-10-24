@@ -24,7 +24,8 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' http://localhost:* ws://localhost:* 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: blob: https: http:; media-src 'self' blob: data: http://localhost:*; font-src 'self' data: http://localhost:*; style-src 'self' 'unsafe-inline' http://localhost:*; connect-src 'self' ipc://localhost http://ipc.localhost http://localhost:* ws://localhost:* https: blob: data:;"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' http://localhost:*; img-src 'self' data: blob: https: http://localhost:* http://127.0.0.1:*; media-src 'self' blob: data: http://localhost:* http://127.0.0.1:*; font-src 'self' data: http://localhost:*; connect-src 'self' ipc://localhost http://ipc.localhost http://localhost:* ws://localhost:* https://api.github.com blob: data:; frame-src 'self' http://localhost:*; object-src 'none'; base-uri 'self'; form-action 'self'",
+      "devCsp": "default-src 'self' http://localhost:* ws://localhost:* 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: blob: https: http:; media-src 'self' blob: data: http://localhost:*; font-src 'self' data: http://localhost:*; style-src 'self' 'unsafe-inline' http://localhost:*; connect-src 'self' ipc://localhost http://ipc.localhost http://localhost:* ws://localhost:* https: blob: data:;"
     }
   },
   "bundle": {
