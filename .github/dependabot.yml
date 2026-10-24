@@ -1,0 +1,42 @@
+# Weekly dependency updates. Nothing merges by itself: every pull request waits for review and CI.
+# requirements.txt pins with ~=, so a minor or major bump arrives as a pull request to read, test
+# (including the packaged-backend smoke test before a release) and merge deliberately.
+# Labels that don't exist in the repository are skipped, so create "dependencies", "python",
+# "javascript", "rust" and "github-actions" once.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies, python]
+    groups:
+      python-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    labels: [dependencies, javascript]
+    groups:
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: cargo
+    directory: /frontend/src-tauri
+    schedule:
+      interval: weekly
+    labels: [dependencies, rust]
+    groups:
+      cargo-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies, github-actions]
+    groups:
+      actions-minor-and-patch:
+        update-types: [minor, patch]
