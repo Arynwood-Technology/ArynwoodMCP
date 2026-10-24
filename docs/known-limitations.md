@@ -1,6 +1,6 @@
 # Known Limitations (Alpha)
 
-This is an early Linux alpha. This page says plainly what is solid, what needs a caveat, and
+This feature review began with the early Linux alpha; Windows x64 packages shipped in 0.4.5. This page says plainly what is solid, what needs a caveat, and
 what doesn't work yet, so you can decide what to rely on. It is kept in step with what has
 actually been tested — if something here reads more cautiously than the app feels, that is
 deliberate.

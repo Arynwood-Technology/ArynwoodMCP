@@ -23,7 +23,7 @@ PERSONAS: dict = {}
 # tree" context feature further down this file is a dev-checkout-browsing feature
 # with no packaged-build equivalent — it degrades to listing the bundle's own
 # extraction directory when frozen, which is harmless but not meaningful; see
-# docs/release-readiness-audit.md for the fuller list of features that don't have
+# docs/internal/release-readiness-audit.md for the fuller list of features that don't have
 # packaged-build parity yet.
 BASE_DIR = app_base_dir()
 

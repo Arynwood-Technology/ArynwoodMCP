@@ -21,7 +21,7 @@ and download it again from the release page.
 ## The app won't start / a port is already in use
 
 The backend runs on `:8010`, the frontend dev server on `:5180` (see
-`docs/release-readiness-audit.md` §1 for the port-unification history — all three
+`docs/internal/release-readiness-audit.md` §1 for the port-unification history — all three
 launch scripts and the packaged build agree on these now). If something else on your
 machine already owns one of those ports, the backend or `npm run dev` will fail to
 bind. Find and stop whatever's using it:

@@ -1,3 +1,6 @@
+> These are the instructions I give AI assistants in this repository, kept public on purpose.
+> See [How we build](https://github.com/Arynwood-Technology/.github/blob/main/HOW-WE-BUILD.md).
+
 # Agent working directions
 
 Read [docs/scope.md](docs/scope.md) first: what Arynwood MCP is, what it isn't, and the
