@@ -5,3 +5,4 @@ time they were written and are not current product guarantees.
 
 - [release-readiness-audit.md](release-readiness-audit.md): the packaging and release-readiness audit
 - [ai-runtime-improvement-audit.md](ai-runtime-improvement-audit.md): the AI runtime review
+- [sycamore-integration-plan.md](sycamore-integration-plan.md): the design of PDF learning through Sycamore

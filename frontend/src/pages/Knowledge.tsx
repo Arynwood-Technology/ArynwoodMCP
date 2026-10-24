@@ -61,7 +61,7 @@ export function Knowledge() {
   }, [pdfJob.status, pdfJob.jobId])
 
   // Ticks the elapsed-time readout while a parse is in flight; Sycamore doesn't expose
-  // real page-level progress (see docs/sycamore-integration-plan.md Phase 4), so an
+  // real page-level progress (see docs/internal/sycamore-integration-plan.md Phase 4), so an
   // honest "Ns elapsed" beats a fake percentage.
   useEffect(() => {
     if (!pdfBusy) return

@@ -20,7 +20,7 @@ router = APIRouter()
 # no Aryn Cloud account needed) lives in its own dev checkout/venv, not the main
 # project venv — same reasoning as scripts/run_whisper.py's dedicated whisper-venv:
 # it pulls in its own torch/transformers/timm/easyocr/paddleocr stack. See
-# docs/sycamore-integration-plan.md for the full rationale.
+# docs/internal/sycamore-integration-plan.md for the full rationale.
 _SYCAMORE_REPO_DIR = external_paths.SYCAMORE_REPO_DIR
 _SYCAMORE_VENV_PYTHON = os.path.join(_SYCAMORE_REPO_DIR, ".venv", "bin", "python3")
 _SYCAMORE_PARTITION_SCRIPT = os.path.join(APP_DIR, "scripts", "run_sycamore_partition.py")
@@ -86,7 +86,7 @@ async def sycamore_partition_start_job(
         raise HTTPException(
             404,
             f"Sycamore local-inference venv not found — expected {_SYCAMORE_VENV_PYTHON}. "
-            "See docs/sycamore-integration-plan.md.",
+            "See docs/internal/sycamore-integration-plan.md.",
         )
     filename = file.filename or "file"
     if os.path.splitext(filename.lower())[1] != ".pdf":

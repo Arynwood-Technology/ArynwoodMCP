@@ -1,8 +1,8 @@
 # Contributing
 
-Arynwood MCP is source-available, not open source (see `LICENSE`) — this repo isn't
-currently open to external pull requests. That may change later; this file will be
-updated if and when it does.
+Arynwood MCP is open source under the GNU AGPL-3.0-only (see `LICENSE`). Outside pull
+requests aren't being accepted yet. That may change later; this file will say so when it
+does.
 
 ## What's welcome
 

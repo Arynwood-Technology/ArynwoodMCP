@@ -7,19 +7,31 @@ protected today and what isn't. What the project is and isn't meant to do is in
 
 ## Supported versions
 
-Pre-1.0: only the latest release and the latest commit on `main` receive fixes. There are no
-maintained release branches.
+Pre-1.0: only the latest release line (today **0.5.x**) and the latest commit on `main` receive
+fixes. There are no maintained release branches. Update before reporting; the problem may
+already be fixed.
 
 ## Reporting a vulnerability
 
-Email **security@arynwood.com** with a description, reproduction steps, and impact.
+Report it privately through GitHub's private vulnerability reporting:
+**https://github.com/Arynwood-Technology/ArynwoodMCP/security/advisories/new**
+
 Do not open a public GitHub issue for anything that could let someone else exploit it
 before a fix ships — that includes remote code execution, auth bypass, SSRF, or
-credential/token exposure.
+credential/token exposure. Low-severity findings (e.g. a missing header with no practical
+exploit) can go in a regular GitHub issue.
 
-We'll acknowledge within 5 business days and aim to have a fix or mitigation plan
-within 30 days for confirmed issues. Low-severity findings (e.g. a missing header
-with no practical exploit) can go in a regular GitHub issue.
+Please include:
+
+- the version (Settings, or the release you installed) and how you run it (packaged
+  AppImage, `.deb`, Windows installer, or a source checkout);
+- what an attacker can do, and what they need first (a web page you visit, a file you open,
+  access to your network, a local account);
+- steps to reproduce, with requests or a small proof of concept.
+
+We acknowledge reports within **7 days**, and aim to fix critical problems in the next patch
+release, with a GitHub security advisory that credits you unless you'd rather not be named.
+There is no bug bounty program at this time.
 
 ## What is protected
 

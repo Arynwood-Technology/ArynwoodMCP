@@ -41,7 +41,7 @@ baseline. Models and supporting services are installed separately on both. Downl
 - [Structure](structure.md): files, folders and services
 - [Scope](scope.md): what Arynwood MCP is and isn't, and the current plan
 - [Conversation tuning](conversation-tuning.md): measured prompt and model changes
-- [Sycamore integration plan](sycamore-integration-plan.md): how PDF learning works
+- [Sycamore integration plan](internal/sycamore-integration-plan.md): how PDF learning works
 - [Third-party notices](third-party-notices.md): dependency licenses
 - [`SECURITY.md`](../SECURITY.md), [`CONTRIBUTING.md`](../CONTRIBUTING.md), [`LICENSE`](../LICENSE)
 - [Internal working notes](internal/README.md): earlier audits, kept for reference

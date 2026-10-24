@@ -4,12 +4,11 @@ The public repo was opened on 2026-09-10 with a single import commit, after deve
 
 ## ArynCore and private development
 
-Arynwood MCP grew out of ArynCore, an earlier project, and was developed in private before the
-public import. The import commit is where the public history starts, not where development started.
-
-TODO(Lorelei): ArynCore's origins, dates and milestones before 2026-09-10, and the date and context
-of the changelog's undated "0.1.0 — initial release" entry.
-TODO(Lorelei): decide whether to link the older aryncore-mcp repo or publish its history as an archive repo.
+Arynwood MCP grew out of ArynCore, which started in June 2025. The earliest ArynCore commits are
+from 2025-06-09, and the aryncore-mcp repository began on 2025-06-23; both are private. Work
+continued there and in a private Arynwood MCP repository until the public import on 2026-09-10,
+so the import commit is where the public history starts, not where development started. The
+changelog's undated "0.1.0 — initial release" entry is from that private period.
 
 ## Arynwood MCP
 

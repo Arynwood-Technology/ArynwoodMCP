@@ -9,6 +9,18 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Changed
+
+- **Arynwood MCP is now open source, under the GNU AGPL-3.0-only.** Releases up to and including
+  0.5.3 shipped under the earlier Arynwood MCP Source-Available License. The Arynwood tree logo
+  and app icons stay all rights reserved. Report vulnerabilities through GitHub's private
+  vulnerability reporting (see `SECURITY.md`).
+
+### Security
+
+- **Zod 4.6.7** (was 4.4.3; GHSA-mrhx-c7xc-m3w5). Zod is used only by a lint plugin during
+  development, so no package shipped it.
+
 ### Added
 
 - **Build provenance for every package.** The AppImage, `.deb` and Windows installer each get a

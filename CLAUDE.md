@@ -12,7 +12,8 @@ exposes a unified UI for multi-persona LLM chat (with tool-calling into a runnin
 Kdenlive instance), GPU media generation (Stable Diffusion, TTS, voice conversion,
 LoRA training, and more), a music/sound production studio, a design canvas, and
 social media publishing. Deployment target: multi-tenant managed hosting or
-self-hosted license.
+self-hosted. License: AGPL-3.0-only (releases up to 0.5.3 shipped under an earlier
+source-available license).
 
 ## Running the App
 
@@ -145,7 +146,7 @@ outline, so keyboard users previously had no focus indicator anywhere.
 - **`backend/api.py`** — entry point; registers all routers, calls `init_db()` via `lifespan()`
 - **`backend/db.py`** — SQLite at `config/arynwood.db`; `get_db()` yields an `aiosqlite` connection with `row_factory = aiosqlite.Row`
 - **`backend/routers/`** — one router file per domain (see table below)
-- **`backend/services/knowledge.py`** — Qdrant embeddings async CRUD; extracts text from txt/md/pdf/docx/epub. PDFs additionally get a background-job deep parse via Sycamore (local layout model + optional OCR/table extraction) — see `docs/sycamore-integration-plan.md`
+- **`backend/services/knowledge.py`** — Qdrant embeddings async CRUD; extracts text from txt/md/pdf/docx/epub. PDFs additionally get a background-job deep parse via Sycamore (local layout model + optional OCR/table extraction) — see `docs/internal/sycamore-integration-plan.md`
 - **`backend/services/mcp_tool_agent.py`** — shared bounded tool-calling loop that bridges Arynwood's chat to any server in `mcp/config/mcp_servers.json`; `gather_context_for_message` dispatches across every registered server whose `mcp/config/local_agent/gates.json` gate is classified a match by an LLM call (not keyword substring matching — see "Local tool-calling agents" below). Also owns tool permission tiers (`classify_tool_tier`), schema validation/repair, and optional fallback-model escalation on repeated stalls.
 - **`backend/services/memory_index.py`** — semantic index for `arynwood_memory` (separate Qdrant collection from the knowledge base), so chat retrieves memories relevant to the current turn instead of loading all of them every time
 - **`backend/services/telemetry.py`** — Prometheus counters/histograms for LLM calls (`ollama_client`) and MCP tool calls (`mcp_tool_agent`), exposed at `/metrics` alongside the HTTP-level metrics `prometheus-fastapi-instrumentator` already provides
@@ -814,7 +815,7 @@ key, not a bare `{"kdenlive": {...}}` object:
 ```
 
 ### PDF learning depends on a sibling repo's venv, not anything in this one
-`POST /api/knowledge/sycamore/jobs` shells out to `~/GitHub/sycamore/lib/sycamore/.venv/bin/python3` (hardcoded path in `backend/routers/knowledge.py`) — a separate checkout of the Sycamore document-parsing project, not part of this repo and not in `requirements.txt`. Its local-inference path (torch/transformers/timm/easyocr/paddleocr) is heavy enough that it deliberately isn't installed into the main venv, same reasoning as `scripts/run_whisper.py`'s dedicated `whisper-venv`. If that sibling checkout is missing or its venv isn't set up, PDF learning hard-fails with a 404 pointing at `docs/sycamore-integration-plan.md` — it does not silently fall back to the plain pdfminer/pypdf extraction non-PDF files use. Non-PDF files (text, code, `.docx`) are unaffected either way.
+`POST /api/knowledge/sycamore/jobs` shells out to `~/GitHub/sycamore/lib/sycamore/.venv/bin/python3` (hardcoded path in `backend/routers/knowledge.py`) — a separate checkout of the Sycamore document-parsing project, not part of this repo and not in `requirements.txt`. Its local-inference path (torch/transformers/timm/easyocr/paddleocr) is heavy enough that it deliberately isn't installed into the main venv, same reasoning as `scripts/run_whisper.py`'s dedicated `whisper-venv`. If that sibling checkout is missing or its venv isn't set up, PDF learning hard-fails with a 404 pointing at `docs/internal/sycamore-integration-plan.md` — it does not silently fall back to the plain pdfminer/pypdf extraction non-PDF files use. Non-PDF files (text, code, `.docx`) are unaffected either way.
 
 ### Music Lab's song-gen sidecar needs two separate venvs — don't merge them
 `backend/routers/music.py` (`/api/music`) talks to the `song-gen` sidecar (`~/GitHub/MusicStudio/sidecars/song-gen/`, port 8003) for AI instrument generation (ACE-Step) and melody-conditioned "Jam with AI" responses (MusicGen). ACE-Step and MusicGen cannot share one venv — MusicGen's own torch pin (2.1.x) breaks ACE-Step (needs torch 2.10.x; confirmed hands-on as `module 'torch' has no attribute 'xpu'`), so the sidecar's `venv-musicgen/` is separate from `venv/` and MusicGen runs as a subprocess, not an in-process import. If you're touching this sidecar, read `MusicStudio/CLAUDE.md`'s song-gen section first — it documents the exact torch/torchcodec/numpy/transformers pins that were needed, all confirmed by a real generation + `ffprobe`, not just an import check. Also worth knowing before "fixing" Jam mode's output quality: MusicGen's melody conditioning discards drums/bass internally before it extracts anything from the input audio (confirmed against the installed `audiocraft` source), so it never does literal audio-following — this is disclosed in `JamWithAI.tsx`'s UI, not a bug to chase.
