@@ -362,8 +362,27 @@ async def _backfill_message_trust(db) -> None:
         except Exception:
             logger.warning("messages.trust backfill skipped a source", exc_info=True)
 
+def restrict_to_owner(path: str = None) -> None:
+    """Only the owner may read the database: it holds OAuth tokens, server tokens and the Grove
+    session. A new file is created 0600 before SQLite opens it, an existing one (and its WAL/SHM/journal
+    files) is changed to 0600, and the default data folder to 0700. A folder named by ARYNWOOD_DB_PATH
+    is the user's own and is left alone. Not on Windows, where chmod only toggles read-only and the
+    per-user AppData folder is already private."""
+    path = path or DB_PATH
+    if sys.platform == "win32":
+        return
+    if not os.path.exists(path):
+        os.close(os.open(path, os.O_CREAT | os.O_WRONLY, 0o600))
+    for name in (path, path + "-wal", path + "-shm", path + "-journal"):
+        if os.path.exists(name):
+            os.chmod(name, 0o600)
+    if not os.environ.get("ARYNWOOD_DB_PATH"):
+        os.chmod(os.path.dirname(path), 0o700)
+
+
 async def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    restrict_to_owner()
     async with aiosqlite.connect(DB_PATH) as db:
         # One-time rename for any DB from before this product's internal table name
         # was "arynwood_memory" — must run before the CREATE TABLE IF NOT EXISTS below,
