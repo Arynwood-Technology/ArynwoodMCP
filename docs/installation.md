@@ -207,7 +207,7 @@ Swap any of these for whatever you'd rather run by editing
 
 - App → http://localhost:5180
 - API → http://localhost:8010
-- API docs → http://localhost:8010/docs
+- API schema → http://localhost:8010/openapi.json (for any OpenAPI viewer; there is no `/docs` page)
 
 Both the backend and Ollama bind to `127.0.0.1` (loopback) by default - set
 `ARYNWOOD_BIND_HOST=0.0.0.0` and `OLLAMA_HOST=0.0.0.0` in `.env` to expose them to

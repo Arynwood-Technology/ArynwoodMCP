@@ -29,7 +29,8 @@ uvicorn backend.api:app --host 0.0.0.0 --port 8010 --reload
 cd frontend && npm run dev
 ```
 
-URLs: App → http://localhost:5180 | API → http://localhost:8010 | API docs → http://localhost:8010/docs
+URLs: App → http://localhost:5180 | API → http://localhost:8010 | API schema → http://localhost:8010/openapi.json
+(no `/docs`: FastAPI loads Swagger UI from a CDN, so it is off; open the schema in any OpenAPI viewer)
 
 This is the source-checkout dev workflow. The packaged Linux desktop build
 (AppImage/`.deb`, what actually ships to users) is a separate path — see

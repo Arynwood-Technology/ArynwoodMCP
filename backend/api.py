@@ -1,3 +1,4 @@
+import mimetypes
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -22,7 +23,7 @@ import asyncio
 import logging
 
 from backend.db import init_db, DB_PATH
-from backend.services.auth import ApiKeyMiddleware, TRUSTED_BROWSER_ORIGINS
+from backend.services.auth import ApiKeyMiddleware, TRUSTED_BROWSER_ORIGINS, redact_tokens_in_server_logs
 from backend.services.exposure import validate_bind_host
 from backend.services import machine, memory_index, index_jobs
 from backend.gateway import get_gateway, is_daemon, is_enabled as gateway_enabled, shutdown_gateway
@@ -125,7 +126,9 @@ async def lifespan(app: FastAPI):
         studio.stop_all_sidecars()
 
 
-app = FastAPI(title="Arynwood MCP", version="0.5.3", lifespan=lifespan)
+# No /docs or /redoc: FastAPI serves both from a CDN, which would run third-party code on the backend's
+# trusted origin. /openapi.json stays, for any OpenAPI viewer you run yourself.
+app = FastAPI(title="Arynwood MCP", version="0.5.3", lifespan=lifespan, docs_url=None, redoc_url=None)
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 # No endpoint under /api/* set any Cache-Control header, which left every dynamic
@@ -146,7 +149,24 @@ async def _no_cache_api_responses(request, call_next):
         response.headers["Cache-Control"] = "no-store"
     return response
 
+# Every response: no MIME sniffing, no referrer sent on, and no framing unless the route says who may
+# frame it (/html-tools and the Grove's previews set their own policy, which is kept). With nosniff a
+# stylesheet or script must arrive with its real type, and on Windows mimetypes reads the registry,
+# where .css and .js are sometimes text/plain; these files are served by type, so name it.
+mimetypes.add_type("text/css", ".css")
+mimetypes.add_type("text/javascript", ".js")
+
+@app.middleware("http")
+async def _security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    if "content-security-policy" not in response.headers:
+        response.headers["Content-Security-Policy"] = "frame-ancestors 'none'"
+    return response
+
 app.add_middleware(ApiKeyMiddleware)  # browser origins always checked; bearer auth is opt-in
+redact_tokens_in_server_logs()  # a WebSocket's ?token= never reaches uvicorn's logs
 
 # Wildcard allow_origins is a real risk with auth opt-in/off by default (see
 # ApiKeyMiddleware above): any website's JS, running in a browser tab on this same

@@ -7,6 +7,7 @@ single-user boundary, not tenant isolation or a sandbox for local processes.
 Non-loopback clients require authentication even when a launcher is bypassed.
 """
 
+import logging
 import os
 import re
 import secrets
@@ -14,6 +15,25 @@ from urllib.parse import parse_qs
 
 from starlette.responses import JSONResponse
 from backend.services.exposure import allowed_hosts, is_loopback, request_host_allowed
+
+
+class RedactTokenFilter(logging.Filter):
+    """uvicorn writes each request's path with its query string: the HTTP access log, and WebSocket
+    accepts and refusals (on uvicorn.error). A WebSocket may carry the API key as ?token=, so its value
+    is replaced before the line is written."""
+    TOKEN = re.compile(r"((?:^|[?&])token=)[^&\s\"]*", re.I)
+
+    def filter(self, record):
+        if isinstance(record.args, tuple):
+            record.args = tuple(self.TOKEN.sub(r"\1[redacted]", a) if isinstance(a, str) else a for a in record.args)
+        return True
+
+
+def redact_tokens_in_server_logs():
+    for name in ("uvicorn.access", "uvicorn.error"):
+        logger = logging.getLogger(name)
+        if not any(isinstance(f, RedactTokenFilter) for f in logger.filters):
+            logger.addFilter(RedactTokenFilter())
 
 
 # Opaque origins can be created by arbitrary sandboxed websites.

@@ -62,7 +62,8 @@ This starts:
 - React Vite dev server
 
 Access the app at `http://localhost:5180`.
-API docs at `http://localhost:8010/docs`.
+API schema at `http://localhost:8010/openapi.json` (open it in any OpenAPI viewer; the built-in
+`/docs` page is off because it loads Swagger UI from a CDN).
 
 Backend and Ollama bind to `127.0.0.1` by default; set `ARYNWOOD_BIND_HOST=0.0.0.0`
 and `OLLAMA_HOST=0.0.0.0` in `.env` for LAN access (pair with `ARYNWOOD_API_KEY`).
