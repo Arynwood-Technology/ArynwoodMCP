@@ -137,7 +137,7 @@ def extract_text_from_bytes(filename: str, data: bytes) -> str:
     # XHTML files plus an OPF manifest/spine, and parsing that directly with
     # stdlib zipfile/ElementTree + the bs4 already used just below avoids a
     # dependency (ebooklib is AGPLv3+ — see docs/third-party-notices.md) that was
-    # in real tension with this app's own license for a distributed build.
+    # in tension with this app's license at the time (proprietary, before AGPL-3.0).
     if ext == ".epub":
         return _extract_epub_text(data)
 

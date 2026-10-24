@@ -8,15 +8,18 @@ versions and licenses can change between releases.
 ## Resolved: ebooklib (AGPLv3+) removed 2026-09-10
 
 `ebooklib` (used for `.epub` knowledge-base ingestion) was licensed AGPLv3+, in
-direct tension with `LICENSE`'s "proprietary, no redistribution" terms for a
-*distributed* build. Rather than get a legal opinion to keep it, it was removed:
+direct tension with the proprietary, no-redistribution license Arynwood MCP had at
+the time, for a *distributed* build. Rather than get a legal opinion to keep it, it was removed:
 `backend/services/knowledge.py`'s `_extract_epub_text()` now parses EPUBs directly
 (stdlib `zipfile` + `xml.etree.ElementTree`, plus the `beautifulsoup4` already used
 elsewhere in that file for HTML stripping) — no new dependency, same behavior
 (chapter text in spine reading order, script/style/nav stripped), covered by
-`tests/test_epub_extraction.py`. No remaining AGPL/GPL dependency in this repo as of
-this writing — re-run the regeneration commands below before each release to confirm
-that stays true as dependencies change.
+`tests/test_epub_extraction.py`.
+
+Arynwood MCP itself is AGPL-3.0-only since the release after 0.5.3, so AGPL and GPLv3
+dependencies are no longer a conflict. Re-run the regeneration commands below before each
+release to confirm every dependency stays compatible with it (GPL-2.0-only code, for
+example, is not).
 
 `paramiko` (backend, SFTP deploy — `backend/routers/deploy.py`) is LGPL-2.1. Used as
 an unmodified library dependency (not statically linked into a single binary via

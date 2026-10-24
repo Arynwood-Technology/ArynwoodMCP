@@ -103,7 +103,7 @@ Knowledge search needs Qdrant and the `nomic-embed-text` embedding model:
 
 ## History
 
-Arynwood MCP grew out of ArynCore, an earlier project developed in private. This public
+Arynwood MCP grew out of ArynCore, started in June 2025 and developed in private. This public
 repository opened on 2026-09-10 with the first Linux desktop alpha (0.4.0), imported in a single
 commit. Windows shipped in 0.4.5. The Community page shipped in 0.4.9; it connects to
 [Arynwood Grove](https://github.com/Arynwood-Technology/arynwood-community), a separate service.
@@ -122,10 +122,14 @@ mode. Read [SECURITY.md](SECURITY.md) for protections, known gaps and private re
 
 ## License
 
-Arynwood MCP uses a [custom source-available license](LICENSE). It is not an open-source
-license, and GitHub lists it as "Other". You may run unmodified builds, and read and modify
-the source, for your own personal or internal use. Redistributing it, or offering it as a
-hosted service, needs written permission.
+Arynwood MCP is free software under the [GNU Affero General Public License v3.0 only](LICENSE)
+(AGPL-3.0-only). You may use, study, share and change it. If you share a changed version, or run
+one as a service for other people, you must offer its source under the same license. Releases up
+to and including 0.5.3 shipped under an earlier source-available license.
+
+The Arynwood tree logo and the app icons made from it (`frontend/src-tauri/icons/`,
+`frontend/src-tauri/icon-source/`, `frontend/public/icon.png`, `frontend/src/assets/arynwood-tree.png`)
+are artwork by Arynwood Technology. They are not covered by the code license; all rights reserved.
 
 ## Contributing
 

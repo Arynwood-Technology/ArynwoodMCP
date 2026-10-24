@@ -273,7 +273,7 @@ upload → POST /sycamore/jobs (async)
 Sycamore's local PDF partitioner runs in a dedicated venv
 (`~/GitHub/sycamore/lib/sycamore/.venv`, a sibling checkout — not part of this repo,
 not in `requirements.txt`), invoked as a subprocess inside the same `_gpu_lock` every
-other GPU job serializes behind. See `docs/sycamore-integration-plan.md` for the full
+other GPU job serializes behind. See `docs/internal/sycamore-integration-plan.md` for the full
 rationale and the architecture options that were weighed. Non-PDF files skip Sycamore
 entirely and go through plain pdfminer/pypdf extraction (`knowledge.extract_text_from_bytes`).
 

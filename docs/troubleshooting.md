@@ -91,7 +91,7 @@ Requires both Qdrant (`QDRANT_URL`, default `http://localhost:6333`) and Ollama
 reachable — check Qdrant is running first, then check `systemctl status ollama`.
 PDF learning additionally depends on a separate sibling-repo Python environment
 (`~/GitHub/sycamore/`) — if that checkout/venv doesn't exist, PDF learning fails with
-a clear 404 pointing at `docs/sycamore-integration-plan.md`; other file types
+a clear 404 pointing at `docs/internal/sycamore-integration-plan.md`; other file types
 (text, `.docx`, etc.) are unaffected.
 
 ## Stable Diffusion / TortoiseTTS won't start

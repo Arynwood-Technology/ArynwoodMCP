@@ -2,8 +2,8 @@
 
 The files in this folder are the Community screens of
 [Arynwood Grove](https://github.com/Arynwood-Technology/arynwood-community), where they are
-published under the GNU AGPL-3.0-only. Their copyright holder, the same as this repository's,
-also licenses them for Arynwood MCP under this repository's [license](../../../LICENSE).
+published under the GNU AGPL-3.0-only, the same [license](../../../LICENSE) as the rest of
+Arynwood MCP. Both have the same copyright holder.
 
 Changes for Arynwood MCP: every request, live notice and socket goes through Arynwood's
 backend (`lib/grove.ts`, `backend/routers/community.py`), which holds the Grove sign-in, and

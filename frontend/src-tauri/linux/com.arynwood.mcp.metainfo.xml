@@ -5,7 +5,7 @@
 <component type="desktop-application">
   <id>com.arynwood.mcp</id>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>LicenseRef-proprietary=https://github.com/Arynwood-Technology/ArynwoodMCP/blob/main/LICENSE</project_license>
+  <project_license>AGPL-3.0-only</project_license>
   <name>Arynwood MCP</name>
   <summary>Local-first AI workspace for the Linux desktop</summary>
   <description>

@@ -182,7 +182,7 @@ they contain a table, so search results can cite "p.4" or "table" instead of an 
 chunk index. Runs in a dedicated venv at `~/GitHub/sycamore/lib/sycamore/.venv` (a
 sibling checkout, not part of this repo) — if that path doesn't exist on a given
 machine, PDF learning fails with a clear error rather than silently degrading. See
-`docs/sycamore-integration-plan.md` for the full design and `docs/architecture.md`'s
+`docs/internal/sycamore-integration-plan.md` for the full design and `docs/architecture.md`'s
 `/api/knowledge` section for the endpoint list. Non-PDF files (text, code, `.docx`)
 still go through plain pdfminer/pypdf extraction via `POST /api/knowledge/upload`.
 

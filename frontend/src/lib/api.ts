@@ -370,7 +370,7 @@ export const uploadKnowledgeFile = async (file: File): Promise<{ filename: strin
 }
 
 // PDF parsing via Sycamore's local layout model + OCR + table-structure extraction
-// (see docs/sycamore-integration-plan.md). Runs as a background job — a scanned,
+// (see docs/internal/sycamore-integration-plan.md). Runs as a background job — a scanned,
 // multi-page PDF can take well past a normal request timeout — so this is a
 // start-then-poll pair sharing the same job registry as /api/tools/jobs/{id}.
 export interface KnowledgeJob {
