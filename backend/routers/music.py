@@ -27,6 +27,7 @@ from backend._frozen import user_data_dir
 from backend.db import DB_PATH, get_db
 from backend.routers.studio import _ping, _sidecar_url
 from backend.services.gpu_jobs import _free_sd_vram_for_job, _restore_sd_vram_after_job, gpu_queue
+from backend.services.uploads import read_capped
 
 router = APIRouter()
 
@@ -160,6 +161,12 @@ async def generate(
     if provider not in ("acestep", "musicgen"):
         raise HTTPException(400, f"Unknown provider: {provider}")
 
+    # Read (and size-check) the clips before the job exists, so a refused one leaves no job behind.
+    reference_bytes = await read_capped(reference_audio) if reference_audio else None
+    reference_name = reference_audio.filename if reference_audio else None
+    melody_bytes = await read_capped(melody_audio) if melody_audio else None
+    melody_name = melody_audio.filename if melody_audio else None
+
     job_id = uuid.uuid4().hex
     params = {
         "prompt": prompt, "instrument": instrument, "genre": genre, "style": style,
@@ -169,10 +176,6 @@ async def generate(
     await _create_job(job_id, kind="generate", provider=provider, sidecar="song-gen", params=params)
 
     resolved_label = label or await _next_idea_label(instrument, provider)
-    reference_bytes = await reference_audio.read() if reference_audio else None
-    reference_name = reference_audio.filename if reference_audio else None
-    melody_bytes = await melody_audio.read() if melody_audio else None
-    melody_name = melody_audio.filename if melody_audio else None
 
     asyncio.create_task(_run_generate(
         job_id, kind="generated", provider=provider, params=params, label=resolved_label,
@@ -302,7 +305,7 @@ async def jam(
         raise HTTPException(400, "Provide input_audio (upload) or input_asset_id (an existing asset)")
 
     if input_audio:
-        input_bytes = await input_audio.read()
+        input_bytes = await read_capped(input_audio)
         input_name = input_audio.filename or "jam_input.wav"
         recording_id = uuid.uuid4().hex
         ext = os.path.splitext(input_name)[1] or ".wav"
@@ -446,7 +449,7 @@ async def separate_stems(
 ):
     """POST /stems — returns {job_id, source_asset_id} immediately. Poll
     GET /jobs/{job_id}, then find results via GET /assets?source_asset_id=..."""
-    content = await audio.read()
+    content = await read_capped(audio)
     original_name = audio.filename or "upload.wav"
     base_label = label or os.path.splitext(original_name)[0]
 

@@ -16,6 +16,7 @@ and GPU-queue-coordinated, unlike this router's stateless proxy pattern.
 
 import asyncio
 import os
+import re
 import subprocess
 import time
 from typing import Literal
@@ -26,6 +27,7 @@ from fastapi.responses import Response, StreamingResponse
 
 from backend import external_paths
 from backend.services import machine
+from backend.services.uploads import read_capped, save_capped
 from backend._frozen import die_with_parent, sanitize_environ_for_children, xdg_data_dir
 
 router = APIRouter()
@@ -238,7 +240,7 @@ async def start_stem_separation(
     stems: int = Form(4),
 ):
     """POST /stems — submit an audio file for stem separation; returns a job ID."""
-    content = await audio.read()
+    content = await read_capped(audio)
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             r = await client.post(
@@ -317,6 +319,9 @@ async def delete_voice_model(name: str):
         raise HTTPException(503, "Voice sidecar is not running.")
 
 
+VOICE_MODEL_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9 _.-]{0,79}")
+
+
 @router.post("/voice/models/import")
 async def import_voice_model(
     name: str = Form(...),
@@ -325,16 +330,19 @@ async def import_voice_model(
 ):
     """Accept .pth (+ optional .index) upload, save to MusicStudio models dir, then register with sidecar."""
     from pathlib import Path as _Path
+    # The name becomes a folder and two file names, so it may only be a plain name.
+    if not VOICE_MODEL_NAME.fullmatch(name):
+        raise HTTPException(400, "Name the model with letters, digits, spaces, '.', '_' or '-' (up to 80, starting with a letter or digit).")
     models_dir = _Path.home() / ".local/share/musicstudio/models" / name
     models_dir.mkdir(parents=True, exist_ok=True)
 
     pth_path = models_dir / f"{name}.pth"
-    pth_path.write_bytes(await pth.read())
+    await save_capped(pth, pth_path)
 
     index_path = None
     if index and index.filename:
         index_path = models_dir / f"{name}.index"
-        index_path.write_bytes(await index.read())
+        await save_capped(index, index_path)
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -356,7 +364,7 @@ async def start_voice_convert(
     index_rate: float = Form(0.5),
 ):
     """POST /voice/convert — submit audio for RVC voice conversion; returns a job ID."""
-    content = await audio.read()
+    content = await read_capped(audio)
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             r = await client.post(
@@ -405,7 +413,7 @@ async def apply_effects_chain(
     effects: str = Form("[]"),
 ):
     """POST /effects/chain — apply a JSON-encoded Pedalboard effects chain to an audio file."""
-    content = await audio.read()
+    content = await read_capped(audio)
     try:
         async with httpx.AsyncClient(timeout=60.0) as client:
             r = await client.post(
@@ -426,8 +434,8 @@ async def reference_master(
     reference: UploadFile = File(...),
 ):
     """POST /effects/master — master a target audio track to match the loudness/EQ of a reference track."""
-    tc = await target.read()
-    rc = await reference.read()
+    tc = await read_capped(target)
+    rc = await read_capped(reference)
     try:
         async with httpx.AsyncClient(timeout=120.0) as client:
             r = await client.post(
