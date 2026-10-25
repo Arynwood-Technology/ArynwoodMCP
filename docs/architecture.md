@@ -150,8 +150,8 @@ Chrome loads the same URLs, plays the same files and ignores the same CSP quirks
 ```
 FastAPI app
 ├── Lifespan: init_db() — SQLite schema creation + seeding
-├── Middleware: CORSMiddleware, PrometheusInstrumentatorMiddleware
-└── Routers (16 total, all mounted under /api/<domain>):
+├── Middleware: ApiKeyMiddleware (Host, Origin, key), CORSMiddleware, security headers, no-store on /api/*, Prometheus
+└── Routers (20, plus 2 opt-in; all mounted under /api/<domain>):
     ├── /api/chat       — LLM chat + WebSocket streaming
     ├── /api/ollama     — Ollama model management
     ├── /api/servers    — LLM server registry
@@ -168,8 +168,16 @@ FastAPI app
     ├── /api/lora       — LoRA dataset prep + training job management
     ├── /api/video      — Video generation/edit/caption jobs, video library
     ├── /api/models     — Read-only GPU model manager (SD checkpoints, LoRAs)
-    └── /api/dj         — DJ Toolkit: launch native Linux DJ/production apps + built-in manual
+    ├── /api/dj         — DJ Toolkit: launch native Linux DJ/production apps + built-in manual
+    ├── /api/projects   — Projects that conversations, memories and knowledge sources can link to
+    ├── /api/community  — The Community page's connection to a Grove (pass-through to the Grove's API)
+    ├── /api/images     — Image generation through an OpenAI-compatible endpoint
+    ├── /api/mcp-codebase — opt-in (ARYNWOOD_ENABLE_CODEBASE_TOOLS=1): codebase tools over MCP JSON-RPC
+    └── /api/gateway    — opt-in (daemon or ARYNWOOD_ENABLE_GATEWAY=1): the headless gateway
 ```
+
+The lists below are an overview. The complete reference for every route (parameters, request bodies,
+responses, errors, access) is generated from the backend: [docs/api](api/README.md).
 
 ### `/api/chat`
 
@@ -186,11 +194,15 @@ WS   /ws                        — streaming LLM chat
 WebSocket protocol:
   Client → { message, persona, model, server_host, server_port, conversation_id?, project_id? }
   Client → { type: "approval_response", request_id, approved }   — answers a pending approval_request, not a new turn
+  Client → { type: "cancel" }                                     — stops the active turn
   Server → { type: "conversation_id", id }
            { type: "status", label }                              — "what's happening" before the reply streams
            { type: "context_used", web_search, kb_sources, tool_servers }  — evidence for the reply, sent once
            { type: "approval_request", request_id, tool, arguments, tier } — pauses the turn; needs approval_response
+           { type: "approval_resolved", request_id, tool, approved }
            { type: "token", token, done }
+           { type: "turn_completed", run_id, status, evidence }    — before the final done token
+           { type: "cancelled" }                                   — after a cancel, once the turn has cleaned up
            { type: "error", message }
            { type: "memory_saved", items }                        — items may include conflict_with
 
@@ -227,15 +239,15 @@ Post-processing:
 ```
 GET  /                          — tool library listing
 POST /{id}/open                 — open tool in browser
-GET  /{id}/install/stream       — streaming install log
+POST /{id}/install/stream      — streaming install log
 POST /stable_diffusion/generate — txt2img via A1111 API
 POST /sd/generate, /sd/img2img  — alternate SD endpoints
 GET  /sd/models, /sd/status
 POST /tortoise_tts/generate     — Tortoise TTS
 POST /alltalk_tts/generate      — AllTalk TTS (XTTSv2)
 POST /kokoro/generate           — Kokoro TTS (fast)
-POST /chatterbox/generate       — Chatterbox TTS
-POST /sadtalker/run             — SadTalker video generation
+POST /chatterbox/jobs           — Chatterbox TTS (background job)
+POST /sadtalker/jobs            — SadTalker video generation (background job)
 POST /florence2/caption         — Florence-2 image captioning
 POST /rembg/remove              — background removal
 GET  /searxng/search             — SearXNG meta-search

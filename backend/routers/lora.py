@@ -1,3 +1,7 @@
+"""
+LoRA router — training projects: source photos, dataset preparation, captions (by hand or Florence-2), SDXL
+LoRA training through kohya_ss with live progress, and the trained files.
+"""
 import asyncio
 import glob
 import json

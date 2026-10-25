@@ -1,3 +1,7 @@
+"""
+Memory router — Arynwood's long-term memories: create, edit, delete, confirm a model-written (provisional)
+memory, and review proposed revisions.
+"""
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from backend.db import get_db
@@ -113,12 +117,15 @@ async def delete_memory(memory_id: int, db=Depends(get_db)):
 
 @router.get("/{memory_id}/revisions")
 async def memory_revisions(memory_id: int, db=Depends(get_db)):
+    """GET /{id}/revisions — every proposed revision of a memory, newest first."""
     async with db.execute("SELECT * FROM memory_revisions WHERE memory_id=? ORDER BY id DESC", (memory_id,)) as cur:
         return [dict(r) for r in await cur.fetchall()]
 
 
 @router.post("/{memory_id}/revisions/{revision_id}/accept")
 async def accept_revision(memory_id: int, revision_id: int, db=Depends(get_db)):
+    """POST /{id}/revisions/{revision_id}/accept — apply a pending revision. The memory becomes confirmed; 409 if
+    it changed since the revision was proposed."""
     await db.execute("BEGIN IMMEDIATE")
     async with db.execute("SELECT * FROM arynwood_memory WHERE id=?", (memory_id,)) as cur:
         memory = await cur.fetchone()
@@ -139,6 +146,7 @@ async def accept_revision(memory_id: int, revision_id: int, db=Depends(get_db)):
 
 @router.post("/{memory_id}/revisions/{revision_id}/reject")
 async def reject_revision(memory_id: int, revision_id: int, db=Depends(get_db)):
+    """POST /{id}/revisions/{revision_id}/reject — reject a pending revision; the memory is left as it is."""
     cur = await db.execute("UPDATE memory_revisions SET state='rejected' WHERE id=? AND memory_id=? AND state='pending'", (revision_id, memory_id))
     await db.commit()
     if not cur.rowcount:

@@ -1,3 +1,7 @@
+"""
+System router — health of the services the app uses, GPU information and the GPU job queue, CPU mode, and
+restarting the backend (source checkouts only).
+"""
 import asyncio
 import os
 import platform

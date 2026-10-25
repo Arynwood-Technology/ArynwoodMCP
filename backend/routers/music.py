@@ -360,6 +360,7 @@ async def list_jobs(db=Depends(get_db)):
 
 @router.get("/jobs/{job_id}")
 async def get_job(job_id: str, db=Depends(get_db)):
+    """GET /jobs/{id} — a generation job's row, with its place in the GPU queue."""
     job = await _get_job_or_404(db, job_id)
     job["queue_position"] = gpu_queue.queue_position(job_id)
     return job
@@ -371,6 +372,8 @@ async def get_job(job_id: str, db=Depends(get_db)):
 async def list_assets(kind: Optional[str] = None, instrument: Optional[str] = None,
                        favorite: Optional[bool] = None, project_id: Optional[int] = None,
                        source_asset_id: Optional[str] = None, db=Depends(get_db)):
+    """GET /assets — the Music Lab library, newest first, filtered by kind, instrument, favorite, project or source
+    asset."""
     query = "SELECT * FROM music_assets WHERE 1=1"
     args: list = []
     if kind:
@@ -401,6 +404,7 @@ class AssetUpdate(BaseModel):
 
 @router.patch("/assets/{asset_id}")
 async def update_asset(asset_id: str, body: AssetUpdate, db=Depends(get_db)):
+    """PATCH /assets/{id} — rename an asset or mark it a favorite."""
     await _get_asset_or_404(db, asset_id)
     fields: dict = {}
     if body.label is not None:
@@ -416,6 +420,7 @@ async def update_asset(asset_id: str, body: AssetUpdate, db=Depends(get_db)):
 
 @router.delete("/assets/{asset_id}")
 async def delete_asset(asset_id: str, db=Depends(get_db)):
+    """DELETE /assets/{id} — remove an asset and its audio file."""
     asset = await _get_asset_or_404(db, asset_id)
     if asset.get("file_path") and os.path.isfile(asset["file_path"]):
         os.remove(asset["file_path"])
@@ -426,6 +431,7 @@ async def delete_asset(asset_id: str, db=Depends(get_db)):
 
 @router.get("/assets/{asset_id}/audio")
 async def get_asset_audio(asset_id: str, db=Depends(get_db)):
+    """GET /assets/{id}/audio — the asset's WAV file, named after its label."""
     asset = await _get_asset_or_404(db, asset_id)
     if not asset.get("file_path") or not os.path.isfile(asset["file_path"]):
         raise HTTPException(404, "Audio file not found")

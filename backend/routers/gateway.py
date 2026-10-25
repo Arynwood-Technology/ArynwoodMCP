@@ -73,6 +73,8 @@ def _inbound(req: InboundRequest) -> InboundMessage:
 
 @router.post("/inbound")
 async def inbound(req: InboundRequest):
+    """POST /inbound — run one turn for a session, creating it on first contact. With wait=false, answers at once
+    and the result arrives as a turn_result event."""
     gateway = get_gateway()
     try:
         sessions.validate_key(req.session)
@@ -89,6 +91,8 @@ async def inbound(req: InboundRequest):
 
 @router.get("/status")
 async def status(db=Depends(get_db)):
+    """GET /status — whether this is the daemon, how many sessions exist, and what is running, queued and waiting
+    for approval."""
     async with db.execute("SELECT COUNT(*) FROM gateway_sessions") as cur:
         count = (await cur.fetchone())[0]
     return {"daemon": is_daemon(), "sessions": count, **get_gateway().status()}
@@ -96,6 +100,7 @@ async def status(db=Depends(get_db)):
 
 @router.get("/sessions")
 async def list_sessions(db=Depends(get_db)):
+    """GET /sessions — every session, most recently active first."""
     return [s.public() for s in await sessions.list_all(db)]
 
 
@@ -108,11 +113,13 @@ async def _session_or_404(db, key: str) -> sessions.Session:
 
 @router.get("/sessions/{key}")
 async def get_session(key: str, db=Depends(get_db)):
+    """GET /sessions/{key} — one session."""
     return (await _session_or_404(db, key)).public()
 
 
 @router.put("/sessions/{key}")
 async def put_session(key: str, body: SessionSettings, db=Depends(get_db)):
+    """PUT /sessions/{key} — create a session, or change its persona, model, server, project, label or trust level."""
     changes = body.model_dump(exclude_unset=True)
     for required in ("persona", "trust_level"):
         if changes.get(required) is None:
@@ -141,6 +148,7 @@ async def put_session(key: str, body: SessionSettings, db=Depends(get_db)):
 
 @router.delete("/sessions/{key}")
 async def delete_session(key: str, db=Depends(get_db)):
+    """DELETE /sessions/{key} — forget the session; its conversation stays in the history."""
     if not await sessions.delete(db, key):
         raise HTTPException(404, f"No session {key}")
     return {"deleted": key}
@@ -148,17 +156,21 @@ async def delete_session(key: str, db=Depends(get_db)):
 
 @router.post("/sessions/{key}/reset")
 async def reset_session(key: str, db=Depends(get_db)):
+    """POST /sessions/{key}/reset — continue in a new conversation from the next message."""
     await _session_or_404(db, key)
     return (await sessions.update(db, key, conversation_id=None)).public()
 
 
 @router.post("/sessions/{key}/cancel")
 async def cancel_session_turn(key: str):
+    """POST /sessions/{key}/cancel — stop the session's turn in progress, if any."""
     return {"cancelled": await get_gateway().cancel(key)}
 
 
 @router.get("/sessions/{key}/messages")
 async def session_messages(key: str, limit: int = 50, db=Depends(get_db)):
+    """GET /sessions/{key}/messages — the newest messages of the session's current conversation (limit 1-500),
+    oldest first."""
     session = await _session_or_404(db, key)
     if session.conversation_id is None:
         return []
@@ -183,11 +195,13 @@ async def file_memory():
 
 @router.get("/approvals")
 async def list_approvals():
+    """GET /approvals — destructive or publishing tool calls waiting for a decision."""
     return get_gateway().pending_approvals()
 
 
 @router.post("/approvals/{request_id}")
 async def decide_approval(request_id: str, decision: ApprovalDecision):
+    """POST /approvals/{request_id} — approve or deny one waiting tool call."""
     if not get_gateway().resolve_approval(request_id, decision.approved, by="http"):
         raise HTTPException(404, "No pending approval with that id")
     return {"request_id": request_id, "approved": decision.approved}
@@ -195,6 +209,8 @@ async def decide_approval(request_id: str, decision: ApprovalDecision):
 
 @router.websocket("/ws")
 async def gateway_ws(websocket: WebSocket):
+    """WS /ws?session=<key> — follow sessions' events, send messages, answer approvals and cancel turns (protocol:
+    docs/api/README.md)."""
     await websocket.accept()
     gateway = get_gateway()
     initial = websocket.query_params.get("session")

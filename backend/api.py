@@ -250,6 +250,8 @@ if os.path.isdir(_HTML_TOOLS_DIR):
 
     @app.get("/html-tools/{filename:path}")
     async def serve_html_tool(filename: str, request: Request):
+        """GET /html-tools/{filename} — one of Design Center's HTML tools from static/html-tools, framable only by
+        the app itself."""
         # Resolve before checking: an encoded `..%2F` or absolute path in `filename` would
         # otherwise serve any file the backend can read, and this route is outside the /api auth.
         path = _os.path.realpath(_os.path.join(_HTML_TOOLS_ROOT, filename))
@@ -268,4 +270,5 @@ if os.path.isdir(_HTML_TOOLS_DIR):
 
 @app.get("/")
 async def root():
+    """GET / — a liveness check: {"status": "Arynwood MCP running"} whenever the backend is up."""
     return {"status": "Arynwood MCP running"}

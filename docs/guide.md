@@ -62,8 +62,9 @@ This starts:
 - React Vite dev server
 
 Access the app at `http://localhost:5180`.
-API schema at `http://localhost:8010/openapi.json` (open it in any OpenAPI viewer; the built-in
-`/docs` page is off because it loads Swagger UI from a CDN).
+API reference: [docs/api](api/README.md), generated from the backend (every route, WebSocket and
+command). The running backend serves its OpenAPI document at `http://localhost:8010/openapi.json`; there
+is no `/docs` page, because FastAPI loads Swagger UI from a CDN.
 
 Backend and Ollama bind to `127.0.0.1` by default; set `ARYNWOOD_BIND_HOST=0.0.0.0`
 and `OLLAMA_HOST=0.0.0.0` in `.env` for LAN access (pair with `ARYNWOOD_API_KEY`).
@@ -117,17 +118,26 @@ turn, it answers one already in progress, and must be sent before anything else 
 {"type": "approval_response", "request_id": "...", "approved": true}
 ```
 
+**Send** — stop the active turn (answered with `cancelled` once it has cleaned up):
+```json
+{"type": "cancel"}
+```
+
 **Receive** (streaming):
 ```json
 {"type": "conversation_id", "id": 42}
 {"type": "status", "label": "Checking your knowledge base…"}
 {"type": "context_used", "web_search": false, "kb_sources": [...], "tool_servers": []}
 {"type": "approval_request", "request_id": "...", "tool": "delete_track", "arguments": {...}, "tier": "destructive"}
+{"type": "approval_resolved", "request_id": "...", "tool": "delete_track", "approved": false}
 {"type": "token", "token": "Hello", "done": false}
-{"type": "token", "token": "!", "done": true}
+{"type": "turn_completed", "run_id": "...", "status": "completed", "evidence": {...}}
+{"type": "token", "token": "", "done": true}
 {"type": "memory_saved", "items": [...]}
+{"type": "cancelled"}
 {"type": "error", "message": "..."}
 ```
+Every message type and field: [API reference, chat WebSocket](api/README.md#chat-websocket-apichatws).
 `status` is purely informational (drives the "what Arynwood is doing" indicator in the
 UI). `context_used` is sent once, right before the reply streams, only when there's
 something to disclose. `approval_request` pauses the turn — see "MCP Tool-Calling"

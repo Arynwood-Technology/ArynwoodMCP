@@ -172,6 +172,8 @@ async def health(url: str | None = None) -> dict | None:
 
 @router.get("/status")
 async def status(db=Depends(get_db)):
+    """GET /status — the Grove the Community page uses: its address, whether it is on this computer, its state
+    (running, starting, stopped, failed or unreachable) and what can be done from here."""
     url = await grove_url(db)
     local = is_local(url)
     directory = community_dir()
@@ -211,6 +213,8 @@ async def status(db=Depends(get_db)):
 
 @router.post("/start")
 async def start(db=Depends(get_db)):
+    """POST /start — start the Grove installed on this computer (Linux only). It keeps running after Arynwood
+    quits."""
     global _proc, _failure
     if os.name == "nt":
         raise HTTPException(501, "Community's local launcher requires Linux. Start your Grove separately and enter its address here.")
@@ -253,6 +257,7 @@ async def start(db=Depends(get_db)):
 
 @router.post("/stop")
 async def stop(db=Depends(get_db)):
+    """POST /stop — stop the Grove on this computer, only if Arynwood started it."""
     global _proc, _failure
     _failure = None
     pid = managed_pid()
@@ -471,6 +476,10 @@ def _moved(url: str, response: httpx.Response) -> HTTPException:
 
 @router.api_route("/grove/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
 async def grove_passthrough(path: str, request: Request, db=Depends(get_db)):
+    """GET/POST/PUT/PATCH/DELETE /grove/{path} — a Community-page request passed to the Grove's own API at
+    /api/{path} (only the areas in GROVE_AREAS), with the Grove sign-in this backend holds. The Grove's status
+    code and answer come back as it sent them; a path ending in /events is relayed as a server-sent event
+    stream. The Grove documents its API in its own repository."""
     base = await grove_url(db)
     target = httpx.URL(base).copy_with(path=_grove_path(path), query=request.url.query.encode() or None)
     headers = {name: request.headers[name] for name in FORWARD_REQUEST_HEADERS if name in request.headers}
