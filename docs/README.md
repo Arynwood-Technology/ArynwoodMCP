@@ -22,6 +22,8 @@ baseline. Models and supporting services are installed separately on both. Downl
 
 - [History](history.md): ArynCore, every public version, and Grove
 - [Release overview](release-overview.md): the latest release in more detail
+- [Release signing](release-signing.md): signed checksums, the release key, verifying a download
+- [`releases/TEMPLATE.md`](releases/TEMPLATE.md) - the release-notes template
 - [`CHANGELOG.md`](../CHANGELOG.md)
 - [`releases/0.5.3.md`](releases/0.5.3.md) - packages, checksums, release checks and known issues
 - [`releases/0.5.2.md`](releases/0.5.2.md) - Community from Arynwood Grove 0.7.1

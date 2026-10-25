@@ -28,6 +28,10 @@ them as a summary, not a precise record.
   a package without one made from the tag being released. Check a download with
   `gh attestation verify <file> -R Arynwood-Technology/ArynwoodMCP`. The packages are still not
   code-signed.
+- **Signed checksums, from the first release signed with the release key.** `scripts/sign-release.sh`
+  writes `SHA256SUMS` for every package and signs it (`SHA256SUMS.asc`) with the owner's OpenPGP key;
+  `scripts/verify-release.sh` checks a download against both. The key hasn't been created yet, so no
+  release is signed; see `docs/release-signing.md`.
 
 ## [0.5.3] — 2026-10-23
 

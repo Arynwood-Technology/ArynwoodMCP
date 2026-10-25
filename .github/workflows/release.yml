@@ -7,6 +7,8 @@ name: Release (Linux)
 # don't add a signing step that silently no-ops without them. Until then, tagged packages get
 # a GitHub build-provenance attestation (free, keyless): anyone can check that a file was built
 # here from the tag with `gh attestation verify <file> -R Arynwood-Technology/ArynwoodMCP`.
+# Checksum signing (SHA256SUMS.asc) is the owner's local step after the draft exists, with a key this
+# workflow never sees: docs/release-signing.md.
 
 on:
   workflow_dispatch:
