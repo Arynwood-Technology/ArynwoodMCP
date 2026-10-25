@@ -6,7 +6,7 @@ tests can't show that a packaged build plays anything (the AppImage once shipped
 crashed renderer and a solid grey window). This drives the same engine directly and prints one JSON line per test.
 
   # the host's own GStreamer (control):
-  xvfb-run -a python3 scripts/check_webkit_media.py MEDIA_DIR audio:a.wav video:b.mp4 recorder
+  xvfb-run -a python3 scripts/check_webkit_media.py MEDIA_DIR audio:a.wav video:b.mp4 webaudio:a.wav recorder
 
   # what an extracted AppImage would see (cwd must be the bundle's usr/ — its libwebkit looks for its helpers relatively):
   R=/path/to/squashfs-root; cd $R/usr && xvfb-run -a env LD_LIBRARY_PATH=$R/usr/lib \\
@@ -16,6 +16,8 @@ crashed renderer and a solid grey window). This drives the same engine directly 
       python3 /path/to/scripts/check_webkit_media.py MEDIA_DIR audio:a.wav video:b.mp4 recorder
 
 Elements are muted (`muted = true`) and the recorder listens to a WebAudio oscillator, so nothing is audible.
+The webaudio case needs a fixture longer than 4 seconds. It checks the same
+MediaElementAudioSourceNode path as Music Lab's audition, including delayed errors.
 `no such element factory "x"` lines on stderr (GST_DEBUG above) name plugins to add to stage_gstreamer_plugins.sh.
 Needs system python3-gi + gir1.2-webkit2-4.1 and xvfb. Exit 0 = every test played/recorded.
 """
@@ -36,13 +38,26 @@ from gi.repository import GLib, Gtk, WebKit2  # noqa: E402
 
 PAGE = """<!doctype html><meta charset=utf8><body><script>
 async function play(kind, file) {
+  const test = kind + ':' + file;
+  const webaudio = kind === 'webaudio';
+  if (webaudio) kind = 'audio';
   const el = document.createElement(kind); el.muted = true; el.preload = 'auto'; el.src = '/' + file; document.body.appendChild(el);
-  const out = { test: kind + ':' + file };
-  try { await Promise.race([el.play(), new Promise((_, rej) => setTimeout(() => rej(new Error('play() timed out')), 8000))]); }
+  const out = { test };
+  let ctx;
+  try {
+    if (webaudio) {
+      ctx = new AudioContext();
+      ctx.createMediaElementSource(el).connect(ctx.destination);
+      await ctx.resume();
+    }
+    await Promise.race([el.play(), new Promise((_, rej) => setTimeout(() => rej(new Error('play() timed out')), 8000))]);
+  }
   catch (e) { out.error = String(e && e.name || e) + ': ' + String(e && e.message || ''); }
-  await new Promise(r => setTimeout(r, 700));
+  await new Promise(r => setTimeout(r, webaudio ? 4000 : 700));
   out.currentTime = +el.currentTime.toFixed(2); out.readyState = el.readyState; out.mediaError = el.error ? el.error.code : null;
   out.ok = !out.error && !el.paused && el.currentTime > 0 && !el.error;
+  el.pause();
+  if (ctx) await ctx.close();
   return out;
 }
 async function recorder() {
