@@ -11,6 +11,7 @@ Model Context Protocol (MCP) tool integrations, including Kdenlive editing throu
 [![CI](https://github.com/Arynwood-Technology/ArynwoodMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/Arynwood-Technology/ArynwoodMCP/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/Arynwood-Technology/ArynwoodMCP)](https://github.com/Arynwood-Technology/ArynwoodMCP/releases/latest)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Arynwood-Technology/ArynwoodMCP/badge)](https://scorecard.dev/viewer/?uri=github.com/Arynwood-Technology/ArynwoodMCP)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15880/badge)](https://www.bestpractices.dev/projects/15880)
 
 Default model inference, memory and conversations stay on your hardware. Network features
 contact outside services: web search, URL learning, model/tool downloads, social integrations,
