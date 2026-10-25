@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Sign a release's checksums with the owner's release key. The owner runs this; see docs/release-signing.md.
 #
-#   scripts/sign-release.sh vX.Y.Z [--upload] [--out DIR]
+#   scripts/sign-release.sh vX.Y.Z [--upload] [--out DIR] [--loopback]
 #   scripts/sign-release.sh --from-dir DIR [--expect GLOB]... [--key FILE] [--fingerprint FPR]
 #
 # With a tag it downloads that DRAFT release's assets (a published release is refused: past releases are
@@ -12,7 +12,8 @@
 #   3. signs it with the release key: SHA256SUMS.asc, a detached, ASCII-armored OpenPGP signature
 #   4. checks the result with scripts/verify-release.sh against the published public key
 #   5. with --upload, attaches SHA256SUMS and SHA256SUMS.asc to the draft; otherwise prints that command
-# gpg asks for the key's passphrase itself; this script never sees or stores it.
+# gpg asks for the key's passphrase itself; this script never sees or stores it. --loopback makes gpg ask in
+# this terminal instead of a separate window.
 set -euo pipefail
 
 REPO=Arynwood-Technology/ArynwoodMCP
@@ -22,18 +23,19 @@ DEFAULT_EXPECT=('*_amd64.AppImage' '*_amd64.deb' '*_x64-setup.exe')
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(dirname "$here")
 
-usage() { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 die() { printf 'sign-release: %s\n' "$*" >&2; exit 1; }
 # True when file name $1 matches the pattern $2. Unquoted on purpose: --expect patterns are globs.
 # shellcheck disable=SC2053
 matches_glob() { [[ "$1" == $2 ]]; }
 
-tag="" from_dir="" out="" upload=0 key_file="" fingerprint="" expect=()
+tag="" from_dir="" out="" upload=0 key_file="" fingerprint="" expect=() pinentry=()
 while (($#)); do
   case "$1" in
     --from-dir) from_dir=${2:?--from-dir needs a folder}; shift ;;
     --out) out=${2:?--out needs a folder}; shift ;;
     --upload) upload=1 ;;
+    --loopback) pinentry=(--pinentry-mode loopback) ;;
     --expect) expect+=("${2:?--expect needs a pattern}"); shift ;;
     --key) key_file=${2:?--key needs a file}; shift ;;
     --fingerprint) fingerprint=${2:?--fingerprint needs a value}; shift ;;
@@ -136,7 +138,7 @@ echo "SHA256SUMS:"; cat SHA256SUMS
 # 3. The signature (gpg asks for the passphrase through its own prompt)
 GPG_TTY=${GPG_TTY:-$(tty 2> /dev/null || true)}
 export GPG_TTY
-gpg --local-user "$fingerprint" --digest-algo SHA512 --armor --detach-sign --output SHA256SUMS.asc SHA256SUMS
+gpg ${pinentry[@]+"${pinentry[@]}"} --local-user "$fingerprint" --digest-algo SHA512 --armor --detach-sign --output SHA256SUMS.asc SHA256SUMS
 
 # 4. Check it the way a user will
 "$here/verify-release.sh" --require-all --key "$key_file" --fingerprint "$fingerprint" "$dir"

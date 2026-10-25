@@ -30,8 +30,9 @@ them as a summary, not a precise record.
   code-signed.
 - **Signed checksums, from the first release signed with the release key.** `scripts/sign-release.sh`
   writes `SHA256SUMS` for every package and signs it (`SHA256SUMS.asc`) with the owner's OpenPGP key;
-  `scripts/verify-release.sh` checks a download against both. The key hasn't been created yet, so no
-  release is signed; see `docs/release-signing.md`.
+  `scripts/verify-release.sh` checks a download against both. The release key (fingerprint
+  `C536 F3C4 689A 1734 920A  0E5B F1F8 0C83 C593 8FF0`) is in `docs/release-signing-key.asc`; signing starts with the
+  next release. See `docs/release-signing.md`.
 
 ## [0.5.3] — 2026-10-23
 
