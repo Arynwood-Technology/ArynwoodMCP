@@ -22,7 +22,10 @@ SRC="${GSTREAMER_PLUGINS_DIR:-/usr/lib/$(uname -m)-linux-gnu/gstreamer-1.0}"
 #  transcode + voaacenc + encoding = what WebKitGTK's MediaRecorder needs — found by delta-debugging all 240 host
 #  plugins: without the first two `new MediaRecorder(stream)` throws "unsupported on this platform", without
 #  `encoding` (encodebin2) it records 0 bytes; Music Lab's Record tab depends on it)
-REQUIRED="coreelements typefindfunctions playback app audioconvert audioresample audioparsers volume
+# WebAudio's MediaElementAudioSourceNode and MediaStreamAudioSourceNode need
+# deinterleave (from interleave). Plain <audio> and oscillator-only recording do
+# not catch its absence: audition playback fails later and mic Stop never reaches review.
+REQUIRED="coreelements typefindfunctions playback app audioconvert audioresample audioparsers volume interleave
   autodetect pulseaudio isomp4 matroska ogg vorbis opus wavparse libav vpx debugutilsbad
   videofilter transcode voaacenc encoding"
 # Nice to have; the app still plays audio and video without them.
