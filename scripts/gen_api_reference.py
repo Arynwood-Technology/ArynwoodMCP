@@ -19,6 +19,7 @@ import argparse
 import ast
 import asyncio
 import collections
+import copy
 import dataclasses
 import difflib
 import inspect
@@ -221,6 +222,42 @@ def kwarg(call, name, pos=None):
     return None
 
 
+def unparse(node) -> str:
+    """ast.unparse, with f-strings written the same way on every Python version.
+
+    Since PEP 701, Python 3.12's ast.unparse reuses an f-string's own quote inside a replacement field, so
+    the same source came out as f"{d['k']}" on 3.11 and f'{d['k']}' on 3.12, and the pages differed with
+    the interpreter. Each f-string here gets the first quote its body doesn't contain, as on 3.11."""
+    found = []
+
+    class Hide(ast.NodeTransformer):
+        def visit_JoinedStr(self, n):
+            found.append(n)
+            return ast.Name(id=f"__fstring_{len(found) - 1}__")
+
+    text = ast.unparse(Hide().visit(copy.deepcopy(node)))
+    for i, n in enumerate(found):
+        text = text.replace(f"__fstring_{i}__", _fstring(n), 1)
+    return text
+
+
+def _fstring(node: ast.JoinedStr) -> str:
+    body = "".join(_fstring_part(v) for v in node.values)
+    quotes = [q for q in ("'", '"', '"""', "'''") if q not in body] or ["'''"]
+    quotes.sort(key=lambda q: bool(body) and q[0] == body[-1])
+    return f"f{quotes[0]}{body}{quotes[0]}"
+
+
+def _fstring_part(v) -> str:
+    if isinstance(v, ast.Constant):
+        return "".join(c * 2 if c in "{}" else "\\\\" if c == "\\" else
+                       c if c.isprintable() else c.encode("unicode_escape").decode() for c in v.value)
+    expr = unparse(v.value)
+    conversion = f"!{chr(v.conversion)}" if v.conversion != -1 else ""
+    spec = ":" + "".join(_fstring_part(p) for p in v.format_spec.values) if v.format_spec else ""
+    return "{" + (" " if expr.startswith("{") else "") + expr + conversion + spec + "}"
+
+
 def const(node):
     return node.value if isinstance(node, ast.Constant) else None
 
@@ -258,11 +295,11 @@ def text_of(node, fn, fn_node=None, depth=0) -> str:
     if isinstance(node, ast.JoinedStr):
         out = []
         for v in node.values:
-            out.append(str(v.value) if isinstance(v, ast.Constant) else "{" + ast.unparse(v.value) + "}")
+            out.append(str(v.value) if isinstance(v, ast.Constant) else "{" + unparse(v.value) + "}")
         return "".join(out)
     if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
         return text_of(node.left, fn) + text_of(node.right, fn)
-    return "{" + ast.unparse(node) + "}"
+    return "{" + unparse(node) + "}"
 
 
 def status_of(node, fn):
@@ -271,7 +308,7 @@ def status_of(node, fn):
     try:
         return int(eval(compile(ast.Expression(node), "<status>", "eval"), inspect.unwrap(fn).__globals__))
     except Exception:
-        return ast.unparse(node)
+        return unparse(node)
 
 
 def raises(fn, fn_node=None, depth=0, seen=None):
@@ -317,18 +354,18 @@ def raises(fn, fn_node=None, depth=0, seen=None):
 def describe_inline(node) -> str:
     if isinstance(node, ast.Dict):
         return "JSON with " + keys_of(node)
-    return "`" + ast.unparse(node) + "`" if node is not None else ""
+    return "`" + unparse(node) + "`" if node is not None else ""
 
 
 def keys_of(d: ast.Dict) -> str:
     keys = []
     for k, v in zip(d.keys, d.values):
         if k is None:
-            keys.append(f"the fields of `{ast.unparse(v)}`")
+            keys.append(f"the fields of `{unparse(v)}`")
         elif isinstance(k, ast.Constant):
             keys.append(f"`{k.value}`")
         else:
-            keys.append(f"`[{ast.unparse(k)}]`")
+            keys.append(f"`[{unparse(k)}]`")
     return ", ".join(keys) if keys else "no fields"
 
 
@@ -484,7 +521,7 @@ class Describer:
             return "JSON object with " + self.fields(fn, expr, fn_node, depth, env), True
         if isinstance(expr, ast.DictComp):
             value, ok = self(fn, expr.value, fn_node, depth + 1, env)
-            return f"JSON object keyed by `{ast.unparse(expr.key)}`, each value " + value, ok
+            return f"JSON object keyed by `{unparse(expr.key)}`, each value " + value, ok
         if isinstance(expr, (ast.List, ast.Tuple, ast.Set)):
             if not expr.elts:
                 return "empty JSON list", True
@@ -526,16 +563,16 @@ class Describer:
             inner, ok = self(fn, expr.value, fn_node, depth + 1, env)
             if ok is True and ("row" in inner or inner.startswith("JSON object")):
                 return f"the `{const(expr.slice)}` value of {inner}", True
-        return f"`{ast.unparse(expr)}`", False
+        return f"`{unparse(expr)}`", False
 
     def fields(self, fn, d: ast.Dict, fn_node, depth, env) -> str:
         parts = []
         for k, v in zip(d.keys, d.values):
             if k is None:
                 text, ok = self(fn, v, fn_node, depth + 1, env)
-                parts.append(f"the fields of {text if ok is True else '`' + ast.unparse(v) + '`'}")
+                parts.append(f"the fields of {text if ok is True else '`' + unparse(v) + '`'}")
                 continue
-            label = f"`{k.value}`" if isinstance(k, ast.Constant) else f"`[{ast.unparse(k)}]`"
+            label = f"`{k.value}`" if isinstance(k, ast.Constant) else f"`[{unparse(k)}]`"
             if depth < 1 and isinstance(v, INTERESTING):
                 text, ok = self(fn, v, fn_node, depth + 1, env)
                 if ok is True and not text.startswith("`"):
@@ -582,7 +619,7 @@ class Describer:
                     bare = ast.Call(func=arg, args=[], keywords=[])
                     return self.helper(fn, nested_def(fn_node, arg.id), (fn, fn_node, bare), line, depth, {})
         if depth >= 6:
-            return f"`{ast.unparse(expr)}`", False
+            return f"`{unparse(expr)}`", False
         target = resolve(fn, expr.func)
         if target is not None and node_of(target) is not None:
             return self.helper(target, node_of(target), (fn, fn_node, expr), line, depth, {})
@@ -593,7 +630,7 @@ class Describer:
             method = getattr(owner, expr.func.attr, None) if inspect.isclass(owner) else None
             if method is not None and node_of(method) is not None:
                 return self.helper(method, node_of(method), (fn, fn_node, expr), line, depth, {"self": owner})
-        return f"`{ast.unparse(expr)}`", False
+        return f"`{unparse(expr)}`", False
 
     def helper(self, fn, node, call, line, depth, env):
         """What a called helper returns, or failing that, the first sentence of its docstring."""
