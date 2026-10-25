@@ -21,7 +21,7 @@ Where Design Center's images come from: {source: endpoint|local, server, model, 
 
 **Response**
 
-- `200`: JSON object with `source`, `server` (JSON object with `id`, `name`, `host`, or `null`), `model` (the `model` value of `null`, or `null`), `cpu_mode`
+- `200`: JSON object with `source`, `server` (JSON object with `id`, `name`, `host`, or `null`), `model`, `cpu_mode`
 
 <a id="put-api-images-config"></a>
 ### `PUT /api/images/config`

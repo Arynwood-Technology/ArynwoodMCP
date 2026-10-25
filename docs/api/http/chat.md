@@ -164,7 +164,7 @@ Every recorded run of a conversation, oldest first, each with its evidence and s
 
 **Response**
 
-- `200`: JSON list of rows of `chat_runs`: `id`, `conversation_id`, `status`, `evidence`, `error`, `assistant_message_id`, `created_at`, `updated_at`, plus `evidence`, `steps`
+- `200`: JSON list of rows of `chat_runs`: `id`, `conversation_id`, `status`, `evidence`, `error`, `assistant_message_id`, `created_at`, `updated_at`, plus `steps`
 
 **Errors** (plus the [access errors](../README.md#errors) every route can return)
 

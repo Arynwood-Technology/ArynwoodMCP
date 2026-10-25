@@ -361,6 +361,16 @@ def element_type(hint):
 DOC = "doc"
 
 
+def either(texts) -> str:
+    """Alternatives joined with "or", each once."""
+    out = []
+    for t in texts:
+        for part in t.split(", or "):
+            if part not in out:
+                out.append(part)
+    return ", or ".join(out)
+
+
 def combine(*hows):
     return False if False in hows else DOC if DOC in hows else True
 
@@ -491,7 +501,7 @@ class Describer:
             return "JSON list, each item " + item, ok
         if isinstance(expr, ast.IfExp):
             (a, oka), (b, okb) = self(fn, expr.body, fn_node, depth + 1, env), self(fn, expr.orelse, fn_node, depth + 1, env)
-            return (a if a == b else f"{a}, or {b}"), combine(oka, okb)
+            return either([a, b]), combine(oka, okb)
         if isinstance(expr, ast.Name) and expr.id not in env and depth < 5:
             value, added, removed = self.assigned(fn_node, expr.id, line)
             text = ok = None
@@ -506,6 +516,7 @@ class Describer:
                     self.bound.append(saved[0])
                     self.callers.append(saved[1])
             if text is not None:
+                added = [k for k in added if f"`{k}`" not in text]
                 for key in removed:
                     text = re.sub(rf"`{re.escape(key)}`(, )?", "", text).replace(", :", ":").rstrip(", ")
                 return text + (", plus " + ", ".join(f"`{k}`" for k in added) if added else ""), ok
@@ -513,7 +524,7 @@ class Describer:
             return self.call(fn, expr, fn_node, depth, env, line)
         if isinstance(expr, ast.Subscript) and isinstance(const(expr.slice), str) and isinstance(expr.value, ast.Name):
             inner, ok = self(fn, expr.value, fn_node, depth + 1, env)
-            if ok is True:
+            if ok is True and ("row" in inner or inner.startswith("JSON object")):
                 return f"the `{const(expr.slice)}` value of {inner}", True
         return f"`{ast.unparse(expr)}`", False
 
@@ -600,7 +611,7 @@ class Describer:
             self.callers.pop()
             self.bound.pop()
         if results and all(ok is True for _, ok in results):
-            return ", or ".join(t for t, _ in results), True
+            return either([t for t, _ in results]), True
         doc = ast.get_docstring(node)
         if doc:
             return f"what `{getattr(node, 'name', 'it')}()` returns: " + first_sentence(doc), DOC
