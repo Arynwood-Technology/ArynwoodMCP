@@ -21,6 +21,9 @@ for a Tauri/WebView2 app with a bundled Python backend. It is an alpha. Read the
    [GitHub CLI](https://cli.github.com/):
    `gh attestation verify .\arynwood-mcp_<version>_x64-setup.exe -R Arynwood-Technology/ArynwoodMCP`
 
+   Releases signed with the release key (none yet) also carry `SHA256SUMS` and `SHA256SUMS.asc`;
+   [release signing](release-signing.md#verifying-a-download) has the PowerShell steps.
+
 3. Run the installer. It installs for your user account only. If WebView2 is
    missing, it downloads Microsoft's bootstrapper and installs it.
    The installer is unsigned, so Microsoft Defender SmartScreen may say

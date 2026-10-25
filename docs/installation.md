@@ -117,6 +117,12 @@ gh attestation verify arynwood-mcp_*_amd64.AppImage -R Arynwood-Technology/Arynw
 The packages are not code-signed. An attestation proves where a file was built; it doesn't
 change what your system shows when you open it.
 
+Releases signed with the project's release key also carry `SHA256SUMS` and its signature,
+`SHA256SUMS.asc` (none yet: the key hasn't been created). For those, `scripts/verify-release.sh`
+checks the signature and the package in one step; see
+[release signing](release-signing.md#verifying-a-download). The signature covers the checksum list, not the
+packages themselves, so it doesn't change what your system shows either.
+
 ### Where the app stores its data
 
 Mutable state lives outside the install location, under `~/.local/share/arynwood-mcp/`

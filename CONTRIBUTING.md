@@ -75,4 +75,6 @@ builds and uploads CI artifacts without publishing a release. `make package` als
 stages GStreamer, runs the backend smoke gate, and finalizes launcher permissions.
 Run `scripts/finalize_appimage.py` after direct Tauri builds, before checksums or
 signing. See [the release checklist](docs/releases/0.4.4.md) (written for 0.4.4) and, for
-the Windows installer, [`docs/windows.md`](docs/windows.md).
+the Windows installer, [`docs/windows.md`](docs/windows.md). Before publishing a draft, sign its
+checksums with `scripts/sign-release.sh` ([release signing](docs/release-signing.md)) and write
+the notes from [`docs/releases/TEMPLATE.md`](docs/releases/TEMPLATE.md).
