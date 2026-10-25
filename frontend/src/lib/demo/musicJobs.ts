@@ -13,7 +13,7 @@ import { addMusicAsset, listMusicAssets, renameAsset, setFavorite, deleteAsset, 
 import { synthesizeClip, voiceForInstrument, voiceForRole } from './audioSynth'
 import { renderEffectsChain, renderPitchShift, splitStems } from './audioDsp'
 import { audioBufferToWavBlob } from '../wav'
-import type { ActiveEffect } from '../../components/studio/LiveVoiceMonitor'
+import type { ActiveEffect } from '../../components/studio/liveAudioGraph'
 
 function formNum(form: FormData, key: string): number | undefined {
   const v = form.get(key)

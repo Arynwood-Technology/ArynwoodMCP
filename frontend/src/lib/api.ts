@@ -92,14 +92,15 @@ export const openCommunity = (target: 'app' | 'repo' = 'app') =>
   request<{ url: string }>(`/community/open?target=${target}`, { method: 'POST' })
 
 // Ollama
+// Running/show and TTS proxy replies are unmodified upstream JSON: callers must narrow them.
 export const getModels = (host = 'localhost', port = 11434) =>
   request<{ models: OllamaModel[] }>(`/ollama/models?host=${host}&port=${port}`)
 export const getRunning = (host = 'localhost', port = 11434) =>
-  request<any>(`/ollama/running?host=${host}&port=${port}`)
+  request<unknown>(`/ollama/running?host=${host}&port=${port}`)
 export const deleteModel = (model: string, host = 'localhost', port = 11434) =>
-  request<any>('/ollama/model', { method: 'DELETE', body: JSON.stringify({ model, server_host: host, server_port: port }) })
+  request<{ deleted: string }>('/ollama/model', { method: 'DELETE', body: JSON.stringify({ model, server_host: host, server_port: port }) })
 export const showModel = (model: string, host = 'localhost', port = 11434) =>
-  request<any>(`/ollama/show?model=${encodeURIComponent(model)}&host=${host}&port=${port}`)
+  request<unknown>(`/ollama/show?model=${encodeURIComponent(model)}&host=${host}&port=${port}`)
 
 // Servers
 export const getServers = () => request<Server[]>('/servers')
@@ -108,7 +109,7 @@ export const createServer = (data: Partial<Server>) =>
 export const updateServer = (id: number, data: Partial<Server>) =>
   request<Server>(`/servers/${id}`, { method: 'PATCH', body: JSON.stringify(data) })
 export const deleteServer = (id: number) =>
-  request<any>(`/servers/${id}`, { method: 'DELETE' })
+  request<{ deleted: number }>(`/servers/${id}`, { method: 'DELETE' })
 export const pingServer = (id: number) =>
   request<{ online: boolean }>(`/servers/${id}/ping`)
 /** The server chat uses until the owner picks another, remembered across launches. */
@@ -152,7 +153,7 @@ export const getMessages = (id: number) => request<Message[]>(`/chat/conversatio
 export interface ChatRun { id: string; status: string; assistant_message_id: number | null; evidence: Record<string, unknown>[] }
 export const getConversationRuns = (id: number) => request<ChatRun[]>(`/chat/conversations/${id}/runs`)
 export const deleteConversation = (id: number) =>
-  request<any>(`/chat/conversations/${id}`, { method: 'DELETE' })
+  request<{ deleted: number }>(`/chat/conversations/${id}`, { method: 'DELETE' })
 
 // Models (SD checkpoints / LoRAs beyond Ollama)
 export const getCheckpoints = () => request<CheckpointList>('/models/checkpoints')
@@ -160,10 +161,25 @@ export const getLoras = () => request<ModelFileList>('/models/loras')
 
 // Tools
 export const getTools = () => request<Tool[]>('/tools')
-export const generateImage = (data: object) =>
+/** Request fields accepted by backend/routers/tools.py SDRequest. */
+export interface ImageGenerationRequest {
+  prompt: string
+  negative_prompt?: string
+  steps?: number
+  width?: number | null
+  height?: number | null
+  cfg_scale?: number
+  style?: string
+}
+export interface SpeechRequest { text: string; voice?: string }
+export interface AllTalkRequest extends SpeechRequest { language?: string }
+export interface KokoroRequest extends SpeechRequest { speed?: number }
+export interface KokoroAudio { audio_base64: string; sample_rate: number; format: 'wav' }
+
+export const generateImage = (data: ImageGenerationRequest) =>
   request<{ images: string[] }>('/tools/stable_diffusion/generate', { method: 'POST', body: JSON.stringify(data) })
-export const generateTTS = (data: object) =>
-  request<any>('/tools/tortoise_tts/generate', { method: 'POST', body: JSON.stringify(data) })
+export const generateTTS = (data: SpeechRequest) =>
+  request<unknown>('/tools/tortoise_tts/generate', { method: 'POST', body: JSON.stringify(data) })
 
 // Types
 export interface SystemStatus {
@@ -258,6 +274,7 @@ export interface Tool {
   homepage?: string
   install?: string
   local_html?: boolean
+  vram_gb?: number | null
   /** Needs an NVIDIA GPU to be usable; switched off while CPU mode is on. */
   gpu?: boolean
   status: 'online' | 'offline' | 'available' | 'unavailable' | 'error'
@@ -274,10 +291,10 @@ export const removeBg    = (form: FormData) => fetch('/api/tools/rembg/remove', 
 export const searchSearx = (q: string, engines = '') =>
   request<SearXResult>(`/tools/searxng/search?q=${encodeURIComponent(q)}&engines=${engines}`)
 export const listQdrant  = () => request<{ collections: { name: string }[] }>('/tools/qdrant/collections')
-export const generateAlltalk = (data: object) =>
-  request<any>('/tools/alltalk_tts/generate', { method: 'POST', body: JSON.stringify(data) })
-export const generateKokoro = (data: object) =>
-  request<any>('/tools/kokoro/generate', { method: 'POST', body: JSON.stringify(data) })
+export const generateAlltalk = (data: AllTalkRequest) =>
+  request<unknown>('/tools/alltalk_tts/generate', { method: 'POST', body: JSON.stringify(data) })
+export const generateKokoro = (data: KokoroRequest) =>
+  request<KokoroAudio>('/tools/kokoro/generate', { method: 'POST', body: JSON.stringify(data) })
 export const scrapeFetch = (data: { url: string; selector?: string; fetcher?: string; output?: string }) =>
   request<ScraplingResult>('/tools/scrapling/fetch', { method: 'POST', body: JSON.stringify(data) })
 
@@ -533,3 +550,18 @@ export const startDjSession = (id: string) =>
   request<{ session_id: string; results: { tool_id: string; launched: boolean; pid?: number; reason?: string }[] }>(
     `/dj/sessions/${id}/start`, { method: 'POST' }
   )
+
+/** /system/hardware: fixed local response, including the GPU-unavailable variant. */
+export interface HardwareProfile {
+  cpu: { name: string; cores: number }
+  ram_gb: number
+  disk_free_gb: number
+  gpu: ({ available: false } | {
+    available: true; name: string; temp: string; utilization: string
+    memory_used: string; memory_total: string
+  }) & { vram_gb: number }
+  can_run: string[]
+  too_large: string[]
+  ram_notes: string[]
+  recommended_models: { name: string; size: string; desc: string; pull: string }[]
+}

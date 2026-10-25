@@ -442,9 +442,14 @@ backend startup (cheap at this table's scale, and simpler than tracking dirty ro
 cd frontend
 npm run dev       # dev server with HMR
 npm run build     # tsc + vite build
-npm run lint      # eslint
+npm run lint      # eslint . --max-warnings 0 (zero errors and warnings required)
 npm run preview   # preview production build
 ```
+
+CI runs `npm run lint` and rejects every ESLint error or warning. The former
+aggregate-count allowance and its helper have been removed. Shared audio graph
+functions and `ActiveEffect` live in `components/studio/liveAudioGraph.ts`;
+`LiveVoiceMonitor.tsx` exports only its component.
 
 ## Branching, private data, and pushing
 

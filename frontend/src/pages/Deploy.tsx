@@ -19,6 +19,9 @@ interface DeployTarget {
   public_url: string
 }
 
+interface PublishedPage { uploaded: string; filename: string; public_url: string }
+interface UploadedFile extends PublishedPage { size: number }
+
 interface RemoteEntry {
   name: string
   is_dir: boolean
@@ -83,13 +86,13 @@ function ServerModal({ initial, onSave, onClose }: {
   onClose: () => void
 }) {
   const [form, setForm] = useState({ ...EMPTY, ...initial })
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set = <K extends keyof typeof EMPTY,>(k: K, v: (typeof EMPTY)[K]) => setForm(f => ({ ...f, [k]: v }))
 
-  const field = (key: keyof typeof EMPTY, label: string, type = 'text', placeholder = '') => (
+  const field = (key: Exclude<keyof typeof EMPTY, 'port'>, label: string, type = 'text', placeholder = '') => (
     <div key={key} style={{ marginBottom: 10 }}>
       <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>{label}</label>
-      <input type={type} value={String((form as any)[key] ?? '')} placeholder={placeholder}
-        onChange={e => set(key, type === 'number' ? Number(e.target.value) : e.target.value)}
+      <input type={type} value={String(form[key] ?? '')} placeholder={placeholder}
+        onChange={e => set(key, e.target.value)}
         style={inp} />
     </div>
   )
@@ -154,7 +157,7 @@ function ServerModal({ initial, onSave, onClose }: {
 
 function PublishPageModal({ targetId, onClose }: { targetId: number; onClose: () => void }) {
   const [form, setForm] = useState({ title: '', description: '', media_url: '', media_type: 'image', slug: '' })
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<PublishedPage | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
@@ -168,7 +171,7 @@ function PublishPageModal({ targetId, onClose }: { targetId: number; onClose: ()
       const data = await r.json()
       if (!r.ok) throw new Error(data.detail)
       setResult(data)
-    } catch (e: any) { setError(e.message) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }
 
@@ -184,7 +187,7 @@ function PublishPageModal({ targetId, onClose }: { targetId: number; onClose: ()
                 <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 3 }}>
                   {k === 'media_url' ? 'Media URL (image/video/audio)' : k === 'slug' ? 'Filename slug (e.g. my-post → my-post.html)' : k.charAt(0).toUpperCase() + k.slice(1)}
                 </label>
-                <input value={(form as any)[k]} onChange={e => set(k, e.target.value)} style={inp} />
+                <input value={form[k]} onChange={e => set(k, e.target.value)} style={inp} />
               </div>
             ))}
             <div style={{ marginBottom: 14 }}>
@@ -240,7 +243,7 @@ export function Deploy() {
   // Upload
   const [uploadDir, setUploadDir] = useState('')
   const [uploading, setUploading] = useState(false)
-  const [lastUpload, setLastUpload] = useState<any>(null)
+  const [lastUpload, setLastUpload] = useState<UploadedFile[] | null>(null)
   const [copiedUrl, setCopiedUrl] = useState(false)
   const uploadRef = useRef<HTMLInputElement>(null)
 
@@ -282,7 +285,7 @@ export function Deploy() {
       setBrowsePath(data.path)
       setUploadDir(data.path)
       setWebRoot(data.web_root)
-    } catch (e: any) {
+    } catch {
       setEntries([])
     } finally {
       setBrowseLoading(false)
@@ -537,7 +540,7 @@ export function Deploy() {
             {lastUpload && lastUpload.length > 0 && (
               <div style={{ background: 'var(--surface2)', borderRadius: 8, padding: 10 }}>
                 <div style={{ fontSize: 11, color: '#22c55e', marginBottom: 6, fontWeight: 600 }}>✓ {lastUpload.length} uploaded</div>
-                {lastUpload.map((u: any) => (
+                {lastUpload.map(u => (
                   <div key={u.filename} style={{ marginBottom: 6 }}>
                     <div style={{ fontSize: 11, color: 'var(--text)', marginBottom: 3 }}>{u.filename}</div>
                     <div style={{ display: 'flex', gap: 4 }}>

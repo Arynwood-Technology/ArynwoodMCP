@@ -29,8 +29,8 @@ there usually belongs in Grove first.
 - **Tests.** New features and bug fixes come with tests that cover them (`tests/` for the backend,
   a `*.test.ts(x)` beside the code for the frontend); a bug fix includes a test that fails without
   it. Tests that need a live Ollama are marked `eval` and run separately (`pytest tests/ -m eval`).
-- **No new lint problems.** `npm run lint` currently has a pre-existing baseline of problems (see
-  `CLAUDE.md`); don't let that baseline grow.
+- **Zero lint findings.** `npm run lint` runs ESLint with `--max-warnings 0`; CI fails
+  on any error or warning. Fix findings before requesting review.
 - **No weaker protections.** Keep the Host and Origin checks, the API key gate, the Content Security
   Policies and the security headers at least as strict as they are. Load nothing from other sites
   at runtime: no CDN scripts, styles or fonts.

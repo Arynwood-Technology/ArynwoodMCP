@@ -1,9 +1,9 @@
 // Real Web Audio processing for demo-mode Effects Rack, Voice Conversion, and Stem
-// Separator — reuses makeLiveGraph (frontend/src/components/studio/LiveVoiceMonitor.tsx),
+// Separator — reuses makeLiveGraph (frontend/src/components/studio/liveAudioGraph.ts),
 // the same graph EffectsRack.tsx already uses for its live preview, rendered offline via
 // OfflineAudioContext instead of live. This is genuinely, honestly functional: real DSP
 // run on the visitor's real uploaded/recorded audio, not a faked/canned result.
-import { makeLiveGraph, type ActiveEffect } from '../../components/studio/LiveVoiceMonitor'
+import { makeLiveGraph, type ActiveEffect } from '../../components/studio/liveAudioGraph'
 import { audioBufferToWavBlob } from '../wav'
 
 async function decodeToBuffer(file: Blob): Promise<AudioBuffer> {
