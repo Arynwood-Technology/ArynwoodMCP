@@ -1,3 +1,7 @@
+"""
+Ollama router — the models on an Ollama server: list, show, pull (streamed progress), unload from VRAM and
+delete, plus a ping and starting a local `ollama serve`.
+"""
 import asyncio
 import json
 import subprocess

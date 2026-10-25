@@ -22,6 +22,22 @@ _executor = ThreadPoolExecutor(max_workers=4)
 
 # ── SSH helpers ────────────────────────────────────────────────────────────────
 
+# The only ciphers and MACs a connection offers. Paramiko's defaults add CBC-mode AES, 3DES and SHA-1
+# and MD5 MACs, kept for servers from before about 2012; OpenSSH has offered these since 5.9 (2011).
+# An allowlist, so a Paramiko upgrade can't add a weak one back.
+# Key exchange, host-key and signature algorithms stay Paramiko's own, already all SHA-2 or better
+# (tests/test_deploy_security.py checks that on every upgrade).
+SSH_CIPHERS = ("aes128-ctr", "aes192-ctr", "aes256-ctr", "aes128-gcm@openssh.com", "aes256-gcm@openssh.com")
+SSH_MACS = ("hmac-sha2-256", "hmac-sha2-512", "hmac-sha2-256-etm@openssh.com", "hmac-sha2-512-etm@openssh.com")
+
+
+def _disabled_algorithms() -> dict:
+    return {
+        "ciphers": [c for c in paramiko.Transport._preferred_ciphers if c not in SSH_CIPHERS],
+        "macs": [m for m in paramiko.Transport._preferred_macs if m not in SSH_MACS],
+    }
+
+
 def _open_sftp(target: dict) -> tuple[paramiko.SSHClient, paramiko.SFTPClient]:
     """Open an SSH connection and return (SSHClient, SFTPClient) for the given target."""
     ssh = paramiko.SSHClient()
@@ -38,6 +54,7 @@ def _open_sftp(target: dict) -> tuple[paramiko.SSHClient, paramiko.SFTPClient]:
         "port": int(target.get("port", 22)),
         "username": target.get("username", "root"),
         "timeout": 12,
+        "disabled_algorithms": _disabled_algorithms(),
     }
     key_path = os.path.expanduser(target.get("ssh_key_path") or "")
     if key_path and os.path.exists(key_path):

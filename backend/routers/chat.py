@@ -1,3 +1,8 @@
+"""
+Chat router — personas, conversations, and chat turns: the streaming WebSocket (/ws) and a
+non-streaming /complete. Each turn's system prompt is budgeted to the model's real context window; central
+also gets native tools and the MCP tool loop, and destructive or publishing tool calls wait for approval.
+"""
 import asyncio
 import json
 import logging
@@ -1338,6 +1343,8 @@ class ChatRequest(BaseModel):
 
 @router.post("/complete")
 async def chat_complete(req: ChatRequest, db=Depends(get_db)):
+    """POST /complete — run one chat turn without streaming (the same turn the WebSocket runs) and return the whole
+    reply, its conversation id and the run's evidence. 502 when the turn fails."""
     sink = _HttpSink()
     await _run_turn(sink, req.model_dump(), db)
     if sink.error:
@@ -1713,6 +1720,8 @@ async def _run_turn(target, data, db):
 
 @router.get('/conversations/{conversation_id}/runs')
 async def conversation_runs(conversation_id: int, db=Depends(get_db)):
+    """GET /conversations/{id}/runs — every recorded run of a conversation, oldest first, each with its evidence
+    and steps: what informed each reply."""
     async with db.execute('SELECT * FROM chat_runs WHERE conversation_id=? ORDER BY created_at,id', (conversation_id,)) as cur:
         rows = [dict(r) for r in await cur.fetchall()]
     for row in rows:
@@ -1724,6 +1733,8 @@ async def conversation_runs(conversation_id: int, db=Depends(get_db)):
 
 @router.websocket('/ws')
 async def chat_ws(websocket: WebSocket):
+    """WS /ws — streaming chat. In: a turn, an approval answer or a cancel. Out: status, token, approval and
+    evidence events (protocol: docs/api/README.md)."""
     await websocket.accept()
     approval_queue = asyncio.Queue(maxsize=1)
     pending_request_id = None

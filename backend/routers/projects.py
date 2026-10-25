@@ -23,6 +23,7 @@ class ProjectUpdate(BaseModel):
 
 @router.get("")
 async def list_projects(db=Depends(get_db)):
+    """GET /projects — every project, most recently updated first."""
     async with db.execute("SELECT * FROM projects ORDER BY updated_at DESC") as cur:
         rows = await cur.fetchall()
     return [dict(r) for r in rows]
@@ -30,6 +31,7 @@ async def list_projects(db=Depends(get_db)):
 
 @router.post("")
 async def create_project(body: ProjectCreate, db=Depends(get_db)):
+    """POST /projects — create a project and return its row."""
     cur = await db.execute(
         "INSERT INTO projects (name, description) VALUES (?,?)", (body.name, body.description)
     )
@@ -41,6 +43,7 @@ async def create_project(body: ProjectCreate, db=Depends(get_db)):
 
 @router.put("/{project_id}")
 async def update_project(project_id: int, body: ProjectUpdate, db=Depends(get_db)):
+    """PUT /projects/{id} — change a project's name and description."""
     await db.execute(
         "UPDATE projects SET name=?, description=?, updated_at=datetime('now') WHERE id=?",
         (body.name, body.description, project_id),

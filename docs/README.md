@@ -38,6 +38,7 @@ baseline. Models and supporting services are installed separately on both. Downl
 
 - [Architecture](architecture.md): frontend, backend, database, stack and ports
 - [Developer guide](guide.md): the chat system, adding routes and pages
+- [API reference](api/README.md): every HTTP route, WebSocket and command, generated from the backend
 - [Structure](structure.md): files, folders and services
 - [Scope](scope.md): what Arynwood MCP is and isn't, and the current plan
 - [Conversation tuning](conversation-tuning.md): measured prompt and model changes

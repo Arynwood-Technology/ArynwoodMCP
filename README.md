@@ -78,7 +78,8 @@ ollama pull nomic-embed-text
 ```
 
 The model names are bundled examples, not recommendations. Edit the copied environment
-file for your setup. The UI is at http://localhost:5180 and API at http://localhost:8010.
+file for your setup. The UI is at http://localhost:5180 and API at http://localhost:8010
+([API reference](docs/api/README.md)).
 Backend and Ollama default to loopback. See [source setup](docs/installation.md#running-from-source-current-always-available)
 for configuration, knowledge services and the development desktop launcher.
 

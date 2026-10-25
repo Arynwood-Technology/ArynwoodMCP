@@ -1,3 +1,8 @@
+"""
+Tools router — the GPU tool registry and its generators: Stable Diffusion (A1111), text to speech, talking
+heads, video, background removal, captions and transcription, plus SearXNG search, Qdrant collections, web
+scraping and the jobs they run. GPU-only tools answer 409 while CPU mode is on.
+"""
 import asyncio
 import base64
 import io

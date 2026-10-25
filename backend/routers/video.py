@@ -1,3 +1,7 @@
+"""
+Video router — Wan2.1 text-to-video jobs, the video library, edit jobs (trim and join clips, transitions,
+audio tracks), captions with Whisper, and Creative Commons background music from Jamendo.
+"""
 import asyncio
 import math
 import json

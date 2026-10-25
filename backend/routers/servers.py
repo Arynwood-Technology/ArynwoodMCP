@@ -1,3 +1,7 @@
+"""
+Servers router — the model servers chat can use (Ollama or OpenAI-compatible): register, edit and ping them,
+list each one's models, and remember the default. Tokens stay on the backend; the page sees only has_token.
+"""
 import os
 from typing import Optional
 from urllib.parse import urlparse

@@ -1,3 +1,7 @@
+"""
+Knowledge router — learn text, files, URLs and PDFs (through a local Sycamore parse job) into the Qdrant
+knowledge base, and search it with hybrid vector + lexical ranking.
+"""
 import asyncio
 import json
 import os
