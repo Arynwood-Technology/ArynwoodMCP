@@ -299,9 +299,16 @@ Tools are started externally (via their own launch scripts or Docker). Arynwood 
 The Deploy page (route `/publish`) manages SSH/SFTP deployments to remote web servers.
 
 **Add a target**:
-- Via Servers page or POST `/api/deploy/targets`
-- Supports password auth or SSH key auth
-- Supports IPv4 and IPv6 addresses
+- On the Deploy page (**Add Publish Server**) or with `POST /api/deploy/targets`
+- Host (IPv4 or IPv6), port, user, and an SSH key file or a password. The client tries the key file
+  (if set and present), then the SSH agent and your default keys (`~/.ssh/id_*`), then the password
+  (sent only when no key file is used)
+- The server's host key must already be in `~/.ssh/known_hosts` (connect once with `ssh` to add it);
+  an unknown or changed key is refused, never added
+- Only AES-CTR/AES-GCM ciphers and SHA-2 MACs are offered (`SSH_CIPHERS`, `SSH_MACS` in
+  `backend/routers/deploy.py`), so a server older than OpenSSH 5.9 can't be reached
+- Passwords are stored unencrypted in `arynwood.db` (masked in the UI and the API): prefer a key
+- The user field starts as `root`; a user that can write only the web root is safer
 
 **Operations**: File upload, download, delete, directory listing. Path traversal protection enforced.
 
