@@ -1,8 +1,8 @@
 # Arynwood MCP X.Y.Z — <title>
 
 <!-- Template for docs/releases/X.Y.Z.md and for the GitHub draft's notes (release.yml fills the draft from
-     CHANGELOG.md; add the "Verify your download" section to it before publishing). Replace X.Y.Z and the
-     fingerprint. For a release that isn't signed, drop SHA256SUMS and SHA256SUMS.asc and the signature step,
+     CHANGELOG.md; add the "Verify your download" section to it before publishing). Replace X.Y.Z; check the
+     fingerprint against ../release-signing.md. For a release that isn't signed, drop SHA256SUMS and SHA256SUMS.asc and the signature step,
      and say so. See ../release-signing.md. -->
 
 ## Packages
@@ -20,7 +20,7 @@
 
 ## Verify your download
 
-Release key fingerprint: `XXXX XXXX XXXX XXXX XXXX  XXXX XXXX XXXX XXXX XXXX`
+Release key fingerprint: `C536 F3C4 689A 1734 920A  0E5B F1F8 0C83 C593 8FF0`
 Public key: <https://github.com/Arynwood-Technology/ArynwoodMCP/blob/main/docs/release-signing-key.asc>
 
 Put `SHA256SUMS`, `SHA256SUMS.asc` and the package in one folder, import the public key, then:

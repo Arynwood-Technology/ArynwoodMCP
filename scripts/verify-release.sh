@@ -13,9 +13,8 @@
 # not used or changed: the key is imported into a temporary one. See docs/release-signing.md.
 set -euo pipefail
 
-# The release key's primary fingerprint, 40 hex digits. Empty until the first release key is published,
-# which means no release is signed yet.
-RELEASE_KEY_FINGERPRINT=""
+# The release key's primary fingerprint, 40 hex digits (docs/release-signing.md, "Release key").
+RELEASE_KEY_FINGERPRINT="C536F3C4689A1734920A0E5BF1F80C83C5938FF0"
 KEY_URL="https://raw.githubusercontent.com/Arynwood-Technology/ArynwoodMCP/main/docs/release-signing-key.asc"
 
 usage() { sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }

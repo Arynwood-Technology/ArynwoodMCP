@@ -10,27 +10,29 @@ A checksum proves a file arrived intact. The signature proves the checksums came
 signature covers every package. The build attestations (from 0.5.4) are a separate check: they prove which
 workflow built a file from which tag.
 
-**Status: ready, waiting for the release key.** No key has been created yet, so no release is signed.
-`RELEASE_KEY_FINGERPRINT` in `scripts/verify-release.sh` is empty and `docs/release-signing-key.asc` doesn't
-exist. Until both are set, `sign-release.sh` refuses to run and `verify-release.sh` fails. Releases up to and
-including 0.5.3 are not signed and won't be re-signed.
+**Status:** the release key was created and published on 2026-10-25 (below). No release has been signed with
+it yet; signing starts with the next release. Releases up to and including 0.5.3 are not signed and won't be
+re-signed.
 
 | File | Who runs it | What it does |
 |---|---|---|
 | `scripts/sign-release.sh` | the owner, at release time | checks a draft release's packages against the build's checksum lists, writes `SHA256SUMS`, signs it, checks the result |
 | `scripts/verify-release.sh` | anyone who downloads a release | checks the signature against the release key, then each downloaded package against `SHA256SUMS` |
-| `docs/release-signing-key.asc` | — | the public half of the release key (not published yet) |
+| `docs/release-signing-key.asc` | — | the public half of the release key |
 | `tests/test_release_signing.py` | CI | signs and verifies with throwaway keys, including tampered files and the wrong key |
 
 ## Release key
 
-- Fingerprint: **not published yet**
-- Public key: [`docs/release-signing-key.asc`](release-signing-key.asc) (not published yet)
+- Fingerprint: **`C536 F3C4 689A 1734 920A  0E5B F1F8 0C83 C593 8FF0`**
+- Key: Ed25519, signing only, created 2026-10-25, expires 2028-10-24
+- Public key: [`docs/release-signing-key.asc`](release-signing-key.asc)
 
 Before trusting a key, compare its fingerprint with this page and with arynwood.com's security page (once it
 lists it). The private key never leaves the owner's machine and its offline backup.
 
 ## One-time key setup (owner)
+
+Done for the current key on 2026-10-25. The steps stay here for replacing it; step 5 is how to extend it.
 
 Do this on your own computer, in a terminal. Never paste the passphrase, the private key or the revocation
 certificate into a chat, an issue, a commit or any file in a repository, including `arynwood-private`.
@@ -42,6 +44,11 @@ certificate into a chat, an issue, a commit or any file in a repository, includi
    ```bash
    gpg --quick-gen-key 'Arynwood Technology release signing <YOUR-ADDRESS@arynwood.com>' ed25519 sign 2y
    ```
+
+   If it says `agent_genkey failed: Operation cancelled`, the passphrase window got no answer: it can open
+   behind other windows, or gpg's background helper was started from another session. Run
+   `export GPG_TTY=$(tty)` and `gpgconf --kill gpg-agent`, then try again. Or add `--pinentry-mode loopback`
+   right after `gpg` to type the passphrase in the terminal; that is what worked for the current key.
 
 2. Read its fingerprint (40 hex digits) and keep it in a shell variable for the next steps:
 
@@ -105,7 +112,8 @@ Signing is the last step before publishing a draft. The steps before it are unch
    - runs `verify-release.sh --require-all` on the result, against the published key;
    - attaches both files to the draft.
 
-   Without `--upload` it stops after the check and prints the `gh release upload` command.
+   Without `--upload` it stops after the check and prints the `gh release upload` command. Add `--loopback`
+   to type the passphrase in the terminal, if the passphrase window doesn't appear.
 
    It refuses, changing nothing, when:
    - the release is already published (past releases are never re-signed);

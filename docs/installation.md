@@ -118,7 +118,7 @@ The packages are not code-signed. An attestation proves where a file was built; 
 change what your system shows when you open it.
 
 Releases signed with the project's release key also carry `SHA256SUMS` and its signature,
-`SHA256SUMS.asc` (none yet: the key hasn't been created). For those, `scripts/verify-release.sh`
+`SHA256SUMS.asc` (none yet: signing starts with the next release). For those, `scripts/verify-release.sh`
 checks the signature and the package in one step; see
 [release signing](release-signing.md#verifying-a-download). The signature covers the checksum list, not the
 packages themselves, so it doesn't change what your system shows either.
