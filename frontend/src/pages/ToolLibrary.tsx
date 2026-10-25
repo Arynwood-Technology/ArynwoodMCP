@@ -4,7 +4,7 @@ import {
   RefreshCw, Image as ImageIcon, Video, Volume2, Search,
   Database, Code2, Cpu, ExternalLink, Check,
   Box, Zap, Terminal, ChevronDown, ChevronRight, Globe,
-  Play, Download, FolderOpen, Loader2,
+  Play, Download, FolderOpen, Loader2, type LucideIcon,
 } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 import {
@@ -12,7 +12,7 @@ import {
   removeBg, searchSearx, listQdrant,
   generateAlltalk, generateKokoro, scrapeFetch,
   openTool, installToolStream, apiUrl, setCpuMode,
-  type CpuMode, type Tool,
+  type CpuMode, type Tool, type HardwareProfile, type SearXResult,
 } from '../lib/api'
 import { DownloadButton } from '../components/DownloadButton'
 import { Button, SectionCard } from '../components/ui'
@@ -72,7 +72,7 @@ function gpuOffNote(tool: Tool): string {
 
 // ── Category meta ─────────────────────────────────────────────────────────────
 
-const CATEGORY_META: Record<string, { label: string; Icon: any; color: string }> = {
+const CATEGORY_META: Record<string, { label: string; Icon: LucideIcon; color: string }> = {
   image:  { label: 'Image',             Icon: ImageIcon, color: '#fb923c' },
   audio:  { label: 'Audio',             Icon: Volume2,   color: '#5eead4' },
   video:  { label: 'Video',             Icon: Video,     color: '#f472b6' },
@@ -130,7 +130,7 @@ function SDPanel() {
     try {
       const r = await generateImage({ prompt, negative_prompt: negative, steps, width: 512, height: 512 })
       setImages(r.images)
-    } catch (e: any) { setError(e.message) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }
 
@@ -163,7 +163,7 @@ function TTSPanel() {
     if (!text) return
     setLoading(true); setError('')
     try { await generateTTS({ text, voice }) }
-    catch (e: any) { setError(e.message) }
+    catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }
 
@@ -192,9 +192,10 @@ function AllTalkPanel() {
     setLoading(true); setError(''); setAudioUrl('')
     try {
       const r = await generateAlltalk({ text, voice, language: lang })
-      if (r.output_file_url) setAudioUrl(`http://localhost:7851${r.output_file_url}`)
+      if (r !== null && typeof r === 'object' && 'output_file_url' in r
+        && typeof r.output_file_url === 'string' && r.output_file_url) setAudioUrl(`http://localhost:7851${r.output_file_url}`)
       else setAudioUrl('')
-    } catch (e: any) { setError(e.message) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }
 
@@ -234,7 +235,7 @@ function KokoroPanel() {
     try {
       const r = await generateKokoro({ text, voice, speed })
       if (r.audio_base64) setAudioB64(r.audio_base64)
-    } catch (e: any) { setError(e.message) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }
 
@@ -283,7 +284,7 @@ function RembgPanel() {
       const r = await removeBg(form)
       if (r.image_base64) setResult(`data:image/png;base64,${r.image_base64}`)
       else throw new Error(r.detail ?? 'No result')
-    } catch (e: any) { setError(e.message) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }
 
@@ -298,7 +299,7 @@ function RembgPanel() {
         {loading ? 'Removing background…' : 'Remove Background'}
       </button>
       {error && <div style={{ color: '#ef4444', fontSize: 12 }}>{error}</div>}
-      {result && (
+      {!!result && (
         <>
           <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Result (transparent PNG):</div>
           <img src={result} alt="result" style={{ maxWidth: '100%', borderRadius: 8, background: 'repeating-conic-gradient(#555 0% 25%, #333 0% 50%) 0 0 / 16px 16px' }} />
@@ -337,7 +338,7 @@ function SadTalkerPanel() {
         if (job.status === 'done') { setVideoUrl(apiUrl(`/api/tools/jobs/${jobId}/file`)); break }
         if (job.status === 'error') throw new Error(job.error || 'SadTalker failed')
       }
-    } catch (e: any) { setError(e.message) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false); setStatus('') }
   }
 
@@ -367,7 +368,7 @@ function SadTalkerPanel() {
 
 function SearXNGPanel() {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<any[]>([])
+  const [results, setResults] = useState<SearXResult['results']>([])
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -379,7 +380,7 @@ function SearXNGPanel() {
       const r = await searchSearx(query)
       setResults(r.results)
       setSuggestions(r.suggestions)
-    } catch (e: any) { setError(e.message) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }
 
@@ -409,7 +410,7 @@ function SearXNGPanel() {
 }
 
 function QdrantPanel() {
-  const [collections, setCollections] = useState<any[]>([])
+  const [collections, setCollections] = useState<{ name: string }[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -418,7 +419,7 @@ function QdrantPanel() {
     try {
       const r = await listQdrant()
       setCollections(r.collections ?? [])
-    } catch (e: any) { setError(e.message) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }
 
@@ -444,7 +445,7 @@ function Florence2Panel() {
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState('')
   const [task, setTask] = useState('caption')
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<unknown>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const TASKS = ['caption', 'detailed_caption', 'more_detailed_caption', 'ocr', 'detect']
@@ -460,7 +461,7 @@ function Florence2Panel() {
       const data = await r.json()
       if (!r.ok) throw new Error(data.detail)
       setResult(data.result)
-    } catch (e: any) { setError(e.message) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }
 
@@ -480,7 +481,7 @@ function Florence2Panel() {
         {loading ? 'Running Florence-2…' : 'Analyze Image'}
       </button>
       {error && <div style={{ color: '#ef4444', fontSize: 12 }}>{error}</div>}
-      {result && (
+      {!!result && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, fontSize: 12, color: 'var(--text)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
           {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
         </div>
@@ -521,7 +522,7 @@ function ChatterboxPanel() {
         if (job.status === 'done') { setAudioUrl(apiUrl(`/api/tools/jobs/${jobId}/file`)); break }
         if (job.status === 'error') throw new Error(job.error || 'Chatterbox failed')
       }
-    } catch (e: any) { setError(e.message) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false); setStatus('') }
   }
 
@@ -572,7 +573,7 @@ function ScraplingPanel() {
       const r = await scrapeFetch({ url, selector, fetcher, output })
       setResults(r.results)
       setCount(r.count)
-    } catch (e: any) { setError(e.message) }
+    } catch (e: unknown) { setError(e instanceof Error ? e.message : String(e)) }
     finally { setLoading(false) }
   }
 
@@ -683,8 +684,8 @@ function ActionSection({ tool }: { tool: Tool & { local_html?: boolean } }) {
         if (chunk.includes('✓ Done')) setExitOk(true)
         else if (chunk.includes('✗ Failed')) setExitOk(false)
       }
-    } catch (e: any) {
-      setLog(l => l + `\nError: ${e.message}\n`)
+    } catch (e: unknown) {
+      setLog(l => l + `\nError: ${e instanceof Error ? e.message : String(e)}\n`)
     }
     setRunning(false)
   }
@@ -786,7 +787,7 @@ const TOOL_PANELS: Record<string, (tool: Tool) => React.ReactNode> = {
 // ── Hardware profile card ─────────────────────────────────────────────────────
 
 function HardwareCard() {
-  const [hw, setHw] = useState<any>(null)
+  const [hw, setHw] = useState<HardwareProfile | null>(null)
   const [modelsOpen, setModelsOpen] = useState(false)
   const [copying, setCopying] = useState<string | null>(null)
 
@@ -794,7 +795,7 @@ function HardwareCard() {
     let active = true
     fetch('/api/system/hardware').then(async r => {
       if (!r.ok) throw new Error('Hardware information unavailable')
-      const data = await r.json()
+      const data: HardwareProfile = await r.json()
       if (typeof data?.cpu?.name !== 'string') throw new Error('Invalid hardware response')
       return data
     }).then(data => { if (active) setHw(data) }).catch(() => {})
@@ -875,7 +876,7 @@ function HardwareCard() {
 
       {modelsOpen && hw.recommended_models && (
         <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 5 }}>
-          {hw.recommended_models.map((m: any) => (
+          {hw.recommended_models.map(m => (
             <div key={m.name} style={{ background: 'var(--surface)', borderRadius: 8, padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -944,8 +945,8 @@ function GpuLoadsCard() {
       const d = await r.json()
       if (!r.ok) throw new Error(d.detail || `HTTP ${r.status}`)
       await refresh()
-    } catch (e: any) {
-      setSdError(e.message ?? String(e))
+    } catch (e: unknown) {
+      setSdError(e instanceof Error ? e.message : String(e))
     } finally {
       setSdBusy(false)
     }
@@ -1020,7 +1021,7 @@ function GpuLoadsCard() {
 
 // ── Tool card ─────────────────────────────────────────────────────────────────
 
-function ToolCard({ tool, selected, onClick }: { tool: Tool & { vram_gb?: number; local_html?: boolean }; selected: boolean; onClick: () => void }) {
+function ToolCard({ tool, selected, onClick }: { tool: Tool; selected: boolean; onClick: () => void }) {
   const cat = CATEGORY_META[tool.category] ?? CATEGORY_META['image']
   const { Icon } = cat
   const statusColor = STATUS_COLORS[tool.status] ?? '#9ca3af'
@@ -1070,7 +1071,7 @@ function ToolCard({ tool, selected, onClick }: { tool: Tool & { vram_gb?: number
       <div style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
         {tool.gpu && <span title="Needs an NVIDIA GPU" style={{ fontSize: 10, color: '#76b900', background: '#76b90018', borderRadius: 4, padding: '2px 6px', fontWeight: 600 }}>NVIDIA GPU</span>}
         {tool.port && <span style={{ fontSize: 10, color: 'var(--text-muted)', background: 'var(--surface)', borderRadius: 4, padding: '2px 6px' }}>:{tool.port}</span>}
-        {(tool as any).vram_gb && <span style={{ fontSize: 10, color: '#a78bfa', background: '#a78bfa18', borderRadius: 4, padding: '2px 6px' }}>{(tool as any).vram_gb}GB VRAM</span>}
+        {tool.vram_gb && <span style={{ fontSize: 10, color: '#a78bfa', background: '#a78bfa18', borderRadius: 4, padding: '2px 6px' }}>{tool.vram_gb}GB VRAM</span>}
         {hasPanel && <span style={{ fontSize: 10, color: cat.color, background: `${cat.color}18`, borderRadius: 4, padding: '2px 6px' }}>interactive</span>}
       </div>
     </div>
@@ -1097,7 +1098,9 @@ export function ToolLibrary() {
 
   // Auto-open a tool if navigated here with { state: { openTool: 'id' } }
   useEffect(() => {
-    const openToolId = (location.state as any)?.openTool
+    const state: unknown = location.state
+    const openToolId = state !== null && typeof state === 'object' && 'openTool' in state
+      && typeof state.openTool === 'string' ? state.openTool : undefined
     if (openToolId && tools.length > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelected(openToolId)

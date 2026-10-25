@@ -39,7 +39,4 @@ jobs:
       # it merges — deploy-demo.yml deploys on every push to main with no other gate.
       - run: npm run build:demo
       - run: npm test
-      # Fails only on a regression past the tracked baseline (frontend/.eslint-baseline),
-      # not on the pre-existing baseline itself — see that script's own comment and
-      # CLAUDE.md. A tag release can no longer succeed while this is silently red.
-      - run: node scripts/check-lint-baseline.mjs
+      - run: npm run lint

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { LiveVoiceMonitor, makeLiveGraph, type ActiveEffect } from './LiveVoiceMonitor'
+import { LiveVoiceMonitor } from './LiveVoiceMonitor'
+import { makeLiveGraph, type ActiveEffect } from './liveAudioGraph'
 
 interface EffectParam {
   name: string; label: string; type: 'range' | 'select'

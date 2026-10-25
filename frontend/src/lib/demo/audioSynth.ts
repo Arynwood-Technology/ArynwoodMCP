@@ -3,7 +3,7 @@
 // real input audio to process, unlike Effects Rack/Voice Conversion/Stem Separator
 // (audioDsp.ts), so there's nothing honest to run real DSP on. This extends the
 // `impulse()`-style "procedurally fill a buffer" precedent already in
-// LiveVoiceMonitor.tsx, but with real pitched content (a seeded scale-walk melody)
+// liveAudioGraph.ts, but with real pitched content (a seeded scale-walk melody)
 // instead of noise, so the result is genuinely synthesized each time — not one static
 // file played back regardless of what was asked for.
 const SCALE_MINOR = [0, 2, 3, 5, 7, 8, 10]

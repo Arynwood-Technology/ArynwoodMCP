@@ -364,3 +364,6 @@ version the AppImage bundles) before it was fixed, and checked again after. All 
 is `scripts/check_webkit_media.py` against the *extracted AppImage's own* GStreamer, with the previous build as a control
 (it prints `GStreamer element autoaudiosink not found` and times out — the grey window). Still not automated: capture from
 a physical microphone in the packaged window, and a self-healing reload if the renderer ever dies again.
+
+> Current lint policy (2026-10-25): CI requires zero ESLint errors and warnings.
+> The counts above describe this historical validation; the aggregate-count allowance has been removed.
