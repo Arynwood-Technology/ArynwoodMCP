@@ -72,7 +72,8 @@ There is no bug bounty program at this time.
   page's pictures (a Grove's logo, photos in Messages, image files) and website previews. A
   preview's own fonts and module scripts arrive with `Origin: null` (it is sandboxed); that is
   accepted for preview GETs only.
-- **Deploys** require a known SSH host key, and keep uploads inside the target folder.
+- **Deploys** require a known SSH host key (from `~/.ssh/known_hosts`; an unknown one is refused, never
+  added), offer only AES-CTR/AES-GCM ciphers and SHA-2 MACs, and keep uploads inside the target folder.
 - **Files.** Project reads stay inside the project. Developer codebase tools (opt-in, source
   checkout only) skip credential files and bound their subprocesses.
 - **Gateway** (experimental, off by default): over IRC it answers only the owner's services

@@ -58,6 +58,10 @@ update does not imply that every feature below was retested.
 - **Publish (SFTP) target passwords are stored unencrypted** in the local database
   (`arynwood.db`); the UI masks them but the file does not. Prefer an SSH key for a target, and
   treat the database file, and any backup of it, as sensitive.
+- **Publish connects only to SSH servers with modern algorithms**: AES-CTR or AES-GCM, and SHA-2
+  MACs, which OpenSSH has offered since 5.9 (2011). An older server fails with
+  "Incompatible ssh server (no acceptable ciphers)" (or "macs"), and there is no setting to allow its
+  CBC, 3DES, SHA-1 or MD5 algorithms.
 
 ## Reporting a problem
 

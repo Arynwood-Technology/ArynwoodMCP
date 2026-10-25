@@ -366,7 +366,10 @@ Publish generated content to Facebook, Instagram, YouTube, and LinkedIn.
 
 SSH/SFTP file manager for deploying content to remote servers.
 
-- Register deployment targets with host, port, user, key or password
+- Register deployment targets with host, port, user, key or password. The server's host key must
+  already be in `~/.ssh/known_hosts` (connect once with `ssh` to add it); an unknown key is refused.
+  Connections use only AES-CTR or AES-GCM and SHA-2 MACs, so a server older than about 2012 that
+  offers nothing newer than CBC ciphers or SHA-1 MACs can't be reached
 - Browse remote directory trees
 - Upload local files or export HTML pages directly
 - One-click publish for static sites
