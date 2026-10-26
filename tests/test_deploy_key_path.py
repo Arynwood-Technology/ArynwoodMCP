@@ -7,6 +7,11 @@ from backend.routers import deploy
 class _FakeSSH:
     def __init__(self):
         self.connect_kwargs = None
+        self._system_host_keys = _EmptyHostKeys()
+        self._host_keys = _EmptyHostKeys()
+
+    def close(self):
+        pass
 
     def load_system_host_keys(self):
         pass
@@ -19,6 +24,11 @@ class _FakeSSH:
 
     def open_sftp(self):
         return object()
+
+
+class _EmptyHostKeys:
+    def lookup(self, _hostname):
+        return None
 
 
 def _connect(monkeypatch, target):
