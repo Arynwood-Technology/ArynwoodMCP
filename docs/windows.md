@@ -1,19 +1,19 @@
 # Windows desktop (alpha)
 
-Version 0.4.5 was the first release with a Windows x64 build, and 0.5.3 is the current one: a per-user installer
+Version 0.4.5 was the first release with a Windows x64 build, and 0.5.4 is the current one: a per-user installer
 for a Tauri/WebView2 app with a bundled Python backend. It is an alpha. Read the
 [limitations](#windows-alpha-limitations) before relying on it.
 
 ## Install the published release
 
-1. From the [v0.5.3 release](https://github.com/Arynwood-Technology/ArynwoodMCP/releases/tag/v0.5.3),
-   download `arynwood-mcp_0.5.3_x64-setup.exe` and `SHA256SUMS-windows.txt` into the
+1. From the [v0.5.4 release](https://github.com/Arynwood-Technology/ArynwoodMCP/releases/tag/v0.5.4),
+   download `arynwood-mcp_0.5.4_x64-setup.exe` and `SHA256SUMS-windows.txt` into the
    same folder.
 2. Check the installer in PowerShell, from that folder:
 
    ```powershell
    $expected = (Select-String -Path .\SHA256SUMS-windows.txt -Pattern 'x64-setup.exe').Line.Split(' ')[0]
-   $actual = (Get-FileHash .\arynwood-mcp_0.5.3_x64-setup.exe -Algorithm SHA256).Hash
+   $actual = (Get-FileHash .\arynwood-mcp_0.5.4_x64-setup.exe -Algorithm SHA256).Hash
    if ($actual -eq $expected) { 'OK: checksum matches' } else { 'MISMATCH: do not run this file' }
    ```
 
@@ -21,7 +21,7 @@ for a Tauri/WebView2 app with a bundled Python backend. It is an alpha. Read the
    [GitHub CLI](https://cli.github.com/):
    `gh attestation verify .\arynwood-mcp_<version>_x64-setup.exe -R Arynwood-Technology/ArynwoodMCP`
 
-   Releases signed with the release key (from the next release on) also carry `SHA256SUMS` and `SHA256SUMS.asc`;
+   Releases signed with the release key (starting with 0.5.4) also carry `SHA256SUMS` and `SHA256SUMS.asc`;
    [release signing](release-signing.md#verifying-a-download) has the PowerShell steps.
 
 3. Run the installer. It installs for your user account only. If WebView2 is
@@ -30,8 +30,7 @@ for a Tauri/WebView2 app with a bundled Python backend. It is an alpha. Read the
    "Windows protected your PC". Once the checksum matches, choose **More info**,
    then **Run anyway**.
 4. Install [Ollama for Windows](https://ollama.com/download/windows) separately,
-   then pull the models the personas use (README [Quick Start](../README.md#quick-start),
-   step 3) from PowerShell. Or point the app at an existing Ollama/API server
+   then pull the models the personas use (the [source setup guide](installation.md#running-from-source-current-always-available)) from PowerShell. Or point the app at an existing Ollama/API server
    on the Servers page.
 
 To upgrade, run the newer installer. To uninstall, use **Settings → Apps →
