@@ -1,13 +1,13 @@
 # Installation
 
-See [`docs/supported-platforms.md`](supported-platforms.md) first. Version 0.5.3
+See [`docs/supported-platforms.md`](supported-platforms.md) first. Version 0.5.4
 publishes Linux x86_64 packages (below) and a Windows x64 alpha installer, which has
 its own guide: [Windows setup](windows.md). GPU features need their separate dependencies.
 
 ## Packaged build (AppImage / .deb)
 
 > Download published builds from [GitHub Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases).
-> These instructions use version 0.5.3.
+> These instructions use version 0.5.4.
 
 ```bash
 # AppImage — download the .AppImage asset from the release, then:
@@ -18,8 +18,8 @@ chmod +x arynwood-mcp_*.AppImage
 sudo apt install ./arynwood-mcp_*.deb
 ```
 
-(Version 0.5.3 filenames: `arynwood-mcp_0.5.3_amd64.AppImage` and
-`arynwood-mcp_0.5.3_amd64.deb` — no spaces. The globs above tolerate version changes;
+(Version 0.5.4 filenames: `arynwood-mcp_0.5.4_amd64.AppImage` and
+`arynwood-mcp_0.5.4_amd64.deb` — no spaces. The globs above tolerate version changes;
 keep only the package you intend to run in the current directory.)
 
 Both bundle the frontend and a packaged backend — no separate `venv`/`npm install`
@@ -118,7 +118,7 @@ The packages are not code-signed. An attestation proves where a file was built; 
 change what your system shows when you open it.
 
 Releases signed with the project's release key also carry `SHA256SUMS` and its signature,
-`SHA256SUMS.asc` (none yet: signing starts with the next release). For those, `scripts/verify-release.sh`
+`SHA256SUMS.asc` (starting with 0.5.4). For those, `scripts/verify-release.sh`
 checks the signature and the package in one step; see
 [release signing](release-signing.md#verifying-a-download). The signature covers the checksum list, not the
 packages themselves, so it doesn't change what your system shows either.

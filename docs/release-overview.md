@@ -1,8 +1,13 @@
 # Release overview
 
-## Latest release (0.5.3)
+## Latest release (0.5.4)
 
-0.5.3 is a security release. Pillow, which opens every picture, moves to 13.0.0 (12.3.0 had
+0.5.4 adds owner-signed checksums and verified build attestations for all packages,
+PCM microphone recording and first-click WebAudio audition fixes, stricter desktop
+browser policy and API protections, hash-locked CI installs and IRC property fuzzing.
+Official artifact verification and signature checks passed before publication.
+
+Included from 0.5.3: Pillow, which opens every picture, moves to 13.0.0 (12.3.0 had
 35 published advisories); a picture uploaded for a social post is checked and saved again as a
 real picture, so a web page can no longer pass as one; and releases build on Node.js 22.23.4.
 A source checkout now needs Python 3.11 or newer. 0.5.2 brought the Community page up to Arynwood Grove 0.7.1: a side menu, Messages between
@@ -16,7 +21,7 @@ contrast check of the whole app, and updated dependencies for security. Since 0.
 tasks, lists, notes, board, discussion and members, from the Grove on this computer or one on
 a server. Anyone on 0.4.8 or later sees an update notice; earlier versions need one manual
 install. This remains a single-owner desktop alpha with documented
-[security limits](../SECURITY.md). See [docs/releases/0.5.3.md](releases/0.5.3.md) and
+[security limits](../SECURITY.md). See [docs/releases/0.5.4.md](releases/0.5.4.md) and
 [docs/community.md](community.md).
 
 **Experimental: headless gateway.** A remote control for your own workspace: reach Arynwood
@@ -37,7 +42,7 @@ they are not end-to-end encrypted.
 
 ## Download and demo context
 
-**The packaged alpha** (v0.5.3: AppImage and `.deb` for Linux x86_64, and a Windows x64 installer) covers the core workspace. LoRA training, script-based
+**The packaged alpha** (v0.5.4: AppImage and `.deb` for Linux x86_64, and a Windows x64 installer) covers the core workspace. LoRA training, script-based
 GPU tools and the project file browser need a source checkout. Models and supporting services are installed
 separately. Requirements and limits: [arynwood.com/mcp](https://arynwood.com/mcp/).
 
