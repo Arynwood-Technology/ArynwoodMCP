@@ -73,7 +73,9 @@ There is no bug bounty program at this time.
   preview's own fonts and module scripts arrive with `Origin: null` (it is sandboxed); that is
   accepted for preview GETs only.
 - **Deploys** require a known SSH host key (from `~/.ssh/known_hosts`; an unknown one is refused, never
-  added), offer only AES-CTR/AES-GCM ciphers and SHA-2 MACs, and keep uploads inside the target folder.
+  added). Before sending credentials, the client rejects trusted RSA host keys below 2048 bits,
+  ECDSA keys below 256 bits, and unrecognized host-key types. It offers only AES-CTR/AES-GCM
+  ciphers and SHA-2 MACs, and keeps uploads inside the target folder.
 - **Files.** Project reads stay inside the project. Developer codebase tools (opt-in, source
   checkout only) skip credential files and bound their subprocesses.
 - **Gateway** (experimental, off by default): over IRC it answers only the owner's services

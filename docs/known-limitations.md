@@ -61,7 +61,8 @@ update does not imply that every feature below was retested.
 - **Publish connects only to SSH servers with modern algorithms**: AES-CTR or AES-GCM, and SHA-2
   MACs, which OpenSSH has offered since 5.9 (2011). An older server fails with
   "Incompatible ssh server (no acceptable ciphers)" (or "macs"), and there is no setting to allow its
-  CBC, 3DES, SHA-1 or MD5 algorithms.
+  CBC, 3DES, SHA-1 or MD5 algorithms. Trusted RSA host keys must be at least 2048 bits and ECDSA
+  host keys at least 256 bits; other host-key types require an explicit review before they are accepted.
 
 ## Reporting a problem
 

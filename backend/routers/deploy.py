@@ -29,6 +29,40 @@ _executor = ThreadPoolExecutor(max_workers=4)
 # (tests/test_deploy_security.py checks that on every upgrade).
 SSH_CIPHERS = ("aes128-ctr", "aes192-ctr", "aes256-ctr", "aes128-gcm@openssh.com", "aes256-gcm@openssh.com")
 SSH_MACS = ("hmac-sha2-256", "hmac-sha2-512", "hmac-sha2-256-etm@openssh.com", "hmac-sha2-512-etm@openssh.com")
+SSH_RSA_MIN_BITS = 2048
+SSH_ECDSA_MIN_BITS = 256
+
+
+def _validate_trusted_host_keys(ssh: paramiko.SSHClient, host_key_alias: str) -> None:
+    """Reject weak or unreviewed trusted host keys before authenticating to the host."""
+    keyrings = (ssh._system_host_keys, ssh._host_keys)
+    trusted = []
+    for keyring in keyrings:
+        keys = keyring.lookup(host_key_alias)
+        if keys:
+            trusted.extend(keys.values())
+
+    for key in trusted:
+        key_type = key.get_name()
+        bits = key.get_bits()
+        if key_type == "ssh-rsa":
+            acceptable = bits >= SSH_RSA_MIN_BITS
+        elif key_type == "ssh-ed25519":
+            acceptable = bits >= 256
+        elif key_type in {
+            "ecdsa-sha2-nistp256",
+            "ecdsa-sha2-nistp384",
+            "ecdsa-sha2-nistp521",
+        }:
+            acceptable = bits >= SSH_ECDSA_MIN_BITS
+        else:
+            # Unknown/future key types require an explicit security review.
+            acceptable = False
+        if not acceptable:
+            raise paramiko.SSHException(
+                f"Refusing SSH host key {key_type} with {bits} bits; "
+                "the trusted host key does not meet the minimum strength policy"
+            )
 
 
 def _disabled_algorithms() -> dict:
@@ -56,6 +90,8 @@ def _open_sftp(target: dict) -> tuple[paramiko.SSHClient, paramiko.SFTPClient]:
         "timeout": 12,
         "disabled_algorithms": _disabled_algorithms(),
     }
+    port = kwargs["port"]
+    host_key_alias = host if port == 22 else f"[{host}]:{port}"
     key_path = os.path.expanduser(target.get("ssh_key_path") or "")
     if key_path and os.path.exists(key_path):
         kwargs["key_filename"] = key_path
@@ -66,6 +102,7 @@ def _open_sftp(target: dict) -> tuple[paramiko.SSHClient, paramiko.SFTPClient]:
         kwargs["look_for_keys"] = True
 
     try:
+        _validate_trusted_host_keys(ssh, host_key_alias)
         ssh.connect(**kwargs)
         return ssh, ssh.open_sftp()
     except Exception:
