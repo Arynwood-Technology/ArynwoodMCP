@@ -42,7 +42,8 @@ them as a summary, not a precise record.
   avoiding a WebKitGTK/GStreamer MediaRecorder failure that produced empty recordings. Stop
   opens the take for review, trimming, saving, or sending to Music Lab.
 - **Linux WebAudio playback.** Bundle GStreamer's `interleave` plugin, needed by Music Lab's
-  audition path. Media checks now cover WebAudio and synthetic microphone capture.
+  audition path. Reload preloaded audition media when attaching WebAudio so the
+  first Play advances. Media checks cover WebAudio and synthetic microphone capture.
 
 ### Security
 
