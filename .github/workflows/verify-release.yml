@@ -93,7 +93,7 @@ jobs:
           mkdir -p typelib-packages typelibs
           (cd typelib-packages && apt-get download gir1.2-webkit2-4.1 gir1.2-javascriptcoregtk-4.1 gir1.2-soup-3.0)
           for package in typelib-packages/*.deb; do dpkg-deb -x "$package" typelibs; done
-          python3 -m pip install --require-hashes -r requirements-ci.lock
+          python3 -m pip install --require-hashes -r requirements-verify.lock
       - name: Extract and inspect the official AppImage
         shell: bash
         run: |

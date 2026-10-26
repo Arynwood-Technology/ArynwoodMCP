@@ -4,8 +4,10 @@ The open alerts were inspected against the public main branch. Scores change onl
 after another analysis; no alert was dismissed to improve the score.
 
 - **Pinned dependencies (#34, #142, #144, #145):** Python CI/package installs now
-  use `--require-hashes` and the exact, transitive, cross-platform
-  `requirements-ci.lock`. Its initial versions match the tested repository venv.
+  use `--require-hashes` and exact, transitive locks. Application/test builds
+  use the cross-platform `requirements-ci.lock`; archive verification uses the
+  smaller `requirements-verify.lock` so Ubuntu 22.04's GI Python 3.10 does not
+  try to install application dependencies that require Python 3.11. Its initial versions match the tested repository venv.
   Regenerate with `uv pip compile requirements-ci.in --universal --python-version
   3.11 --generate-hashes --output-file requirements-ci.lock`, review the diff,
   then rerun the full suites and package checks. `uv` is local tooling; CI uses pip.
