@@ -28,9 +28,10 @@ property fuzzing. [Release notes](docs/releases/0.5.4.md) · [Verification recor
 
 Main requires pull requests and passing backend, frontend, API-reference and
 Windows checks. CodeQL and OpenSSF Scorecard run alongside the test workflows.
-The best-practices badge is in progress; some upstream dependency advisories and
-maintenance findings remain. These checks describe evidence and work still to do,
-not a security certification. [Scorecard follow-up](docs/scorecard-status.md).
+Arynwood MCP has earned the OpenSSF Best Practices Passing badge through its public
+project self-assessment. The badge reports evidence against published criteria; it
+is not a security certification. Dependency advisories and maintenance findings
+are tracked separately in the [Scorecard follow-up](docs/scorecard-status.md).
 
 ## What you can do
 
