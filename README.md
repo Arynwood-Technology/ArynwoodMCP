@@ -18,11 +18,10 @@ calendars, files and community spaces.
 
 Arynwood MCP is an **open-source desktop alpha**, for one owner on one machine.
 Linux x86_64 AppImage and `.deb` packages and a Windows x64 installer are available.
-**0.5.3 is the current published release; 0.5.4 is in release preparation.**
-Check [Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases) for
-publication status; a draft or a successful test run is not a published update.
+**0.5.4 is published, with signed checksums and verified build provenance.**
+Download it from [Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases/tag/v0.5.4).
 
-The 0.5.4 candidate brings security fixes, stricter desktop browser policy,
+Version 0.5.4 brings security fixes, stricter desktop browser policy,
 PCM microphone recording, a first-play WebAudio audition fix and updated desktop
 dependencies. It also adds hashed Python build dependencies and bounded IRC
 property fuzzing. [Release notes](docs/releases/0.5.4.md) · [Verification record](docs/releases/0.5.4-readiness.md).
@@ -69,9 +68,9 @@ a GPU is optional for basic chat, while generation tools have their own requirem
 [Platform requirements](docs/supported-platforms.md) · [Installation and first run](docs/installation.md).
 
 **Verify downloads before running them.** Published 0.5.3 has build checksums but
-no provenance attestations or release-key signature. The 0.5.4 release process adds
-per-package GitHub attestations and requires the owner to sign the combined
-`SHA256SUMS` before publication. Follow the instructions for the version you download.
+no provenance attestations or release-key signature. Release 0.5.4 includes
+per-package GitHub attestations and owner-signed `SHA256SUMS` with its detached
+`SHA256SUMS.asc` signature. Follow the instructions for the version you download.
 [Download verification](docs/release-signing.md#verifying-a-download).
 
 ## Run from source

@@ -10,8 +10,7 @@ A checksum proves a file arrived intact. The signature proves the checksums came
 signature covers every package. The build attestations (from 0.5.4) are a separate check: they prove which
 workflow built a file from which tag.
 
-**Status:** the release key was created and published on 2026-10-25 (below). No release has been signed with
-it yet; signing starts with the next release. Releases up to and including 0.5.3 are not signed and won't be
+**Status:** the release key was created and published on 2026-10-25 (below). **0.5.4 is the first signed release**, published on 2026-10-26 UTC. Releases up to and including 0.5.3 are not signed and won't be
 re-signed.
 
 | File | Who runs it | What it does |
