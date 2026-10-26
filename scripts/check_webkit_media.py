@@ -90,9 +90,11 @@ async function recorder() {
 async function mic() {
   const out = { test: 'mic' };
   try {
+    // Match AudioRecorder: resume the graph before the asynchronous device request.
+    const ctx = new AudioContext(); await ctx.resume();
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     out.device = stream.getAudioTracks()[0] ? stream.getAudioTracks()[0].label : '';
-    const ctx = new AudioContext(), src = ctx.createMediaStreamSource(stream);
+    const src = ctx.createMediaStreamSource(stream);
     const proc = ctx.createScriptProcessor(4096, Math.max(1, src.channelCount || 1), 1);
     let frames = 0, peak = 0;
     proc.onaudioprocess = e => {
