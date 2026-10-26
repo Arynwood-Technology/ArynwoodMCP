@@ -62,6 +62,11 @@ them as a summary, not a precise record.
 
 ### Desktop dependencies
 
+- Update `rand` to 0.8.6 (RUSTSEC-2026-0097), `serde_with` to 3.21.0
+  (GHSA-7gcf-g7xr-8hxj), and `tokio` to 1.53.3 (RUSTSEC-2026-0386).
+  The upstream Linux `glib` advisory and unmaintained transitive crates remain; see
+  `docs/scorecard-status.md`.
+
 - Pin Rust Tauri and npm API together at 2.12.4; source builds need Rust 1.90 or newer.
 - Update FastAPI, uvicorn, python-dotenv, ollama and ddgs. Dependency updates are not presented
   as CVE fixes without verified advisory evidence.
