@@ -167,6 +167,9 @@ export function EffectsRack({ sidecarReady, externalFile, onExternalFileConsumed
       const ctx = new AudioContext()
       previewCtxRef.current = ctx
       previewSourceRef.current = ctx.createMediaElementSource(audio)
+      // WebKit can preload the file through its ordinary media pipeline before this
+      // node exists. Reload through the WebAudio route so the first Play advances.
+      audio.load()
       rebuildPreviewGraph()
     }
     const ctx = previewCtxRef.current

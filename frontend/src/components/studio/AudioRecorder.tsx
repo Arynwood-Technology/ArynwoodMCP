@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { audioBufferToWavBlob, blobToBase64, sliceAudioBuffer } from '../../lib/wav'
 import { describeMicError, nextDeviceId, openMicStream, usableInputs } from '../../lib/mic'
+import { startPcmCapture, takeToAudioBuffer, type PcmCapture } from '../../lib/pcmCapture'
 
 type Phase = 'idle' | 'recording' | 'review'
 
@@ -49,8 +50,8 @@ export function AudioRecorder({ onSendToEffects, onSendToVoice, onSendToJam }: A
   const [saving, setSaving] = useState(false)
 
   const streamRef = useRef<MediaStream | null>(null)
-  const recorderRef = useRef<MediaRecorder | null>(null)
-  const chunksRef = useRef<Blob[]>([])
+  const captureRef = useRef<PcmCapture | null>(null)
+  const recordStartRef = useRef(0)
   const audioCtxRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const levelRafRef = useRef<number | null>(null)
@@ -73,6 +74,7 @@ export function AudioRecorder({ onSendToEffects, onSendToVoice, onSendToJam }: A
   useEffect(() => {
     refreshDevices()
     return () => {
+      captureRef.current?.stop()
       stopStream()
       audioCtxRef.current?.close()
       if (levelRafRef.current) cancelAnimationFrame(levelRafRef.current)
@@ -103,11 +105,14 @@ export function AudioRecorder({ onSendToEffects, onSendToVoice, onSendToJam }: A
   async function startRecording() {
     setError('')
     try {
+      // Create the context before the first await, while this is still the click: one created later can start
+      // suspended, and a suspended graph captures nothing.
+      const audioContext = ctx()
+      await audioContext.resume()
       const stream = await openMicStream(deviceId)
       streamRef.current = stream
       await refreshDevices()
 
-      const audioContext = ctx()
       const source = audioContext.createMediaStreamSource(stream)
       const analyser = audioContext.createAnalyser()
       analyser.fftSize = 256
@@ -115,49 +120,44 @@ export function AudioRecorder({ onSendToEffects, onSendToVoice, onSendToJam }: A
       analyserRef.current = analyser
       tickLevel()
 
-      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : ''
-      const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream)
-      chunksRef.current = []
-      recorder.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data) }
-      recorder.onstop = handleRecordingStop
-      recorder.start()
-      recorderRef.current = recorder
+      // Samples come off the same graph as the level meter, not through MediaRecorder (see lib/pcmCapture).
+      captureRef.current = startPcmCapture(audioContext, source)
+      recordStartRef.current = Date.now()
 
       setElapsed(0)
       timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
       setPhase('recording')
     } catch (e: unknown) {
+      captureRef.current?.stop()
+      captureRef.current = null
+      stopStream()
+      if (levelRafRef.current) cancelAnimationFrame(levelRafRef.current)
+      setLevel(0)
       setError(describeMicError(e))
     }
   }
 
   function stopRecording() {
-    recorderRef.current?.stop()
+    const take = captureRef.current?.stop()
+    captureRef.current = null
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null }
     if (levelRafRef.current) { cancelAnimationFrame(levelRafRef.current); levelRafRef.current = null }
     setLevel(0)
-    // Don't stop the stream here — MediaRecorder.stop() is async and needs the
-    // stream alive to flush its final chunk and fire `onstop`. Killing the mic
-    // tracks synchronously right after calling stop() can make `onstop` never
-    // fire at all (seen on Chromium), which is what made Stop Recording hang.
-    // The stream gets released in handleRecordingStop once stop has actually
-    // completed.
-  }
-
-  async function handleRecordingStop() {
     stopStream()
-    const blob = new Blob(chunksRef.current, { type: recorderRef.current?.mimeType || 'audio/webm' })
-    try {
-      const arrayBuffer = await blob.arrayBuffer()
-      const decoded = await ctx().decodeAudioData(arrayBuffer)
-      setBuffer(decoded)
-      setTrimStart(0)
-      setTrimEnd(decoded.duration)
-      setPhase('review')
-    } catch (e: unknown) {
-      setError('Could not decode recording: ' + (e instanceof Error ? e.message : String(e)))
+
+    if (!take || take.frames === 0) {
+      // A click-and-immediately-stop is the only empty take worth ignoring quietly.
+      if (Date.now() - recordStartRef.current >= 400) {
+        setError(`No audio was captured. Check that the right microphone is selected and not muted. [capture callbacks: ${take?.callbacks ?? 0}]`)
+      }
       setPhase('idle')
+      return
     }
+    const recorded = takeToAudioBuffer(ctx(), take)
+    setBuffer(recorded)
+    setTrimStart(0)
+    setTrimEnd(recorded.duration)
+    setPhase('review')
   }
 
   function discard() {

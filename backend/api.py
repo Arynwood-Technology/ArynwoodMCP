@@ -128,7 +128,7 @@ async def lifespan(app: FastAPI):
 
 # No /docs or /redoc: FastAPI serves both from a CDN, which would run third-party code on the backend's
 # trusted origin. /openapi.json stays, for any OpenAPI viewer you run yourself.
-app = FastAPI(title="Arynwood MCP", version="0.5.3", lifespan=lifespan, docs_url=None, redoc_url=None)
+app = FastAPI(title="Arynwood MCP", version="0.5.4", lifespan=lifespan, docs_url=None, redoc_url=None)
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 # No endpoint under /api/* set any Cache-Control header, which left every dynamic

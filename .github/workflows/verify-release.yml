@@ -93,7 +93,7 @@ jobs:
           mkdir -p typelib-packages typelibs
           (cd typelib-packages && apt-get download gir1.2-webkit2-4.1 gir1.2-javascriptcoregtk-4.1 gir1.2-soup-3.0)
           for package in typelib-packages/*.deb; do dpkg-deb -x "$package" typelibs; done
-          python3 -m pip install pyinstaller
+          python3 -m pip install --require-hashes -r requirements-ci.lock
       - name: Extract and inspect the official AppImage
         shell: bash
         run: |
@@ -127,11 +127,19 @@ jobs:
           import math, struct, wave
           with wave.open('media/a.wav', 'wb') as audio:
               audio.setparams((1, 2, 44100, 0, 'NONE', 'not compressed'))
-              audio.writeframes(b''.join(struct.pack('<h', int(8000 * math.sin(2 * math.pi * 440 * i / 44100))) for i in range(88200)))
+              audio.writeframes(b''.join(struct.pack('<h', int(8000 * math.sin(2 * math.pi * 440 * i / 44100))) for i in range(264600)))
           PY
-          pulseaudio --start
-          pactl load-module module-null-sink sink_name=release_test
-          pactl set-default-sink release_test
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/media-runtime"
+          export PULSE_RUNTIME_PATH="$XDG_RUNTIME_DIR/pulse"
+          export PULSE_STATE_PATH="$RUNNER_TEMP/media-pulse-state"
+          export PULSE_SERVER="unix:$XDG_RUNTIME_DIR/pulse-socket"
+          mkdir -p "$XDG_RUNTIME_DIR" "$PULSE_STATE_PATH"
+          chmod 700 "$XDG_RUNTIME_DIR"
+          pulseaudio -n --daemonize=yes --exit-idle-time=-1 --disable-shm=yes \
+            -L "module-native-protocol-unix socket=$XDG_RUNTIME_DIR/pulse-socket auth-anonymous=1" \
+            -L "module-null-sink sink_name=release_test" \
+            -L "module-sine-source source_name=release_mic frequency=440 rate=48000"
+          trap 'pactl exit' EXIT
           bundle="$GITHUB_WORKSPACE/extracted/squashfs-root"
           cd "$bundle/usr"
           xvfb-run -a env LD_LIBRARY_PATH="$bundle/usr/lib" \
@@ -140,8 +148,9 @@ jobs:
             GST_PLUGIN_PATH_1_0="$bundle/usr/lib/gstreamer-1.0" \
             GST_PLUGIN_SCANNER_1_0="$bundle/usr/lib/gstreamer1.0/gstreamer-1.0/gst-plugin-scanner" \
             GST_REGISTRY="$RUNNER_TEMP/media-registry.bin" GST_REGISTRY_REUSE_PLUGIN_SCANNER=no \
+            GST_PLUGIN_FEATURE_RANK=alsadeviceprovider:NONE,pipewiredeviceprovider:NONE,alsasrc:NONE,pipewiresrc:NONE \
             WEBKIT_DISABLE_DMABUF_RENDERER=1 python3 "$GITHUB_WORKSPACE/scripts/check_webkit_media.py" \
-            "$GITHUB_WORKSPACE/media" audio:a.wav audio:a.mp3 video:a.mp4 recorder
+            "$GITHUB_WORKSPACE/media" audio:a.wav audio:a.mp3 video:a.mp4 webaudio:a.wav recorder mic
       - name: Attach verified Windows installer to the draft release
         shell: bash
         run: |

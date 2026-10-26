@@ -9,6 +9,8 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+## [0.5.4] — 2026-10-25
+
 ### Changed
 
 - **Arynwood MCP is now open source, under the GNU AGPL-3.0-only.** Releases up to and including
@@ -33,6 +35,42 @@ them as a summary, not a precise record.
   `scripts/verify-release.sh` checks a download against both. The release key (fingerprint
   `C536 F3C4 689A 1734 920A  0E5B F1F8 0C83 C593 8FF0`) is in `docs/release-signing-key.asc`; signing starts with the
   next release. See `docs/release-signing.md`.
+
+### Fixed
+
+- **Microphone recording in the Linux desktop app.** Record raw samples through Web Audio,
+  avoiding a WebKitGTK/GStreamer MediaRecorder failure that produced empty recordings. Stop
+  opens the take for review, trimming, saving, or sending to Music Lab.
+- **Linux WebAudio playback.** Bundle GStreamer's `interleave` plugin, needed by Music Lab's
+  audition path. Reload preloaded audition media when attaching WebAudio so the
+  first Play advances. Media checks cover WebAudio and synthetic microphone capture.
+
+### Security
+
+- Music downloads accept only jamendo.com and its subdomains; lookalike domains are refused.
+- Community IRC treats unusual channel/nickname strings as ordinary names. NickServ passwords
+  are removed from browser local storage; enter yours again when needed.
+- Social sign-in completion messages must come from the popup opened by that page.
+- Backend responses protect against content-type guessing, referrer disclosure and unwanted
+  framing. WebSocket API keys are redacted from access and connection logs.
+- Unix database files and the default data folder are private to their owner. Studio/Music Lab
+  in-memory uploads stop at 512 MB; voice model imports stream with a 1 GB limit and plain names.
+- The desktop app blocks inline scripts and JavaScript eval, limits connections to its backend,
+  Tauri and GitHub update checks, and blocks embedded objects and outside form targets.
+- `/docs` and `/redoc` no longer load third-party scripts on the backend origin. The OpenAPI
+  description remains at `/openapi.json`; a generated API reference is in `docs/api/`.
+- Build actions are pinned to exact revisions and repository permissions default to read-only.
+
+### Desktop dependencies
+
+- Update `rand` to 0.8.6 (RUSTSEC-2026-0097), `serde_with` to 3.21.0
+  (GHSA-7gcf-g7xr-8hxj), and `tokio` to 1.53.3 (RUSTSEC-2026-0386).
+  The upstream Linux `glib` advisory and unmaintained transitive crates remain; see
+  `docs/scorecard-status.md`.
+
+- Pin Rust Tauri and npm API together at 2.12.4; source builds need Rust 1.90 or newer.
+- Update FastAPI, uvicorn, python-dotenv, ollama and ddgs. Dependency updates are not presented
+  as CVE fixes without verified advisory evidence.
 
 ## [0.5.3] — 2026-10-23
 

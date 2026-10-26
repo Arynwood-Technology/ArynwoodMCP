@@ -2,67 +2,81 @@
 
 <p align="center"><img src="frontend/src-tauri/icons/128x128@2x.png" width="128" height="128" alt="The Arynwood tree" /></p>
 
-A local-first personal AI and creative workspace for Linux and Windows desktops: chat with
-local Ollama models, knowledge search and memory over your own documents, a design canvas, and
-Model Context Protocol (MCP) tool integrations, including Kdenlive editing through Cutroom's MCP server.
+**A personal AI and creative workspace for your desktop.** Work with local models,
+your documents, a design canvas, audio and video tools, and supervised Model
+Context Protocol (MCP) integrations. Connect your own Arynwood Grove for shared
+calendars, files and community spaces.
 
-**Website:** [arynwood.com/mcp](https://arynwood.com/mcp/) (requirements, setup steps and FAQ)
+[Website](https://arynwood.com/mcp/) · [Downloads](https://github.com/Arynwood-Technology/ArynwoodMCP/releases/latest) · [Documentation](docs/README.md) · [Browser demo](https://arynwood-technology.github.io/ArynwoodMCP/)
 
 [![CI](https://github.com/Arynwood-Technology/ArynwoodMCP/actions/workflows/ci.yml/badge.svg)](https://github.com/Arynwood-Technology/ArynwoodMCP/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/Arynwood-Technology/ArynwoodMCP)](https://github.com/Arynwood-Technology/ArynwoodMCP/releases/latest)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/Arynwood-Technology/ArynwoodMCP/badge)](https://scorecard.dev/viewer/?uri=github.com/Arynwood-Technology/ArynwoodMCP)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15880/badge)](https://www.bestpractices.dev/projects/15880)
 
-Default model inference, memory and conversations stay on your hardware. Network features
-contact outside services: web search, URL learning, model/tool downloads, social integrations,
-publishing, deployment, IRC, and any remote model, image endpoint or MCP server you configure.
-This is a local-first default, not an enforced offline mode. Models and supporting services
-are installed separately. See [security boundaries](SECURITY.md).
+## Current standing
 
-**[Try the browser demo](https://arynwood-technology.github.io/ArynwoodMCP/)** — the real UI
-with scripted conversations and clearly marked demo data, without a backend or live AI.
+Arynwood MCP is an **open-source desktop alpha**, for one owner on one machine.
+Linux x86_64 AppImage and `.deb` packages and a Windows x64 installer are available.
+**0.5.3 is the current published release; 0.5.4 is in release preparation.**
+Check [Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases) for
+publication status; a draft or a successful test run is not a published update.
 
-![The Chat page in the browser demo, with the demo banner at the top](docs/images/arynwood-mcp-demo.png)
+The 0.5.4 candidate brings security fixes, stricter desktop browser policy,
+PCM microphone recording, a first-play WebAudio audition fix and updated desktop
+dependencies. It also adds hashed Python build dependencies and bounded IRC
+property fuzzing. [Release notes](docs/releases/0.5.4.md) · [Verification record](docs/releases/0.5.4-readiness.md).
 
-## Status
+Main requires pull requests and passing backend, frontend, API-reference and
+Windows checks. CodeQL and OpenSSF Scorecard run alongside the test workflows.
+The best-practices badge is in progress; some upstream dependency advisories and
+maintenance findings remain. These checks describe evidence and work still to do,
+not a security certification. [Scorecard follow-up](docs/scorecard-status.md).
 
-| Area | Status |
+## What you can do
+
+| Work | What MCP provides |
 |---|---|
-| Linux AppImage / .deb and Windows x64 installer, v0.5.3 (2026-10-23) | Shipped desktop alpha |
-| Chat, memory, knowledge and supervised MCP tools | Alpha; external services required |
-| Community page connected to your Arynwood Grove | Shipped alpha, since 0.4.9 |
-| Video Studio, Music Lab and social publishing | Tier 2: works with caveats; experimental workflows |
-| Stem separation, RVC and audio FX | Tier 3: early; separate sidecars, limited end-to-end validation |
-| GPU scripts, LoRA and project file browser | Tier 3: source checkout only |
-| Gateway | Experimental, source only, off by default; owner-only remote control |
+| Chat and research | Local or configured remote model endpoints, personas, document retrieval and owner-controlled memory |
+| Creative work | Design canvas, recording and audio workflows, captions and video editing integrations |
+| Supervised tools | MCP server connections, including Kdenlive editing through Cutroom's tool server |
+| Community | Your Grove's calendars, tasks, files, messages and website previews inside the app |
+| Models and services | Endpoint configuration, service status and separately installed creative sidecars |
 
-The tiers come from the [feature review](docs/known-limitations.md), last done against 0.4.3.
-[Packaged-build exclusions](docs/installation.md#features-that-dont-work-in-the-packaged-build)
-list what needs a source checkout or a separate service.
+Models, Qdrant and creative sidecars are installed separately. Some workflows need
+additional hardware or a source checkout. Read the [feature guide](docs/features.md),
+[known limitations](docs/known-limitations.md) and
+[packaged-build exclusions](docs/installation.md#features-that-dont-work-in-the-packaged-build)
+before choosing a workflow. The gateway is experimental, owner-only and off by default.
 
-## Install the packaged alpha
+The [browser demo](https://arynwood-technology.github.io/ArynwoodMCP/) uses the real
+interface with clearly marked fixture data and scripted conversations. It runs no
+backend or live model.
 
-Download v0.5.3 from [GitHub Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases/latest).
-Linux packages target x86_64 and Ubuntu 22.04 / glibc 2.35 or newer. Windows needs x64;
-the installer is unsigned and installs per user. See [platform requirements](docs/supported-platforms.md)
-and [Windows setup](docs/windows.md) before installing. A GPU is optional for basic chat;
-generation tools have their own requirements.
+![The Chat page in the browser demo](docs/images/arynwood-mcp-demo.png)
 
-- **AppImage:** download the asset, then `chmod +x arynwood-mcp_*.AppImage` and run it.
-- **Debian/Ubuntu:** download the `.deb`, then `sudo apt install ./arynwood-mcp_*.deb`.
-- **Windows:** download and run the x64 installer; follow the [Windows guide](docs/windows.md).
+## Install
 
-Install [Ollama](https://ollama.com) and a model separately. Knowledge search also needs
-Qdrant and an embedding model. The `.deb` uses your system's GStreamer plugins;
-the [installation guide](docs/installation.md) lists the packages and first-run steps.
+Download the latest **published** packages from
+[GitHub Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases/latest).
 
-Verify `SHA256SUMS.txt` against the downloaded package before running it.
-Build attestations were added after 0.5.3; **0.5.4 will be the first release with them**.
-Published 0.5.3 packages do not have those attestations.
+- **Linux AppImage:** make the downloaded file executable and run it.
+- **Debian/Ubuntu:** install the downloaded `.deb` with `sudo apt install ./arynwood-mcp_*.deb`.
+- **Windows:** run the x64 per-user installer. It is not Windows code-signed; see the [Windows guide](docs/windows.md).
 
-## Quick start
+Linux packages target glibc 2.35 or newer. Models and supporting services are separate;
+a GPU is optional for basic chat, while generation tools have their own requirements.
+[Platform requirements](docs/supported-platforms.md) · [Installation and first run](docs/installation.md).
 
-Requires Python 3.11+, Node.js 20.19+ or 22.12+, npm and Ollama.
+**Verify downloads before running them.** Published 0.5.3 has build checksums but
+no provenance attestations or release-key signature. The 0.5.4 release process adds
+per-package GitHub attestations and requires the owner to sign the combined
+`SHA256SUMS` before publication. Follow the instructions for the version you download.
+[Download verification](docs/release-signing.md#verifying-a-download).
+
+## Run from source
+
+Requires Python 3.11+, Node.js 20.19+ or 22.12+, npm and a separately configured model service.
 
 ```bash
 git clone https://github.com/Arynwood-Technology/ArynwoodMCP.git
@@ -72,69 +86,32 @@ source venv/bin/activate
 pip install -r requirements.txt
 npm --prefix frontend ci
 cp .env.example .env
-ollama pull hermes3:8b
-ollama pull nomic-embed-text
 ./start.sh
 ```
 
-The model names are bundled examples, not recommendations. Edit the copied environment
-file for your setup. The UI is at http://localhost:5180 and API at http://localhost:8010
-([API reference](docs/api/README.md)).
-Backend and Ollama default to loopback. See [source setup](docs/installation.md#running-from-source-current-always-available)
-for configuration, knowledge services and the development desktop launcher.
+Configure the copied environment file for your setup. The interface opens at
+http://localhost:5180 and the API at http://localhost:8010.
+Knowledge search also needs Qdrant and an embedding model.
+[Source setup](docs/installation.md#running-from-source-current-always-available) · [API reference](docs/api/README.md).
 
-### Knowledge base setup
+## Ownership and security
 
-Knowledge search needs Qdrant and the `nomic-embed-text` embedding model:
-[setup steps](docs/installation.md#knowledge-base-setup).
+Your default model inference, conversations and memory run on your hardware.
+Network features contact outside services when used: web search, URL learning,
+downloads, publishing, deployment, social services, IRC and configured remote
+endpoints. There is no enforced offline mode or OS sandbox.
 
-## What's inside
+Destructive and publishing MCP calls require approval for the exact operation.
+Direct owner controls have separate limits, and this is not a hardened multi-user
+service. Read [SECURITY.md](SECURITY.md) and [scope](docs/scope.md).
+Report vulnerabilities privately through
+[GitHub security advisories](https://github.com/Arynwood-Technology/ArynwoodMCP/security/advisories/new).
 
-- **Dashboard and navigation:** service health, command palette and status drawer — [feature guide](docs/features.md#getting-around).
-- **Chat, knowledge and memory:** personas, document retrieval and remembered facts — [guide](docs/guide.md).
-- **MCP tools:** supervised calls, including Kdenlive integration — [feature guide](docs/features.md#mcp-tool-servers).
-- **Models and servers:** local and remote endpoints — [endpoint guide](docs/endpoints.md).
-- **Community:** your Grove's spaces inside the desktop app — [Community guide](docs/community.md).
-- **Design and GPU tools:** canvas and separately installed generators — [feature guide](docs/features.md#design-center).
-- **Studio and Music Lab:** sidecars and maturity caveats — [Studio setup](docs/studio.md).
-- **Video Studio:** editing and captions, Tier 2 — [feature guide](docs/features.md#video-studio).
-- **Social and publishing:** credentials, external actions and caveats — [feature guide](docs/features.md#social-media).
-- **Gateway:** experimental owner-only remote control — [gateway guide](docs/gateway.md).
-- **Architecture, database and ports:** [architecture](docs/architecture.md).
+## Development and license
 
-[All documentation and release notes](docs/README.md).
+Arynwood Technology maintains the scope, architecture, review, tests and releases.
+[Contributing](CONTRIBUTING.md) · [How we build](https://github.com/Arynwood-Technology/.github/blob/main/HOW-WE-BUILD.md) · [Project history](docs/history.md).
 
-## History
-
-Arynwood MCP grew out of ArynCore, started in June 2025 and developed in private. This public
-repository opened on 2026-09-10 with the first Linux desktop alpha (0.4.0), imported in a single
-commit. Windows shipped in 0.4.5. The Community page shipped in 0.4.9; it connects to
-[Arynwood Grove](https://github.com/Arynwood-Technology/arynwood-community), a separate service.
-[History and release timeline](docs/history.md).
-
-## How this is built
-
-I design the architecture, choose the scope, review changes, run tests, ship releases and
-operate the servers. Claude Code and Codex work with me as pair programmers; some assisted
-commits have co-author trailers and others do not. [How we build](https://github.com/Arynwood-Technology/.github/blob/main/HOW-WE-BUILD.md).
-
-## Security
-
-This is an alpha for one owner on one machine. It has no OS sandbox or enforced offline
-mode. Read [SECURITY.md](SECURITY.md) for protections, known gaps and private reporting.
-
-## License
-
-Arynwood MCP is free software under the [GNU Affero General Public License v3.0 only](LICENSE)
-(AGPL-3.0-only). You may use, study, share and change it. If you share a changed version, or run
-one as a service for other people, you must offer its source under the same license. Releases up
-to and including 0.5.3 shipped under an earlier source-available license.
-
-The Arynwood tree logo and the app icons made from it (`frontend/src-tauri/icons/`,
-`frontend/src-tauri/icon-source/`, `frontend/public/icon.png`, `frontend/src/assets/arynwood-tree.png`)
-are artwork by Arynwood Technology. They are not covered by the code license; all rights reserved.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). Report reproducible problems through
-[GitHub issues](https://github.com/Arynwood-Technology/ArynwoodMCP/issues).
+Code is licensed under [GNU AGPL-3.0-only](LICENSE). Releases through 0.5.3 used an
+earlier source-available license. The Arynwood tree logo and app icons are separate
+artwork, all rights reserved; the code license does not grant rights to that branding.
