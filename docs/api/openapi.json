@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Arynwood MCP",
-  "version": "0.5.3"
+  "version": "0.5.4"
  },
  "paths": {
   "/metrics": {

@@ -18,6 +18,17 @@ crashed renderer and a solid grey window). This drives the same engine directly 
 Elements are muted (`muted = true`) and the recorder listens to a WebAudio oscillator, so nothing is audible.
 The webaudio case needs a fixture longer than 4 seconds. It checks the same
 MediaElementAudioSourceNode path as Music Lab's audition, including delayed errors.
+
+`mic` records the default capture device the way the app does (getUserMedia -> Web Audio -> raw PCM, see
+frontend/src/lib/pcmCapture.ts) and passes only if samples with signal arrive. It needs a capture device: for a
+throwaway one, run a private PulseAudio with `module-sine-source` and point PULSE_SERVER at it, with
+GST_PLUGIN_FEATURE_RANK=alsadeviceprovider:NONE,pipewiredeviceprovider:NONE and a private XDG_RUNTIME_DIR so the
+host's real microphones can't be reached. `recorder` is MediaRecorder itself, which the app no longer uses for the
+microphone: on WebKitGTK 2.52 / GStreamer 1.24 it writes 0 bytes from a real capture device ("Couldn't find a
+compatible stream profile"), with every host plugin installed.
+
+Each test runs in its own fresh web view. In one page, WebKitGTK 2.52's MediaRecorder on a WebAudio stream writes
+0 bytes once an earlier AudioContext was closed, so `recorder` failed after `webaudio:` for that reason alone.
 `no such element factory "x"` lines on stderr (GST_DEBUG above) name plugins to add to stage_gstreamer_plugins.sh.
 Needs system python3-gi + gir1.2-webkit2-4.1 and xvfb. Exit 0 = every test played/recorded.
 """
@@ -53,9 +64,14 @@ async function play(kind, file) {
     await Promise.race([el.play(), new Promise((_, rej) => setTimeout(() => rej(new Error('play() timed out')), 8000))]);
   }
   catch (e) { out.error = String(e && e.name || e) + ': ' + String(e && e.message || ''); }
-  await new Promise(r => setTimeout(r, webaudio ? 4000 : 700));
+  // Allow device startup without treating a single early snapshot as a playback failure.
+  const deadline = performance.now() + 8000;
+  while (!el.error && el.currentTime === 0 && performance.now() < deadline) {
+    await new Promise(r => setTimeout(r, 100));
+  }
+  if (webaudio) await new Promise(r => setTimeout(r, 4000));
   out.currentTime = +el.currentTime.toFixed(2); out.readyState = el.readyState; out.mediaError = el.error ? el.error.code : null;
-  out.ok = !out.error && !el.paused && el.currentTime > 0 && !el.error;
+  out.ok = !out.error && (!el.paused || el.ended) && el.currentTime > 0 && !el.error;
   el.pause();
   if (ctx) await ctx.close();
   return out;
@@ -71,9 +87,28 @@ async function recorder() {
   } catch (e) { out.error = String(e && e.name || e) + ': ' + String(e && e.message || ''); out.ok = false; }
   return out;
 }
+async function mic() {
+  const out = { test: 'mic' };
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    out.device = stream.getAudioTracks()[0] ? stream.getAudioTracks()[0].label : '';
+    const ctx = new AudioContext(), src = ctx.createMediaStreamSource(stream);
+    const proc = ctx.createScriptProcessor(4096, Math.max(1, src.channelCount || 1), 1);
+    let frames = 0, peak = 0;
+    proc.onaudioprocess = e => {
+      const d = e.inputBuffer.getChannelData(0); frames += d.length;
+      for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
+      e.outputBuffer.getChannelData(0).fill(0);
+    };
+    src.connect(proc); proc.connect(ctx.destination); await ctx.resume(); await new Promise(r => setTimeout(r, 1500));
+    proc.onaudioprocess = null; proc.disconnect(); stream.getTracks().forEach(t => t.stop()); await ctx.close();
+    out.frames = frames; out.peak = +peak.toFixed(3); out.ok = frames > 0 && peak > 0;
+  } catch (e) { out.error = String(e && e.name || e) + ': ' + String(e && e.message || ''); out.ok = false; }
+  return out;
+}
 window.__go = async tests => {
   const res = [];
-  for (const t of tests) res.push(t === 'recorder' ? await recorder() : await play(...t.split(':')));
+  for (const t of tests) res.push(t === 'recorder' ? await recorder() : t === 'mic' ? await mic() : await play(...t.split(':')));
   document.title = 'RESULT:' + JSON.stringify(res);
 };
 </script>"""
@@ -101,34 +136,46 @@ def main() -> int:
 
     server = socketserver.TCPServer(('127.0.0.1', 0), Handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
+    url = f'http://127.0.0.1:{server.server_address[1]}/_check.html'
 
+    results = [run_one(url, test) for test in tests]
+    for r in results:
+        print(json.dumps(r))
+    return 0 if all(r.get('ok') for r in results) else 1
+
+
+def run_one(url: str, test: str) -> dict:
+    """One test in a fresh web view (see the docstring for why they don't share a page)."""
     window = Gtk.Window()
     view = WebKit2.WebView.new_with_context(WebKit2.WebContext.new_ephemeral())
+    view.get_settings().set_enable_media_stream(True)                     # the mic test's getUserMedia
+    view.connect('permission-request', lambda _v, request: (request.allow(), True)[1])
     window.add(view)
     window.show_all()
-    outcome = {'code': 1}
+    outcome = {'result': {'test': test, 'ok': False, 'error': 'TIMED OUT — the web process probably died (grey window)'}}
 
     def loaded(v, event):
         if event == WebKit2.LoadEvent.FINISHED:
-            v.run_javascript(f"window.__go({json.dumps(tests)})", None, None, None)
+            v.run_javascript(f"window.__go({json.dumps([test])})", None, None, None)
 
     def poll():
         title = view.get_title() or ''
         if title.startswith('RESULT:'):
-            results = json.loads(title[7:])
-            for r in results:
-                print(json.dumps(r))
-            outcome['code'] = 0 if all(r.get('ok') for r in results) else 1
+            outcome['result'] = json.loads(title[7:])[0]
             Gtk.main_quit()
             return False
         return True
 
     view.connect('load-changed', loaded)
-    GLib.timeout_add(300, poll)
-    GLib.timeout_add_seconds(90, lambda: (print('TIMED OUT — the web process probably died (grey window)'), Gtk.main_quit(), False)[2])
-    view.load_uri(f'http://127.0.0.1:{server.server_address[1]}/_check.html')
+    poll_id = GLib.timeout_add(300, poll)
+    timeout_id = GLib.timeout_add_seconds(90, lambda: (Gtk.main_quit(), False)[1])
+    view.load_uri(url)
     Gtk.main()
-    return outcome['code']
+    for source_id in (poll_id, timeout_id):
+        if GLib.MainContext.default().find_source_by_id(source_id):
+            GLib.source_remove(source_id)
+    window.destroy()
+    return outcome['result']
 
 
 if __name__ == '__main__':
