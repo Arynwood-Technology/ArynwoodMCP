@@ -45,6 +45,28 @@ def test_ssh_uses_known_hosts_and_rejects_unknown_keys(monkeypatch):
     assert isinstance(policy, deploy.paramiko.RejectPolicy)
 
 
+def test_weak_trusted_rsa_host_key_is_rejected_before_authentication(monkeypatch):
+    ssh = MagicMock()
+    weak_key = paramiko.RSAKey.generate(1024)
+    ssh._system_host_keys.lookup.return_value = {'ssh-rsa': weak_key}
+    ssh._host_keys.lookup.return_value = None
+    monkeypatch.setattr(deploy.paramiko, 'SSHClient', lambda: ssh)
+
+    with pytest.raises(paramiko.SSHException, match='minimum strength'):
+        deploy._open_sftp({'host': 'example.com'})
+
+    ssh.connect.assert_not_called()
+    ssh.close.assert_called_once_with()
+
+
+def test_strong_trusted_rsa_host_key_meets_minimum(host_key):
+    ssh = MagicMock()
+    ssh._system_host_keys.lookup.return_value = {'ssh-rsa': host_key}
+    ssh._host_keys.lookup.return_value = None
+
+    deploy._validate_trusted_host_keys(ssh, 'example.com')
+
+
 def test_connection_failure_closes_ssh(monkeypatch):
     ssh = MagicMock()
     ssh.connect.side_effect = deploy.paramiko.SSHException('Unknown server host key')
