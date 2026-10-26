@@ -16,7 +16,7 @@
 
 ## Releases and history
 
-Version **0.5.3** ships a Windows x64 desktop alpha (an unsigned per-user installer, first
+Version **0.5.4** ships a Windows x64 desktop alpha (an unsigned per-user installer, first
 published in 0.4.5) alongside the Linux AppImage and `.deb`, which keep the Ubuntu 22.04 / glibc 2.35
 baseline. Models and supporting services are installed separately on both. Download published packages from [GitHub Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases).
 
@@ -25,6 +25,7 @@ baseline. Models and supporting services are installed separately on both. Downl
 - [Release signing](release-signing.md): signed checksums, the release key, verifying a download
 - [`releases/TEMPLATE.md`](releases/TEMPLATE.md) - the release-notes template
 - [`CHANGELOG.md`](../CHANGELOG.md)
+- [`releases/0.5.4.md`](releases/0.5.4.md) - signed checksums, recording fixes and verified build provenance
 - [`releases/0.5.3.md`](releases/0.5.3.md) - packages, checksums, release checks and known issues
 - [`releases/0.5.2.md`](releases/0.5.2.md) - Community from Arynwood Grove 0.7.1
 - [`releases/0.5.1.md`](releases/0.5.1.md) - managing Community spaces

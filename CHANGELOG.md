@@ -30,11 +30,11 @@ them as a summary, not a precise record.
   a package without one made from the tag being released. Check a download with
   `gh attestation verify <file> -R Arynwood-Technology/ArynwoodMCP`. The packages are still not
   code-signed.
-- **Signed checksums, from the first release signed with the release key.** `scripts/sign-release.sh`
+- **Signed checksums, starting with 0.5.4.** `scripts/sign-release.sh`
   writes `SHA256SUMS` for every package and signs it (`SHA256SUMS.asc`) with the owner's OpenPGP key;
   `scripts/verify-release.sh` checks a download against both. The release key (fingerprint
-  `C536 F3C4 689A 1734 920A  0E5B F1F8 0C83 C593 8FF0`) is in `docs/release-signing-key.asc`; signing starts with the
-  next release. See `docs/release-signing.md`.
+  `C536 F3C4 689A 1734 920A  0E5B F1F8 0C83 C593 8FF0`) is in `docs/release-signing-key.asc`; 0.5.4 is the first signed
+  release. See `docs/release-signing.md`.
 
 ### Fixed
 
