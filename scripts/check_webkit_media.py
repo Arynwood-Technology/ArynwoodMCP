@@ -90,9 +90,13 @@ async function recorder() {
 async function mic() {
   const out = { test: 'mic' };
   try {
-    // Match AudioRecorder: resume the graph before the asynchronous device request.
+    // Match AudioRecorder/openMicStream: select the first enumerated input with an
+    // ideal ID, and resume the graph before the asynchronous device request.
+    const inputs = await navigator.mediaDevices.enumerateDevices();
+    const device = inputs.find(d => d.kind === 'audioinput' && d.deviceId);
     const ctx = new AudioContext(); await ctx.resume();
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: device ? { deviceId: { ideal: device.deviceId } } : true });
+    out.explicitDevice = Boolean(device);
     out.device = stream.getAudioTracks()[0] ? stream.getAudioTracks()[0].label : '';
     const src = ctx.createMediaStreamSource(stream);
     const proc = ctx.createScriptProcessor(4096, Math.max(1, src.channelCount || 1), 1);
