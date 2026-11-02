@@ -7,14 +7,13 @@ const mocked = vi.mocked(api)
 const rowan: User = { id: 'rowan', name: 'Rowan', email: 'rowan@example.test', admin: 0, role: 'owner', can_start_spaces: true }
 const person = (id: string, name: string, role: string, host = 0) => ({ id, name, email: `${id}@example.test`, host, created: '2026-10-01T09:00:00Z', role, spaces: 1, last_active: null })
 const people = [person('host', 'Robin', 'owner', 1), person('rowan', 'Rowan', 'owner'), person('sam', 'Sam', 'member')]
-const wishes = [{ id: 'w1', created: '2026-10-14T09:00:00Z', author_name: 'Sam', author_email: 'sam@example.test', page: 'calendar', space_name: 'Crew', body: 'A folder for posters', delivery: 'sent' }]
 const row = (id: number, action: string, extra = {}) => ({ id, at: '2026-10-14T10:00:00Z', action, actor_id: 'sam', actor_name: 'Sam', space_id: 'crew', space_name: 'Crew', target_id: null, target_name: '', details: {}, ...extra })
 const firstPage = { items: [row(3, 'entry_created', { target_name: 'Print badges', details: { kind: 'task' } }), row(2, 'space_created')], next: 2 }
 beforeEach(() => { mocked.mockReset() })
 afterEach(() => cleanup())
 function show(user = rowan) {
   mocked.mockImplementation(async (path, method) => path === '/admin/people' ? people : path === '/admin/spaces' ? [{ id: 'crew', name: 'Crew', created: '2026-10-02T09:00:00Z', used: 5 * 1024 * 1024 }]
-    : path === '/admin/wishes' ? wishes : path === '/admin/settings' ? { space_creation: 'everyone', chat_privacy: 'private' }
+    : path === '/admin/settings' ? { space_creation: 'everyone', chat_privacy: 'private' }
     : path.includes('before=') ? { items: [row(1, 'signed_in', { space_name: '' })], next: null }
     : path.startsWith('/admin/activity') ? firstPage : method === 'PUT' ? { ok: true } : [])
   const onChanged = vi.fn()
@@ -43,12 +42,13 @@ it('asks before an owner steps down, then reloads who they are', async () => {
 
 it('shows a manager everything, but no role or setting controls', async () => {
   show({ ...rowan, role: 'manager' })
-  expect(await screen.findByText('A folder for posters')).toBeInTheDocument()
   expect(await screen.findByText('Sam added the task “Print badges” in Crew')).toBeInTheDocument()
   expect(await screen.findByText('Everyone can start spaces.')).toBeInTheDocument()
   expect(screen.getByText(/5.0 MB of files/)).toBeInTheDocument()
   expect(screen.queryByLabelText(/Grove role for/)).toBeNull()
   expect(screen.queryByLabelText('Who can start new spaces')).toBeNull()
+  expect(screen.queryByRole('heading', { name: 'Wishes' })).toBeNull()
+  expect(mocked.mock.calls.some(([path]) => path === '/admin/wishes')).toBe(false)
 })
 
 it('lets an owner keep space-starting to owners and managers', async () => {

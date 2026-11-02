@@ -53,6 +53,12 @@ def _fake_grove(seen: list) -> FastAPI:
             return JSONResponse({"detail": "Sign in first."}, status_code=401)
         return {"id": "u1", "name": "Owner", "email": "owner@example.com", "admin": 1}
 
+    # Grove still has wishes; the relay must not reach them.
+    @app.get("/api/wishes")
+    @app.get("/api/admin/wishes")
+    def wishes():
+        return []
+
     @app.get("/api/community/spaces/{space}/export")
     def export(space: str):
         return Response(json.dumps({"space": space}), media_type="application/json",
@@ -247,9 +253,15 @@ def test_only_the_page_headers_are_forwarded(client, grove):
 # --- what can and can't be reached ---------------------------------------------------------------
 
 @pytest.mark.parametrize("path", ["grove/chat", "health", "source", "community/../grove/chat", "community//spaces",
-                                  "p2p/wallet"])
+                                  "p2p/wallet", "wishes", "admin/wishes", "admin/wishes/old"])
 def test_only_the_community_pages_areas_are_reachable(client, grove, path):
     assert client.get(f"/api/community/grove/{path}").status_code == 404
+
+
+def test_an_encoded_path_does_not_reach_the_groves_wishes(client, grove):
+    # A browser's `admin/wish%2565s` arrives here as `admin/wish%65s`, which the Grove decodes to its wishes.
+    # Starlette's test client decodes once more than a real server does, hence the extra `25`.
+    assert client.get("/api/community/grove/admin/wish%252565s").status_code == 404
 
 
 def test_the_areas_grove_0_7_added_are_reachable(client, grove):

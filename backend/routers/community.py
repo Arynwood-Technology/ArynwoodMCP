@@ -38,7 +38,7 @@ import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from http.cookies import CookieError, SimpleCookie
-from urllib.parse import urlparse, urlsplit
+from urllib.parse import unquote, urlparse, urlsplit
 
 import anyio
 import httpx
@@ -65,7 +65,7 @@ ADDRESS_SETTING = "community_url"
 SESSION_SETTING = "community_session"
 # The Grove API areas the Community page uses; nothing else on a Grove is reachable from here.
 GROVE_AREAS = ("auth", "community", "grove-setup", "mail", "irc", "chat", "messages", "admin", "brand",
-               "webmaster", "wishes")
+               "webmaster")
 GROVE_SOCKETS = ("irc/ws", "chat/ws")
 FORWARD_REQUEST_HEADERS = ("content-type", "accept", "x-community-request")
 # The Grove's own policy travels with each answer: files, photos and attachments come with
@@ -434,7 +434,9 @@ def _grove_path(path: str) -> str:
     """`/api/<path>` on the Grove, for the areas the Community page uses only."""
     segments = path.split("/")
     if (not path or any(c in path for c in "\\?#") or any(ord(c) < 32 for c in path)
-            or any(seg in ("", ".", "..") for seg in segments) or segments[0] not in GROVE_AREAS):
+            or any(seg in ("", ".", "..") for seg in segments) or segments[0] not in GROVE_AREAS
+            # The Grove decodes the path once more, so `admin/wish%65s` would still reach its wishes.
+            or unquote(path).split("/")[:2] == ["admin", "wishes"]):
         raise HTTPException(404, "That isn't part of the Community page.")
     return "/api/" + path
 

@@ -18,7 +18,6 @@ import { Webmaster } from './pages/Webmaster'
 import { LookAndFeel } from './pages/LookAndFeel'
 import { Messages } from './pages/Messages'
 import { WorkspaceSetup } from './pages/WorkspaceSetup'
-import { WishLamp } from './components/WishLamp'
 import { notify, notifyPrefs, OPEN } from './lib/notify'
 import { ircDisconnect } from './lib/irc-manager'
 import { useLiveRefresh, useSpaceRefresh } from './lib/live'
@@ -140,7 +139,6 @@ export function Community() {
         {space&&<WatchSpace key={space.id} id={space.id} onChange={()=>void reloadSpaces()}/>}
         <WatchInbox onCount={setUnread}/>
       </div>
-      <WishLamp page={section} spaceId={space?.id}/>
       {dialog&&<Modal title={dialog==='create'?'Create new space':'Invite members'} onClose={()=>{if(!busy)setDialog(null)}}>
         {dialog==='create'?<form onSubmit={createSpace}>
           <label>Space name<input name="name" required maxLength={80} placeholder="Home, team, or project" /></label>
