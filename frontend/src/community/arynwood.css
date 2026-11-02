@@ -6,10 +6,9 @@
    with the site editor. */
 
 :scope { height: 100%; overflow-y: auto; container-type: size; }
-/* The room the Grove leaves under its page for the wish lamp goes under the scrolling page instead. */
 :scope.grove-community:has(> .grove-shell) { padding-bottom: 0; }
 :scope .grove-shell { height: 100%; min-height: 0; align-items: stretch; }
-:scope .shell-main { height: 100%; overflow-y: auto; padding-bottom: 64px; }
+:scope .shell-main { height: 100%; overflow-y: auto; }
 :scope .grove-shell.focus .shell-main { padding-bottom: 0; }
 /* Beside the page, not floating over it (below 861px the Grove's own sliding menu takes over). */
 @media (min-width: 861px) {

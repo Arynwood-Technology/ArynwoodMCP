@@ -101,7 +101,7 @@ export function Settings({ space, user, onLogout, onLeft, onChanged }: { space: 
       <PasswordPanel onDone={flash} />
       {user.admin ? <section className="panel">
         <h2>Connections</h2>
-        <p>{user.host_tools ? 'Mail and Public chat run on this computer and are visible only to the host.' : `${user.public_chat ? 'Mail is' : 'Mail and Public chat are'} switched off on this Grove.${user.public_chat ? ` Public chat is open to every member, in ${user.public_chat.channel}.` : ''} Mail sending is used only to email wishes.`}</p>
+        <p>{user.host_tools ? 'Mail and Public chat run on this computer and are visible only to the host.' : `${user.public_chat ? 'Mail is' : 'Mail and Public chat are'} switched off on this Grove.${user.public_chat ? ` Public chat is open to every member, in ${user.public_chat.channel}.` : ''}`}</p>
         <ul className="status-list">
           {user.host_tools && <li><Mail size={16} /><span>Mail reading</span><b className={connections?.mail ? 'ok' : ''}>{connections === null ? '...' : connections.mail ? 'Ready' : 'Not set up'}</b></li>}
           <li><Mail size={16} /><span>Mail sending</span><b className={connections?.smtp ? 'ok' : ''}>{connections === null ? '...' : connections.smtp ? 'Ready' : 'Not set up'}</b></li>

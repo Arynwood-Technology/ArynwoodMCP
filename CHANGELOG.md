@@ -9,6 +9,20 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Removed
+
+- Community's genie lamp and Make a wish form, including the admin wishes panel
+  and wish API relay paths. Existing data on the Grove is left intact.
+
+### Security
+
+- Update certifi's trust bundle and setuptools' Windows wheel handling to patched
+  releases. Regenerate both hashed Python dependency locks alongside the FastAPI,
+  ddgs, jsonschema, pytest and PyInstaller updates; check input/lock consistency in CI.
+- Update frontend dependencies, including the Tauri CLI and Vitest fixes.
+- Update the desktop shell's Rust dependencies (Tauri 2.12.5, shell and notification
+  plugins), removing `fxhash` and the advisory-affected `rand` 0.7.
+
 ## [0.5.4] — 2026-10-25
 
 ### Changed

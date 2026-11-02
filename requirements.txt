@@ -3,7 +3,7 @@
 # version constraints at all, so a routine `pip install -r requirements.txt` on a new
 # machine could silently pull a breaking release of e.g. ollama or ddgs (both move
 # fast) with no warning. Bump deliberately, not by accident.
-fastapi~=0.157.0
+fastapi~=0.162.0
 uvicorn[standard]~=0.54.0
 aiosqlite~=0.22.1
 httpx~=0.28.1
@@ -11,7 +11,8 @@ ollama~=0.6.3
 python-multipart~=0.0.32
 watchdog~=6.0.0
 requests~=2.34.2
-# Not used directly: held at releases with security fixes (urllib3 via requests, h2 via ddgs's httpx[http2]).
+# Transitive security floors: certifi's trust bundle, urllib3 via requests, and h2 via ddgs's httpx[http2].
+certifi>=2026.10.19,<2027
 urllib3~=2.8
 h2~=4.4,>=4.4.1
 paramiko~=5.0.0
@@ -19,11 +20,11 @@ prometheus-fastapi-instrumentator~=8.1.0
 # Direct dependency now (roadmap 2.5's LLM/tool call metrics import it explicitly),
 # not just transitive via prometheus-fastapi-instrumentator.
 prometheus_client~=0.26.0
-ddgs~=9.16.0
+ddgs~=9.16.1
 beautifulsoup4~=4.15.0
 python-dotenv~=1.2.4
 Pillow~=13.0.0
 openpyxl~=3.1.5
 
 # Strict MCP argument validation, with external schema retrieval disabled.
-jsonschema~=4.23.0
+jsonschema~=4.26.0
