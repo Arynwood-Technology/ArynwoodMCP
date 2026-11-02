@@ -305,7 +305,7 @@ function handleIRCLine(raw: string) {
   }
 
   // ── Display messages ──────────────────────────────────────────────────────
-  let m: IRCMsg | null = null
+  let m: IRCMsg
 
   if (command === 'PRIVMSG') {
     const target = params[0] ?? ''
