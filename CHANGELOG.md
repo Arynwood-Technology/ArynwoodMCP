@@ -9,6 +9,13 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Changed
+
+- Frontend toolchain: Vite 8, ESLint 10, TypeScript 6.0 and lucide-react 1.x.
+  Vite's build step is about ten times faster.
+- CI and release workflows use the current major versions of GitHub's checkout,
+  artifact and Pages actions.
+
 ### Removed
 
 - Community's genie lamp and Make a wish form, including the admin wishes panel
