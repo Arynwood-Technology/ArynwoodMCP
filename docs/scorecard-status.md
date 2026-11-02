@@ -29,11 +29,13 @@ Priorities and evidence:
   the parents' declared ranges: on November 1, no ESLint, `@eslint/eslintrc` or
   typescript-eslint release accepted minimatch 11. Do not force npm's suggested unrelated downgrade
   or substitute an incompatible major without testing the parent integrations.
-- **Other PRs:** #14 fails installation because React plugin 6 requires Vite 8,
-  while this project uses Vite 7. Keep it open for a coordinated migration.
-  #15–17 are separate major updates, rather than demonstrated security fixes.
-  #19–22 update release/Pages Actions; their ordinary PR checks do not exercise
-  publishing. Review their runtime and artifact compatibility before merging them.
+- **Major updates (November 1):** #48 moved the frontend to Vite 8 with React
+  plugin 6, ESLint 10, jest-dom 7, TypeScript 6.0, globals 17 and lucide-react 1.x
+  together (replacing #14–16). #49 moved checkout, upload/download-artifact and
+  deploy-pages to their current majors (replacing #19–22). TypeScript 7 waits for
+  typescript-eslint (`<6.1.0`). jsdom 30 waits because it breaks seven tests:
+  `Blob.stream` and accessible-name differences. `@types/node` 26 (#17) isn't
+  adopted while CI and releases run Node 22.
 - **Branch protection (4/10) and review (0/10):** retain required checks and PRs.
   Independent human review needs another maintainer; requiring an unavailable
   approver would block maintenance. Automated review is not independent human review.
