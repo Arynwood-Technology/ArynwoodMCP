@@ -3,20 +3,17 @@ import { History, RefreshCw } from 'lucide-react'
 import { api, stamp, type GroveRole, type User } from '../lib/community'
 import { describeActivity, type Activity } from '../lib/activity'
 import { bytes } from '../lib/files'
-import { GenieLamp } from '../components/WishLamp'
 import { Modal } from './Workspace'
 import './admin.css'
 
 interface Person { id: string; name: string; email: string; host: number; created: string; role: GroveRole; webmaster: number; spaces: number; last_active: string | null }
 interface GroveSpace { id: string; name: string; created: string; used: number }
-interface Wish { id: string; created: string; author_name: string; author_email: string; page: string; space_name: string; body: string; delivery: 'kept' | 'sending' | 'sent' | 'failed' }
 interface Page { items: Activity[]; next: number | null }
 type Filter = { person: string; space: string }
 type SpaceCreation = 'everyone' | 'managers'
 type ChatPrivacy = 'private' | 'open'
 
 const roleNames: Record<GroveRole, string> = { owner: 'Owner', manager: 'Manager', member: 'Member' }
-const delivery: Record<Wish['delivery'], string> = { kept: 'Kept here; email is not set up', sending: 'Sending', sent: 'Emailed', failed: 'Kept here; the email failed' }
 
 function logPath({ person, space }: Filter, before?: number) {
   const query = new URLSearchParams()
@@ -26,10 +23,10 @@ function logPath({ person, space }: Filter, before?: number) {
   return '/admin/activity' + (query.toString() ? '?' + query : '')
 }
 
-/** Running the Grove: its people and their roles, its spaces, wishes, and everything that happens. */
+/** Running the Grove: its people and their roles, its spaces, and everything that happens. */
 export function Admin({ user, onChanged }: { user: User; onChanged: () => void }) {
   const owner = user.role === 'owner'
-  const [people, setPeople] = useState<Person[]>([]), [spaces, setSpaces] = useState<GroveSpace[]>([]), [wishes, setWishes] = useState<Wish[]>([])
+  const [people, setPeople] = useState<Person[]>([]), [spaces, setSpaces] = useState<GroveSpace[]>([])
   const [creation, setCreation] = useState<SpaceCreation | null>(null), [privacy, setPrivacy] = useState<ChatPrivacy | null>(null)
   const [log, setLog] = useState<Page | null>(null), [filter, setFilter] = useState<Filter>({ person: '', space: '' })
   const [reload, setReload] = useState(0), [loadingMore, setLoadingMore] = useState(false)
@@ -41,7 +38,6 @@ export function Admin({ user, onChanged }: { user: User; onChanged: () => void }
   useEffect(() => {
     api<Person[]>('/admin/people').then(setPeople).catch(e => setError(e.message))
     api<GroveSpace[]>('/admin/spaces').then(setSpaces).catch(e => setError(e.message))
-    api<Wish[]>('/admin/wishes').then(setWishes).catch(e => setError(e.message))
     api<{ space_creation: SpaceCreation; chat_privacy: ChatPrivacy }>('/admin/settings').then(s => { setCreation(s.space_creation); setPrivacy(s.chat_privacy) }).catch(e => setError(e.message))
   }, [reload])
   useEffect(() => {
@@ -128,13 +124,6 @@ export function Admin({ user, onChanged }: { user: User; onChanged: () => void }
         <p className="muted-text">Private: the room is left off {chat.server}’s channel list and locked with a key only this Grove knows, so nobody can find it or wander in from KVIrc, The Lounge or any other IRC app. The Grove puts this in place, or takes it off, the next time a member in the room is a channel operator; the first person into an empty room is.</p>
         <p className="muted-text">Either way, members stay in {chat.channel}: Public chat doesn’t join, list or message other rooms. Each member chatting is one connection from this Grove’s server, so {chat.server}’s limit on connections from one address is how many can chat at once.</p>
       </section>}
-      <section className="panel admin-wide">
-        <h2><GenieLamp size={20} /> Wishes</h2>
-        {wishes.length ? <ul className="wish-list">{wishes.map(w => <li key={w.id}>
-          <p>{w.body}</p>
-          <small>{w.author_name} ({w.author_email}) · {stamp(w.created)}{w.page ? ` · ${w.page}` : ''}{w.space_name ? ` · ${w.space_name}` : ''} · <span className={w.delivery === 'failed' ? 'danger' : ''}>{delivery[w.delivery]}</span></small>
-        </li>)}</ul> : <p>No wishes yet. Anyone in the Grove can make one with the lamp in the corner.</p>}
-      </section>
       <section className="panel admin-wide" id="grove-activity">
         <h2>Activity</h2>
         <div className="admin-filters">

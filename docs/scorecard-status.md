@@ -1,4 +1,56 @@
-# Scorecard follow-up — 2026-10-25
+# Scorecard follow-up
+
+## Review — 2026-11-01
+
+The [published analysis](https://api.scorecard.dev/projects/github.com/Arynwood-Technology/ArynwoodMCP)
+is dated November 2 (UTC), at `bafa974`, with an overall **6.7/10**. Pinning, fuzzing,
+CI tests, SAST, token permissions and dangerous-workflow checks each score 10.
+The Best Practices badge is now **Passing** (Scorecard gives that level 5/10).
+The earlier October 25 notes below are historical.
+
+Priorities and evidence:
+
+- **Dependencies:** npm PR #46 and cargo PR #32 merged after successful CI,
+  CodeQL and Windows runs. #32 removed `rand` 0.7/0.8/0.9 and `fxhash`, which took
+  Vulnerabilities from 2/10 (8 findings) to 4/10 (6 findings). The six left are
+  `glib` 0.18.5, the four unmaintained crates `proc-macro-error`, `zbus_names`,
+  `zvariant` and `zvariant_derive`, and minimatch (below). CI does not compile the
+  Linux desktop shell; #32 was also built for Linux in an Ubuntu 24.04 container.
+  These remain upstream work. Do not suppress them.
+- **Python:** the FastAPI, ddgs, jsonschema, pytest and PyInstaller PRs change
+  inputs without regenerating hashed locks. Their passing tests can exercise
+  old versions; FastAPI's version-consistency check catches this. The maintenance
+  branch updates these inputs and locks together, adds a lock-consistency test,
+  and patches certifi (2026.10.19 or newer) and setuptools (84.1.0 or newer).
+  Both regenerated locks pass `pip-audit` with no known vulnerabilities.
+- **Frontend audit:** 12 moderate findings trace to minimatch's
+  [globparts advisory](https://github.com/advisories/GHSA-g3hv-75wg-m249) in the
+  ESLint/TypeScript ESLint development tree. Its fixed 11.0.1 series is outside
+  the parents' declared ranges: on November 1, no ESLint, `@eslint/eslintrc` or
+  typescript-eslint release accepted minimatch 11. Do not force npm's suggested unrelated downgrade
+  or substitute an incompatible major without testing the parent integrations.
+- **Other PRs:** #14 fails installation because React plugin 6 requires Vite 8,
+  while this project uses Vite 7. Keep it open for a coordinated migration.
+  #15–17 are separate major updates, rather than demonstrated security fixes.
+  #19–22 update release/Pages Actions; their ordinary PR checks do not exercise
+  publishing. Review their runtime and artifact compatibility before merging them.
+- **Branch protection (4/10) and review (0/10):** retain required checks and PRs.
+  Independent human review needs another maintainer; requiring an unavailable
+  approver would block maintenance. Automated review is not independent human review.
+- **Maintained (0/10):** still inside the first 90 days. Keep maintaining the
+  project; no metadata changes to manufacture age or contributors.
+- **Signed releases (1/10):** only one of five recent releases has a signed
+  artifact. Preserve the checksum-signing and provenance-verification process in
+  [release signing](release-signing.md); use it on future authorized releases.
+  Do not rewrite old release artifacts to improve this score.
+- **Packaging (-1):** registry publishing was not detected. Desktop release
+  artifacts already exist; adding an unrelated registry publication just for a
+  score is outside this work.
+
+No alerts were dismissed. The public score will only reflect changes after a
+new analysis; local audit results do not change the published score.
+
+## Review — 2026-10-25
 
 The open alerts were inspected against the public main branch. Scores change only
 after another analysis; no alert was dismissed to improve the score.
