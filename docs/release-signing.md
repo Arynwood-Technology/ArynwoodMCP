@@ -96,7 +96,9 @@ Signing is the last step before publishing a draft. The steps before it are unch
    draft release with `SHA256SUMS.txt`.
 2. **Windows desktop** builds the installer for the same tag.
 3. Run **Verify release artifacts** with the tag and both run ids. It checks everything and attaches the
-   Windows installer and `SHA256SUMS-windows.txt` to the draft.
+   Windows installer, `SHA256SUMS-windows.txt` and `arynwood-mcp_X.Y.Z_provenance.intoto.jsonl` (every
+   package's build attestation, in one file) to the draft. The signing script below leaves that file out of
+   `SHA256SUMS`: it isn't a package, and it carries its own signatures.
 4. Sign the draft, from an up-to-date checkout. gpg asks for the key's passphrase:
 
    ```bash
@@ -193,9 +195,12 @@ If the private key is ever lost, published or stolen:
 
 ## Scorecard
 
-OpenSSF Scorecard's Signed-Releases check looks for signature files (such as `.asc`) among a project's
-recent release assets. Signed releases give it something to find. Only releases signed from now on can
-count, and the effect on the score hasn't been measured.
+OpenSSF Scorecard's Signed-Releases check (v5.6.0) looks at the assets of the last five releases. A
+release scores 8 when one of its files is a signature (`.asc`, `.sig`, `.minisig`, `.sign`, `.sigstore`,
+`.sigstore.json`) and 10 when one is a provenance file (`.intoto.jsonl`). The check is the average, rounded
+down. In November 2026 only 0.5.4 counted (`SHA256SUMS.asc`, 8), which gives 1/10. Past releases are not
+re-signed, so the score rises only as new releases replace them. With both files on every release from
+now on, it should read 3, 5, 7, 9 and then 10.
 
 ## Reusing this for another project
 

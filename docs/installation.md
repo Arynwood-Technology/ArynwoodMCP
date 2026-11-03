@@ -114,6 +114,15 @@ release workflow, of the exact file it built and the tag it was built from. With
 gh attestation verify arynwood-mcp_*_amd64.AppImage -R Arynwood-Technology/ArynwoodMCP
 ```
 
+Releases after 0.5.4 also carry those attestations as one file,
+`arynwood-mcp_<version>_provenance.intoto.jsonl`. Save it next to the package to check against the
+release's own copy instead of fetching it from GitHub:
+
+```bash
+gh attestation verify arynwood-mcp_*_amd64.AppImage -R Arynwood-Technology/ArynwoodMCP \
+  --bundle arynwood-mcp_*_provenance.intoto.jsonl
+```
+
 The packages are not code-signed. An attestation proves where a file was built; it doesn't
 change what your system shows when you open it.
 

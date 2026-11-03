@@ -83,6 +83,33 @@ jobs:
           for f in artifacts/linux/*.AppImage artifacts/linux/*.deb artifacts/windows/*-setup.exe; do
             gh attestation verify "$f" --repo "$GITHUB_REPOSITORY" --source-ref "refs/tags/$RELEASE_TAG" --deny-self-hosted-runners
           done
+      # The same attestations as one file on the release, so a download can be checked against the
+      # release itself: `gh attestation verify <package> --bundle <file>`. Each line is a Sigstore bundle
+      # holding a signed SLSA provenance statement. The `.intoto.jsonl` ending is the convention that
+      # tools (OpenSSF Scorecard among them) look for. Every package is checked against the file before
+      # it is attached.
+      - name: Collect the attestations into the release's provenance file
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=${RELEASE_TAG#v}
+          provenance="$GITHUB_WORKSPACE/artifacts/arynwood-mcp_${version}_provenance.intoto.jsonl"
+          packages=("$GITHUB_WORKSPACE"/artifacts/linux/*.AppImage "$GITHUB_WORKSPACE"/artifacts/linux/*.deb \
+            "$GITHUB_WORKSPACE"/artifacts/windows/*-setup.exe)
+          mkdir "$RUNNER_TEMP/attestations"
+          cd "$RUNNER_TEMP/attestations"
+          # Writes one sha256:<digest>.jsonl per package into the current folder.
+          for f in "${packages[@]}"; do
+            gh attestation download "$f" --repo "$GITHUB_REPOSITORY" --predicate-type https://slsa.dev/provenance/v1
+          done
+          # The AppImage and .deb share one attestation: keep each bundle once.
+          cat ./*.jsonl | awk 'NF && !seen[$0]++' > "$provenance"
+          test -s "$provenance"
+          for f in "${packages[@]}"; do
+            gh attestation verify "$f" --bundle "$provenance" --repo "$GITHUB_REPOSITORY" \
+              --source-ref "refs/tags/$RELEASE_TAG" --deny-self-hosted-runners
+          done
+          echo "$(wc -l < "$provenance") attestation(s) in $(basename "$provenance")"
       - name: Install isolated verification dependencies
         run: |
           sudo apt-get update
@@ -151,12 +178,14 @@ jobs:
             GST_PLUGIN_FEATURE_RANK=alsadeviceprovider:NONE,pipewiredeviceprovider:NONE,alsasrc:NONE,pipewiresrc:NONE \
             WEBKIT_DISABLE_DMABUF_RENDERER=1 python3 "$GITHUB_WORKSPACE/scripts/check_webkit_media.py" \
             "$GITHUB_WORKSPACE/media" audio:a.wav audio:a.mp3 video:a.mp4 webaudio:a.wav recorder mic
-      - name: Attach verified Windows installer to the draft release
+      - name: Attach verified Windows installer and provenance file to the draft release
         shell: bash
         run: |
           set -euo pipefail
+          version=${RELEASE_TAG#v}
           gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft | grep -x true
-          gh release upload "$RELEASE_TAG" artifacts/windows/*-setup.exe artifacts/windows/SHA256SUMS-windows.txt
+          gh release upload "$RELEASE_TAG" artifacts/windows/*-setup.exe artifacts/windows/SHA256SUMS-windows.txt \
+            "artifacts/arynwood-mcp_${version}_provenance.intoto.jsonl"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: verified-release-checksums

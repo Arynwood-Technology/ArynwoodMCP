@@ -13,6 +13,7 @@
 - `SHA256SUMS`: the SHA-256 checksum of every package above
 - `SHA256SUMS.asc`: the release key's signature of `SHA256SUMS`
 - `SHA256SUMS.txt`, `SHA256SUMS-windows.txt`: the build's own checksum lists
+- `arynwood-mcp_X.Y.Z_provenance.intoto.jsonl`: the build attestations of the three packages
 
 ## Changes
 
@@ -36,7 +37,8 @@ which does both. Windows steps and what to do if a check fails:
 [release signing](https://github.com/Arynwood-Technology/ArynwoodMCP/blob/main/docs/release-signing.md#verifying-a-download).
 
 Each package also has a build attestation:
-`gh attestation verify <package> -R Arynwood-Technology/ArynwoodMCP`.
+`gh attestation verify <package> -R Arynwood-Technology/ArynwoodMCP`. Add
+`--bundle arynwood-mcp_X.Y.Z_provenance.intoto.jsonl` to check it against this release's copy.
 
 ## Known issues
 

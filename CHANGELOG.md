@@ -9,6 +9,12 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Added
+
+- Releases carry `arynwood-mcp_<version>_provenance.intoto.jsonl`: every package's build
+  attestation in one file, checked against each package before Verify release artifacts
+  attaches it. `gh attestation verify <package> --bundle <file>` checks a download against it.
+
 ### Changed
 
 - Frontend toolchain: Vite 8, ESLint 10, TypeScript 6.0 and lucide-react 1.x.
