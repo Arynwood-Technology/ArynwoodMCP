@@ -92,7 +92,9 @@ cd "$dir"
 packages=()
 for f in *; do
   [[ -f "$f" ]] || continue
-  case "$f" in SHA256SUMS*.txt|*.asc|*.sig) continue ;; esac
+  # Not packages: the CI checksum lists, signatures, and the build attestations (Verify release artifacts
+  # attaches *_provenance.intoto.jsonl; it carries its own Sigstore signatures).
+  case "$f" in SHA256SUMS*.txt|*.asc|*.sig|*.intoto.jsonl) continue ;; esac
   [[ "$f" =~ ^[A-Za-z0-9._+-]+$ ]] || die "unexpected characters in a file name: $f"
   packages+=("$f")
 done

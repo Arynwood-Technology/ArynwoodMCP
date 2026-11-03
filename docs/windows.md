@@ -20,6 +20,9 @@ for a Tauri/WebView2 app with a bundled Python backend. It is an alpha. Read the
    From 0.5.4 on, you can also check where the installer was built, with the
    [GitHub CLI](https://cli.github.com/):
    `gh attestation verify .\arynwood-mcp_<version>_x64-setup.exe -R Arynwood-Technology/ArynwoodMCP`
+   Releases after 0.5.4 also carry `arynwood-mcp_<version>_provenance.intoto.jsonl`; with it in the same
+   folder, add `--bundle .\arynwood-mcp_<version>_provenance.intoto.jsonl` to check against the release's
+   own copy.
 
    Releases signed with the release key (starting with 0.5.4) also carry `SHA256SUMS` and `SHA256SUMS.asc`;
    [release signing](release-signing.md#verifying-a-download) has the PowerShell steps.

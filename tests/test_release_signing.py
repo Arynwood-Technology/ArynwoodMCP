@@ -195,6 +195,33 @@ def test_sign_refuses_without_a_key_or_with_unexpected_files(signed, tmp_path, g
     assert r.returncode == 1 and "already has SHA256SUMS" in r.stderr
 
 
+@needs_tools
+def test_the_provenance_file_is_not_a_package(tmp_path, gpg_home):
+    # Verify release artifacts attaches the build attestations to the draft before the owner signs it, so
+    # sign-release.sh downloads them too. They carry their own signatures; SHA256SUMS lists packages only.
+    fpr, public = make_key(gpg_home, tmp_path, "Release")
+    d = make_release(tmp_path)
+    provenance = d / "arynwood-mcp_9.9.9_provenance.intoto.jsonl"
+    provenance.write_text('{"mediaType":"application/vnd.dev.sigstore.bundle.v0.3+json"}\n')
+    r = run(SIGN, "--from-dir", d, "--key", public, "--fingerprint", fpr, env=gpg_home)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert provenance.name not in (d / "SHA256SUMS").read_text()
+    r = verify({"dir": d, "fpr": fpr, "key": public}, None, "--require-all")
+    assert r.returncode == 0, r.stdout
+    assert "WARN" not in r.stdout
+
+
+def test_verify_workflow_attaches_the_provenance_file():
+    # The name the workflow writes is the name it uploads, and both scripts above know the ending.
+    workflow = (ROOT / ".github" / "workflows" / "verify-release.yml").read_text()
+    name = "arynwood-mcp_${version}_provenance.intoto.jsonl"
+    assert f'provenance="$GITHUB_WORKSPACE/artifacts/{name}"' in workflow
+    assert f'"artifacts/{name}"' in workflow.split("gh release upload", 1)[1]
+    assert re.search(r"gh attestation verify \"\$f\" --bundle \"\$provenance\".*\n.*--source-ref", workflow)
+    for script in (SIGN, VERIFY):
+        assert "*.intoto.jsonl)" in script.read_text()
+
+
 def test_published_key_fingerprint_and_docs_agree():
     script = VERIFY.read_text()
     pinned = re.search(r'^RELEASE_KEY_FINGERPRINT="([0-9A-F]*)"$', script, re.M).group(1)

@@ -1,5 +1,24 @@
 # Scorecard follow-up
 
+## Signed releases — 2026-11-02
+
+The analysis of `e5f016c` (after #48 and #49) is still **6.7/10**. Signed-Releases is
+1/10. Scorecard v5.6.0 scores each of the last five releases: 8 for a signature asset
+(`.asc` and similar), 10 for a provenance asset (`.intoto.jsonl`), then takes the average
+rounded down. Only 0.5.4 counts (`SHA256SUMS.asc`).
+
+Every package from 0.5.4 on already has a GitHub build attestation, but those live in
+GitHub's attestation store, not among the release's files. **Verify release artifacts**
+now also downloads them, checks every package against the downloaded copy, and attaches
+them to the draft as `arynwood-mcp_<version>_provenance.intoto.jsonl`. Users can check a
+download against it with `gh attestation verify <package> --bundle <file>`. The file uses
+no new action. `slsa-github-generator`, the usual source of `.intoto.jsonl` files, was not
+used: it must be referenced by tag, and Scorecard counts that reference as unpinned
+(`checks/raw/pinned_dependencies.go`, `job.WorkflowCall.Uses`).
+
+Releases up to 0.5.3 stay as published. If every release from now on is signed and carries
+the provenance file, the check should read 3, 5, 7, 9 and then 10 over the next five releases.
+
 ## Review — 2026-11-01
 
 The [published analysis](https://api.scorecard.dev/projects/github.com/Arynwood-Technology/ArynwoodMCP)

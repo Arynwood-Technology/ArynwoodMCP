@@ -144,7 +144,8 @@ done < SHA256SUMS
 # 7. Files here that the signature doesn't cover
 for f in *; do
   [[ -f "$f" ]] || continue
-  case "$f" in SHA256SUMS|SHA256SUMS.asc|SHA256SUMS*.txt|release-signing-key.asc) continue ;; esac
+  # The build attestations (*.intoto.jsonl) carry their own signatures: gh attestation verify --bundle.
+  case "$f" in SHA256SUMS|SHA256SUMS.asc|SHA256SUMS*.txt|release-signing-key.asc|*.intoto.jsonl) continue ;; esac
   covered=0
   for seen in ${listed[@]+"${listed[@]}"}; do [[ "$seen" == "$f" ]] && covered=1; done
   ((covered)) || warn "$f is not covered by the signature"
