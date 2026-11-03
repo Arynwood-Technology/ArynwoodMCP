@@ -34,6 +34,7 @@ release, so their dates come from [CHANGELOG.md](../CHANGELOG.md).
 | 0.5.2 | 2026-10-23 | Community screens from Arynwood Grove 0.7.1 ([notes](releases/0.5.2.md)) |
 | 0.5.3 | 2026-10-23 | Security release: Pillow 13, checked social uploads, Python 3.11+ ([notes](releases/0.5.3.md)) |
 | 0.5.4 | 2026-10-26 | Signed checksums, verified artifacts, recording/audition fixes and security updates ([notes](releases/0.5.4.md)) |
+| 0.5.5 | 2026-11-03 | Security and maintenance: SSH host-key minimums, Tauri 2.12.5, provenance file on the release ([notes](releases/0.5.5.md)) |
 
 The Community page in Arynwood MCP is a client for Arynwood Grove, which is a separate service.
 Build provenance attestations were added after 0.5.3; 0.5.4 is the first release to carry them and owner-signed checksums.
@@ -43,6 +44,6 @@ Build provenance attestations were added after 0.5.3; 0.5.4 is the first release
 Arynwood Grove is a separate community service with no AI features. Its repository's first
 commit, `8aa6fbd` on 2026-09-23, is "Initial Arynwood Community release" (Community 0.3).
 Grove 0.4.0 renamed it and added the one-command server install; a Community 0.3 server
-upgrades in place. v0.4.0 was tagged on 2026-10-08, and the latest release is v0.7.4
-(2026-10-26). Each version is described in
+upgrades in place. v0.4.0 was tagged on 2026-10-08, and the latest release is v0.7.5
+(2026-11-03). Each version is described in
 [Grove's release notes](https://github.com/Arynwood-Technology/arynwood-community/blob/main/docs/PRERELEASE.md).
