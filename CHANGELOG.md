@@ -23,6 +23,8 @@ them as a summary, not a precise record.
   Vite's build step is about ten times faster.
 - CI and release workflows use the current major versions of GitHub's checkout,
   artifact and Pages actions.
+- The AppImage sets `GDK_BACKEND=x11` itself unless you set one, so it keeps running
+  under X11 as before; the updated bundler's launch hook no longer does it.
 
 ### Removed
 

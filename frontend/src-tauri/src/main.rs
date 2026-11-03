@@ -380,6 +380,14 @@ fn main() {
     #[cfg(target_os = "linux")]
     {
         std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        // An AppImage runs on X11 (XWayland on a Wayland desktop), as every release up to
+        // 0.5.4 did. Until 0.5.4, the bundler's GTK launch hook exported GDK_BACKEND=x11;
+        // the hook that came with the 2026-11 Tauri CLI update no longer does ("AppImage
+        // used to crash on Wayland", tauri-apps/tauri#8541), so the choice is made here.
+        // A GDK_BACKEND the user set is left alone, and the .deb keeps the system's default.
+        if std::env::var_os("APPIMAGE").is_some() && std::env::var_os("GDK_BACKEND").is_none() {
+            std::env::set_var("GDK_BACKEND", "x11");
+        }
     }
 
     // Dev builds (tauri dev / arynwood-desktop.sh) use the live venv; production
