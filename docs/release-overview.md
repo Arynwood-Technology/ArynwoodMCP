@@ -1,8 +1,15 @@
 # Release overview
 
-## Latest release (0.5.4)
+## Latest release (0.5.5)
 
-0.5.4 adds owner-signed checksums and verified build attestations for all packages,
+0.5.5 is a security and maintenance release. Deploy refuses an SSH host key weaker than
+2048-bit RSA or 256-bit ECDSA before sending credentials; the desktop shell moves to Tauri 2.12.5,
+which drops the advisory-affected `rand` 0.7.3 and `fxhash`; certifi, setuptools and other
+dependencies are updated; and each release carries its build attestations as
+`arynwood-mcp_<version>_provenance.intoto.jsonl`. The AppImage keeps running under X11. Community's
+wish lamp is removed.
+
+Included from 0.5.4: owner-signed checksums and verified build attestations for all packages,
 PCM microphone recording and first-click WebAudio audition fixes, stricter desktop
 browser policy and API protections, hash-locked CI installs and IRC property fuzzing.
 Official artifact verification and signature checks passed before publication.
@@ -21,7 +28,7 @@ contrast check of the whole app, and updated dependencies for security. Since 0.
 tasks, lists, notes, board, discussion and members, from the Grove on this computer or one on
 a server. Anyone on 0.4.8 or later sees an update notice; earlier versions need one manual
 install. This remains a single-owner desktop alpha with documented
-[security limits](../SECURITY.md). See [docs/releases/0.5.4.md](releases/0.5.4.md) and
+[security limits](../SECURITY.md). See [docs/releases/0.5.5.md](releases/0.5.5.md) and
 [docs/community.md](community.md).
 
 **Experimental: headless gateway.** A remote control for your own workspace: reach Arynwood
@@ -42,7 +49,7 @@ they are not end-to-end encrypted.
 
 ## Download and demo context
 
-**The packaged alpha** (v0.5.4: AppImage and `.deb` for Linux x86_64, and a Windows x64 installer) covers the core workspace. LoRA training, script-based
+**The packaged alpha** (v0.5.5: AppImage and `.deb` for Linux x86_64, and a Windows x64 installer) covers the core workspace. LoRA training, script-based
 GPU tools and the project file browser need a source checkout. Models and supporting services are installed
 separately. Requirements and limits: [arynwood.com/mcp](https://arynwood.com/mcp/).
 

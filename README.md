@@ -18,13 +18,14 @@ calendars, files and community spaces.
 
 Arynwood MCP is an **open-source desktop alpha**, for one owner on one machine.
 Linux x86_64 AppImage and `.deb` packages and a Windows x64 installer are available.
-**0.5.4 is published, with signed checksums and verified build provenance.**
-Download it from [Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases/tag/v0.5.4).
+**0.5.5 is published, with signed checksums and verified build provenance.**
+Download it from [Releases](https://github.com/Arynwood-Technology/ArynwoodMCP/releases/tag/v0.5.5).
 
-Version 0.5.4 brings security fixes, stricter desktop browser policy,
-PCM microphone recording, a first-play WebAudio audition fix and updated desktop
-dependencies. It also adds hashed Python build dependencies and bounded IRC
-property fuzzing. [Release notes](docs/releases/0.5.4.md) · [Verification record](docs/releases/0.5.4-readiness.md).
+Version 0.5.5 is a security and maintenance release: Deploy checks SSH host-key
+strength before signing in, the desktop shell moves to Tauri 2.12.5, Python and
+frontend dependencies are updated, and every release now carries its build
+attestations as a file. Community's wish lamp is removed.
+[Release notes](docs/releases/0.5.5.md) · [Verification record](docs/releases/0.5.5-readiness.md).
 
 Main requires pull requests and passing backend, frontend, API-reference and
 Windows checks. CodeQL and OpenSSF Scorecard run alongside the test workflows.
@@ -69,9 +70,10 @@ a GPU is optional for basic chat, while generation tools have their own requirem
 [Platform requirements](docs/supported-platforms.md) · [Installation and first run](docs/installation.md).
 
 **Verify downloads before running them.** Published 0.5.3 has build checksums but
-no provenance attestations or release-key signature. Release 0.5.4 includes
+no provenance attestations or release-key signature. Releases from 0.5.4 on include
 per-package GitHub attestations and owner-signed `SHA256SUMS` with its detached
-`SHA256SUMS.asc` signature. Follow the instructions for the version you download.
+`SHA256SUMS.asc` signature; from 0.5.5 the attestations also come as a release file.
+Follow the instructions for the version you download.
 [Download verification](docs/release-signing.md#verifying-a-download).
 
 ## Run from source
