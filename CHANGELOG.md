@@ -9,6 +9,8 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+## [0.5.5] — 2026-11-03
+
 ### Added
 
 - Releases carry `arynwood-mcp_<version>_provenance.intoto.jsonl`: every package's build
@@ -35,6 +37,9 @@ them as a summary, not a precise record.
 - Update frontend dependencies, including the Tauri CLI and Vitest fixes.
 - Update the desktop shell's Rust dependencies (Tauri 2.12.5, shell and notification
   plugins), removing `fxhash` and the advisory-affected `rand` 0.7.
+- Deploy refuses to connect when the trusted SSH host key for a target is weaker
+  than 2048-bit RSA or 256-bit ECDSA, or is a key type it doesn't recognize, before
+  sending any credentials.
 
 ## [0.5.4] — 2026-10-25
 
