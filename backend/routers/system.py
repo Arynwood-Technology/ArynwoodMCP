@@ -9,7 +9,7 @@ import signal
 import subprocess
 import sys
 import re
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 import httpx
 from pydantic import BaseModel
 
@@ -84,8 +84,12 @@ def can_restart() -> bool:
 
 
 @router.get("/status")
-async def get_status():
-    """GET /status — parallel health check for Ollama, TTS, SD, Prometheus, and GPU."""
+async def get_status(request: Request):
+    """GET /status — parallel health check for Ollama, TTS, SD, Prometheus, and GPU.
+
+    `version` is this backend's release, so the screens can tell when they come from a different build
+    (a backend left running from another copy, or a desktop build that packaged another release's backend).
+    """
     checks = await asyncio.gather(
         ping_http("http://localhost:11434"),
         ping_port("localhost", TOOL_PORTS["tortoise_tts"]),
@@ -101,6 +105,7 @@ async def get_status():
         "platform": platform.system(),
         "can_restart": can_restart(),
         "cpu_mode": machine.state(),
+        "version": request.app.version,
     }
 
 

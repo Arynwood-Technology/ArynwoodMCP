@@ -143,6 +143,8 @@ jobs:
           print('PASS no private configuration, databases or memory files in frozen archive')
           PY
       - name: Smoke-test the extracted frozen backend
+        env:
+          SMOKE_EXPECT_VERSION: ${{ inputs.tag }}   # the release's own version, whatever this checkout is
         run: python3 scripts/smoke_packaged_backend.py extracted/squashfs-root/usr/bin/arynwood-backend
       - name: Verify bundled WebKitGTK playback and recording
         shell: bash

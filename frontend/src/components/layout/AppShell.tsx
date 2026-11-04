@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { UpdateNotice } from './UpdateNotice'
+import { VersionNotice } from './VersionNotice'
 import { CommandPalette } from './CommandPalette'
 import { StatusDrawer } from './StatusDrawer'
 import { PageErrorBoundary } from './PageErrorBoundary'
@@ -83,6 +84,7 @@ export function AppShell() {
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {DEMO && <DemoBanner />}
+        <VersionNotice />
         <UpdateNotice />
         {!onDesign && <TopBar title={title} />}
         <main className="relative min-h-0 flex-1">

@@ -8,6 +8,7 @@ import type {
   CheckpointList, ModelFileList, KnowledgeStatus, KnowledgeSource, Sidecar, McpServerInfo, GpuQueue,
   DjTool, DjSession, MusicProviderCapability,
 } from '../api'
+import { APP_VERSION } from '../updates'
 
 export const PERSONAS: Persona[] = [
   { id: 'central', name: 'Arynwood', role: 'MCP Interface and Coordinator', model: 'hermes3:8b' },
@@ -32,6 +33,7 @@ export const STATUS: SystemStatus = {
   },
   platform: 'Linux',
   can_restart: false, // matches the real value in a packaged build — this demo isn't one, but "no restart button" is the honest answer here too
+  version: APP_VERSION,
 }
 
 export const GPU_QUEUE: GpuQueue = { running: null, depth: 0, waiting: [] }

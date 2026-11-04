@@ -116,9 +116,11 @@ uvicorn --reload only respawns the worker on file-change events — a SIGTERM to
 
 Parallel health check for Ollama, TTS, SD, Prometheus, and GPU.
 
+`version` is this backend's release, so the screens can tell when they come from a different build (a backend left running from another copy, or a desktop build that packaged another release's backend).
+
 - Handler: [`get_status`](../../../backend/routers/system.py)
 - Access: this computer only, or the API key once `ARYNWOOD_API_KEY` is set
 
 **Response**
 
-- `200`: JSON object with `ollama`, `tortoise_tts`, `stable_diffusion`, `prometheus`, `gpu` (JSON object with `available`, or JSON object with `available`, `name`, `temp`, `utilization`, `memory_used`, `memory_total`), `platform`, `can_restart`, `cpu_mode` (JSON object with `enabled`, `setting`, `nvidia_gpu`)
+- `200`: JSON object with `ollama`, `tortoise_tts`, `stable_diffusion`, `prometheus`, `gpu` (JSON object with `available`, or JSON object with `available`, `name`, `temp`, `utilization`, `memory_used`, `memory_total`), `platform`, `can_restart`, `cpu_mode` (JSON object with `enabled`, `setting`, `nvidia_gpu`), `version`

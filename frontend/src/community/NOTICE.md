@@ -12,4 +12,6 @@ website previews are served by Arynwood's backend at the address the Grove gives
 invitation links name the Grove's own address; joining from an invitation link stays inside
 the app; downloads are saved as files; outside links open in the system browser; a Grove's
 look colours the Community page only, not the app's window, title or icon; and `arynwood.css`
-fits the members' page into the Community page. They match Arynwood Grove 0.7.1.
+fits the members' page into the Community page. Grove's genie lamp and wishes are left out.
+Otherwise they match Arynwood Grove 0.7.5 (`SCREENS_GROVE_VERSION` in `lib/grove.ts`, shown on the
+Community page).

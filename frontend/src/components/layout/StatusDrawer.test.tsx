@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { StatusDrawer } from './StatusDrawer'
 import { useAppStore } from '../../store/useAppStore'
+import { APP_VERSION } from '../../lib/updates'
 
 const json = (body: unknown) =>
   new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } })
@@ -13,7 +14,7 @@ function mockApi(overrides: Record<string, unknown> = {}) {
     '/api/system/status': {
       ollama: true, tortoise_tts: false, stable_diffusion: false, prometheus: false,
       gpu: { available: true, name: 'RTX 3060', temp: '55', utilization: '12', memory_used: '2048', memory_total: '12288' },
-      platform: 'Linux',
+      platform: 'Linux', version: APP_VERSION,
     },
     '/api/system/gpu-queue': { running: null, depth: 0, waiting: [] },
     '/api/servers': [{ id: 1, name: 'Local Ollama', host: 'localhost', port: 11434, type: 'ollama', enabled: 1, created_at: '' }],
@@ -95,6 +96,23 @@ describe('StatusDrawer', () => {
     await waitFor(() => expect(screen.getByText(/doesn't include a Tortoise server/)).toBeInTheDocument())
     // ...while a healthy Qdrant keeps its remedy hidden.
     expect(screen.queryByText(/needs Qdrant up/)).not.toBeInTheDocument()
+  })
+
+  it('shows one version when the screens and the backend are the same release', async () => {
+    useAppStore.getState().setStatusDrawerOpen(true)
+    render(<StatusDrawer />)
+
+    await waitFor(() => expect(screen.getByText(`Arynwood MCP ${APP_VERSION}`)).toBeInTheDocument())
+    expect(screen.queryByText(/come from different builds/)).not.toBeInTheDocument()
+  })
+
+  it('flags a backend from another release, with the fix', async () => {
+    mockApi({ '/api/system/status': { ollama: true, gpu: { available: false }, platform: 'Linux', version: '0.0.1' } })
+    useAppStore.getState().setStatusDrawerOpen(true)
+    render(<StatusDrawer />)
+
+    await waitFor(() => expect(screen.getByText(`Screens ${APP_VERSION} · backend 0.0.1`)).toBeInTheDocument())
+    expect(screen.getByText(/come from different builds/)).toBeInTheDocument()
   })
 
   it('closes from its own control', async () => {
