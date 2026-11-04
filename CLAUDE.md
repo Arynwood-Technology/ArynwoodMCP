@@ -673,7 +673,10 @@ CSP fix, before it actually worked.
   WebKitGTK a cross-origin `download` attribute is silently ignored, a blob one is honoured. The CSP in
   `tauri.conf.json` needs `media-src ... blob:` or every `blob:` preview (files picked from disk, recordings) fails
   with error 4. `main.rs`'s `on_download` must leave `destination` alone — wry pre-fills Downloads + the name WebKit
-  suggests. None of this shows in a source checkout, because Vite proxies `/api` and the origin is the backend's.
+  suggests. **A download started inside an `<iframe>` from another origin is dropped too** (data: and blob: links alike,
+  measured 2026-11-04 in the packaged app): Design Center and Client Intake post `{type: 'arynwood:download', name,
+  dataUrl | path}` to the window, and `useFrameDownloads` (`lib/frameDownloads.ts`, used by `DesignCenter` and Tool
+  Library's `IframePanel`) saves it there. Any other html-tool that downloads needs the same. None of this shows in a source checkout, because Vite proxies `/api` and the origin is the backend's.
 
 **Building and verifying an AppImage locally (do NOT install it over the user's daily app).**
 ```bash

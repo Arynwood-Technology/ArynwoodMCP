@@ -3027,6 +3027,7 @@ const App = {
     const actions=document.createElement('div'); actions.className='vt-result-actions';
     const dl=document.createElement('a'); dl.className='tbtn pr';
     dl.href=fileUrl; dl.download=spec.resultType==='gif' ? 'result.gif' : 'result.mp4';
+    dl.onclick=e=>{ if(this._framed()){ e.preventDefault(); this._download(dl.download,{path:fileUrl}); } };
     dl.textContent='⬇ Download';
     dl.style.cssText='text-decoration:none;justify-content:center;flex:1;display:flex;align-items:center';
     actions.appendChild(dl);
@@ -3525,6 +3526,7 @@ const App = {
           </div>
         `;
         const dl=document.createElement('a'); dl.href=f.download_url; dl.download=f.filename;
+        dl.onclick=e=>{ if(this._framed()){ e.preventDefault(); this._download(f.filename,{path:f.download_url}); } };
         const btn=document.createElement('button'); btn.className='tbtn pr'; btn.textContent='↓ Download';
         dl.appendChild(btn);
         row.appendChild(dl);
@@ -3720,14 +3722,28 @@ const App = {
     }catch(err){status.textContent='Save failed: '+(err.message||err);}
   },
 
+  // Inside Arynwood this page is a frame from another origin (the desktop window is tauri://localhost), and the
+  // desktop app's web view (WebKitGTK) silently drops a download started in such a frame, data: and blob: links
+  // alike. So the app's window saves the file (frontend/src/lib/frameDownloads.ts): a canvas image as a
+  // data: URL, or a backend file by its /api/ path. Framing is limited to Arynwood's own origins
+  // (frame-ancestors), hence '*'. Opened on its own, a plain download link works.
+  _framed(){ return window.parent!==window; },
+  _download(name,{dataUrl,path}){
+    if(this._framed()){
+      window.parent.postMessage({type:'arynwood:download',name,dataUrl,path},'*');
+      return;
+    }
+    const a=document.createElement('a');
+    a.href=dataUrl||path; a.download=name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  },
+
   saveDownload(){
     if(!this._saveURL) return;
     const name=document.getElementById('sv-name').value.trim()||('design.'+this._saveExt);
-    const a=document.createElement('a');
-    a.href=this._saveURL; a.download=name;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    this._download(name,{dataUrl:this._saveURL});
     this.closeSave();
-    this.toast('Downloaded '+name+' ✦');
+    this.toast((this._framed()?'Saving '+name+' to Downloads':'Downloaded '+name)+' ✦');
   },
 
   async saveMkdir(){

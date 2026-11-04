@@ -1,3 +1,5 @@
+import { useRef } from 'react'
+import { useFrameDownloads } from '../lib/frameDownloads'
 
 // Stable URL — no Date.now() here. Date.now() on every render causes App.tsx to
 // re-render on each navigation, generating a new timestamp URL and reloading the
@@ -21,8 +23,13 @@ const DESIGN_CENTER_URL = import.meta.env.PROD
   : '/html-tools/design-center.html'
 
 export function DesignCenter() {
+  const frame = useRef<HTMLIFrameElement>(null)
+  // Downloads started inside the frame are saved by this window instead (lib/frameDownloads.ts).
+  useFrameDownloads(frame, DESIGN_CENTER_URL)
+
   return (
     <iframe
+      ref={frame}
       src={DESIGN_CENTER_URL}
       style={{
         width: '100%',

@@ -9,6 +9,13 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Fixed
+
+- Design Center's **Download Instead**, and its download buttons for video results and LoRA files, saved
+  nothing in the desktop app while saying "Downloaded": the app's web view drops downloads started inside
+  a tool's frame. The app's window now saves them, into Downloads, and the same goes for Client Intake's
+  **Publish** (the generated website). Design Center's **Save Here** was not affected.
+
 ### Changed
 
 - The `.deb` names its maintainer (Arynwood Technology), homepage and a full description, so
