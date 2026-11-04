@@ -14,6 +14,12 @@ def test_system_status(client):
     assert r.status_code == 200
 
 
+def test_system_status_reports_the_release(client):
+    """The screens compare this with their own version (StatusDrawer, VersionNotice)."""
+    from backend.api import app
+    assert client.get("/api/system/status").json()["version"] == app.version
+
+
 def test_metrics_exposed(client):
     r = client.get("/metrics")
     assert r.status_code == 200

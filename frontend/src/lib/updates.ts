@@ -2,6 +2,16 @@ import { invoke, isTauri } from '@tauri-apps/api/core'
 import { version } from '../../package.json'
 
 export const APP_VERSION = version
+
+/**
+ * Whether the backend answering these screens is another release: one left running from another copy that
+ * holds port 8010, or a desktop build that packaged another release's backend (issue #24). A backend that
+ * answers without a version predates the report, so it differs too. No status yet is not a difference.
+ */
+export function backendDiffers(status: { version?: string } | null): boolean {
+  return !!status && status.version !== APP_VERSION
+}
+
 export const RELEASES_URL = 'https://github.com/Arynwood-Technology/ArynwoodMCP/releases'
 export const UPDATE_API = 'https://api.github.com/repos/Arynwood-Technology/ArynwoodMCP/releases/latest'
 export const UPDATE_INTERVAL_MS = 6 * 60 * 60 * 1000

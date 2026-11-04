@@ -10,9 +10,14 @@ a frozen binary launched with an AppImage's environment:
   * "Restart API" claimed success and did nothing
   * generated files were written into a temp extraction dir and lost on quit
   * quitting the app left the backend (and its sidecars) running, squatting :8010 and GPU memory
+  * a desktop build packaged another release's backend (copied from an installed AppImage) with this
+    checkout's screens, so the screens and the backend disagreed and nothing said so (issue #24)
 
 It is hermetic: an isolated port and XDG data dir (your real DB, personas and logs are never touched), and a
 fake sidecar, so no MusicStudio checkout or GPU is needed. Exit code 0 = all checks passed.
+
+The binary must be this checkout's version (frontend/package.json), or SMOKE_EXPECT_VERSION when checking a
+published release's backend from another checkout.
 """
 import json
 import os
@@ -30,7 +35,17 @@ PORT = int(os.environ.get("SMOKE_PORT", "18011"))
 # A CPU sidecar from backend/routers/studio.py SIDECARS: CI runners have no NVIDIA GPU, so CPU mode
 # is on there and a GPU sidecar (voice, song-gen) is refused.
 SIDECAR_ID, SIDECAR_PORT = "audio-fx", 8002
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 failures: list[str] = []
+
+
+def expected_version() -> str:
+    """The release this binary has to be: the screens it will be packaged with come from this checkout."""
+    wanted = os.environ.get("SMOKE_EXPECT_VERSION", "").strip()
+    if wanted:
+        return wanted.removeprefix("v")
+    with open(os.path.join(ROOT, "frontend", "package.json")) as f:
+        return json.load(f)["version"]
 
 
 def check(name: str, ok: bool, detail: str = "") -> bool:
@@ -133,6 +148,12 @@ def main(binary: str) -> int:
         if not check("starts and answers /api/system/status", up, open(log.name).read()[-600:]):
             return 1
         backend = listener_pid(PORT)
+
+        # From the schema, not /api/system/status: older backends don't report a version there.
+        want, built = expected_version(), ((api("/openapi.json")[1] or {}).get("info") or {}).get("version")
+        check(f"is version {want}, like the screens it is packaged with", built == want,
+              f"this binary is {built}. Build the backend from this checkout (make package-backend) "
+              "instead of reusing another release's binary")
 
         st, body = api("/api/system/status")
         check("reports it cannot restart itself", body.get("can_restart") is False)

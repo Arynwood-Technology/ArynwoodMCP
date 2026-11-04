@@ -610,7 +610,10 @@ CSP fix, before it actually worked.
   debugging, a manually-started backend instance) will make the packaged app
   silently talk to the wrong backend instead of its own bundled one. Always confirm
   `lsof -i :8010` is clear of unrelated processes before treating a packaged-app
-  bug report as reproduced.
+  bug report as reproduced. When that backend is another release, the app says so:
+  `/api/system/status` reports `version`, and `VersionNotice` plus System status's
+  Version row compare it with the screens' own (`backendDiffers` in `lib/updates.ts`;
+  a backend that reports no version is older than the check, so it differs too).
 - **A hand-rolled `__file__`-relative path chain silently broke `mcp_servers.json`
   in a packaged build** (fixed 2026-09-15). `mcp_proxy.py`'s `_CONFIG_PATH` used to
   compute its location via `dirname(dirname(dirname(__file__)))` instead of the
@@ -680,6 +683,8 @@ CSP fix, before it actually worked.
 git status --short                                   # build from a CLEAN committed tree, never mid-edit
 venv/bin/pyinstaller --noconfirm arynwood-backend.spec           # -> dist/arynwood-backend
 venv/bin/python scripts/smoke_packaged_backend.py dist/arynwood-backend   # GATE: must print ALL CHECKS PASSED
+# The gate also fails when the binary isn't this checkout's version. Never reuse a backend copied from an
+# installed release: its screens and backend then disagree, which looked like old Community screens (issue #24).
 cp dist/arynwood-backend frontend/src-tauri/binaries/arynwood-backend-x86_64-unknown-linux-gnu
 eval "$(scripts/stage_gstreamer_plugins.sh "$TMPDIR/gst-plugins")"   # curated GStreamer set — see the gotcha below
 cd frontend && APPIMAGE_EXTRACT_AND_RUN=1 npx tauri build --bundles appimage \

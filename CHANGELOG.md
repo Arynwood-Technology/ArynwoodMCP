@@ -9,8 +9,17 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Added
+
+- The app says when its screens and its backend are different releases: a notice at the top of the
+  window and a Version row in System status, with the fix. This happens when another backend holds
+  port 8010, or when a desktop build packages another release's backend; before, the only sign was
+  out-of-date screens (#24). `/api/system/status` now reports `version`.
+
 ### Changed
 
+- The frozen-backend smoke test fails when the backend binary isn't the checkout's version, so a
+  build can't reuse a backend copied from an installed release (#24).
 - The `.deb` names its maintainer (Arynwood Technology), homepage and a full description, so
   package tools and Ubuntu's App Center no longer show "arynwood" and "(none)". The Windows
   installer's publisher stays "arynwood": it names the registry key that an upgrade reads to
