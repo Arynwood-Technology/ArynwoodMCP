@@ -163,6 +163,26 @@ def test_missing_signature_and_malformed_lines_fail(signed):
 
 
 @needs_tools
+def test_a_relative_key_path_is_read_from_where_you_run_the_script(tmp_path, gpg_home):
+    # docs/release-signing.md: "pass it with --key old.asc". Both scripts move into the release folder,
+    # so the path must be resolved from where they were run, not from there.
+    fpr, public = make_key(gpg_home, tmp_path, "Release")
+    (tmp_path / "keys").mkdir()
+    public.rename(tmp_path / "keys" / public.name)
+    key = f"keys/{public.name}"
+    make_release(tmp_path)
+    r = run(SIGN, "--from-dir", "release", "--key", key, "--fingerprint", fpr, env=gpg_home, cwd=tmp_path)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "RESULT: PASS" in r.stdout  # its own check, which reads the key from inside the release folder
+    env = {k: v for k, v in os.environ.items() if k != "GNUPGHOME"}
+    r = run(VERIFY, "--key", key, "--fingerprint", fpr, "release", env=env, cwd=tmp_path)
+    assert r.returncode == 0, r.stdout
+    assert "RESULT: PASS. 3 package(s)" in r.stdout
+    r = run(VERIFY, "--key", "keys/missing.asc", "--fingerprint", fpr, "release", env=env, cwd=tmp_path)
+    assert r.returncode == 1 and "no such key file: keys/missing.asc" in r.stdout
+
+
+@needs_tools
 def test_unpublished_key_fails_closed(tmp_path):
     # The repository's state until the owner publishes a key: verification refuses, never passes.
     if KEY.exists():

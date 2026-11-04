@@ -61,6 +61,8 @@ fingerprint=$(printf '%s' "$fingerprint" | tr -d ' ' | tr '[:lower:]' '[:upper:]
 [[ "$fingerprint" =~ ^[0-9A-F]{40}$ ]] || die "the fingerprint is not 40 hex digits: $fingerprint"
 key_file=${key_file:-$root/docs/release-signing-key.asc}
 [[ -f "$key_file" ]] || die "the public key isn't published at $key_file yet (docs/release-signing.md)"
+# Absolute, because the check after signing runs from the release folder.
+key_file="$(cd -- "$(dirname -- "$key_file")" && pwd)/$(basename -- "$key_file")"
 gpg --batch --list-secret-keys "$fingerprint" > /dev/null 2>&1 \
   || die "the private key for $fingerprint isn't in this gpg keyring (gpg --list-secret-keys)"
 
