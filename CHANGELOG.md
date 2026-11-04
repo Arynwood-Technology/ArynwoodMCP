@@ -33,6 +33,13 @@ them as a summary, not a precise record.
 - Copyright © 2025-2026 Arynwood LLC: in the README, the Windows installer's file details,
   and a Debian copyright file plus the license text in `/usr/share/doc/arynwood-mcp/` of the `.deb`.
 
+### Fixed
+
+- `scripts/verify-release.sh` and `scripts/sign-release.sh` read a relative `--key` path from the
+  folder they were run in. Before, both looked for it inside the release folder, so the documented
+  `--key old.asc` failed with "no such key file", and signing with a relative key reported a failure
+  after the files were already signed.
+
 ## [0.5.5] — 2026-11-03
 
 ### Added

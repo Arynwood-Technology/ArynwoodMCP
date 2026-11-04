@@ -57,6 +57,11 @@ Check the download with SHA256SUMS.txt and its build attestation instead (docs/i
 
 # 3. The files
 [[ -d "$dir" ]] || stop "no such folder: $dir"
+# --key is a path from where this was run: make it absolute before moving into DIR.
+if [[ -n "$key_file" ]]; then
+  [[ -f "$key_file" ]] || stop "no such key file: $key_file"
+  key_file="$(cd -- "$(dirname -- "$key_file")" && pwd)/$(basename -- "$key_file")"
+fi
 cd "$dir"
 [[ -f SHA256SUMS ]] || stop "SHA256SUMS is missing from $dir (download it from the same release)"
 [[ -f SHA256SUMS.asc ]] || stop "SHA256SUMS.asc is missing from $dir (download it from the same release)"
