@@ -9,6 +9,13 @@ them as a summary, not a precise record.
 
 ## [Unreleased]
 
+### Changed
+
+- The `.deb` names its maintainer (Arynwood Technology), homepage and a full description, so
+  package tools and Ubuntu's App Center no longer show "arynwood" and "(none)". The Windows
+  installer's publisher stays "arynwood": it names the registry key that an upgrade reads to
+  find the previous install, so changing it needs an installer migration first.
+
 ## [0.5.5] — 2026-11-03
 
 ### Added
