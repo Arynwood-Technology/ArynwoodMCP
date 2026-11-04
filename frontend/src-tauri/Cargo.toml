@@ -3,7 +3,9 @@ name = "arynwood"
 version = "0.5.5"
 license = "AGPL-3.0-only"
 description = "Arynwood MCP Desktop"
-authors = []
+authors = ["Arynwood Technology"]
+homepage = "https://arynwood.com/mcp/"
+repository = "https://github.com/Arynwood-Technology/ArynwoodMCP"
 edition = "2021"
 rust-version = "1.90"
 
