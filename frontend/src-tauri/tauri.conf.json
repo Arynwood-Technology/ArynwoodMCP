@@ -44,6 +44,7 @@
     "longDescription": "Arynwood MCP is a desktop workspace for running AI on your own machine. It brings together multi-persona chat with local Ollama models, knowledge search and memory over your own documents, a design canvas with optional image generation, and Model Context Protocol (MCP) tool integrations.\n\nThis is an alpha for one owner on one machine. Ollama and the optional services (Qdrant for knowledge search, an image generation server) are installed separately. Chat works without a GPU.",
     "homepage": "https://arynwood.com/mcp/",
     "license": "AGPL-3.0-only",
+    "copyright": "Copyright © 2025-2026 Arynwood LLC",
     "linux": {
       "appimage": {
         "bundleMediaFramework": true,
@@ -53,7 +54,9 @@
       },
       "deb": {
         "files": {
-          "/usr/share/metainfo/com.arynwood.mcp.metainfo.xml": "linux/com.arynwood.mcp.metainfo.xml"
+          "/usr/share/metainfo/com.arynwood.mcp.metainfo.xml": "linux/com.arynwood.mcp.metainfo.xml",
+          "/usr/share/doc/arynwood-mcp/copyright": "linux/copyright",
+          "/usr/share/doc/arynwood-mcp/LICENSE": "../../LICENSE"
         }
       }
     }
