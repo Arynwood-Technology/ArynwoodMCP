@@ -7,6 +7,9 @@ import { downloadFile } from '../../lib/download'
  *  which holds the Grove sign-in: the desktop web view is a different site from any Grove, so a Grove
  *  cookie there could never be sent. */
 export const GROVE_API = '/api/community/grove'
+/** The Arynwood Grove release these screens match, shown on the Community page beside the connected Grove's own
+ *  version. NOTICE.md names the same release (tests/test_version_consistency.py): update both when porting one. */
+export const SCREENS_GROVE_VERSION = '0.7.5'
 export const groveUrl = (path: string) => apiUrl(GROVE_API + path)
 export const groveSocketUrl = (path: string) => wsUrl(GROVE_API + path)
 /** An address the Grove gave the page itself, such as its logo (`/api/brand/logo?v=…`), reached the same way. */

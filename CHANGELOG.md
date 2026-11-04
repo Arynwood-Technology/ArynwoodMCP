@@ -15,11 +15,17 @@ them as a summary, not a precise record.
   window and a Version row in System status, with the fix. This happens when another backend holds
   port 8010, or when a desktop build packages another release's backend; before, the only sign was
   out-of-date screens (#24). `/api/system/status` now reports `version`.
+- The Community page shows which Grove release its screens match ("Screens from Grove 0.7.5") beside
+  the connected Grove's own version, so an out-of-date copy is visible without comparing screens.
 
 ### Changed
 
 - The frozen-backend smoke test fails when the backend binary isn't the checkout's version, so a
   build can't reuse a backend copied from an installed release (#24).
+- The Community screens' notice now names Grove 0.7.5: Grove's screens changed after 0.7.1 only in
+  places already in Arynwood (IRC fixes, toolchain). Grove's new fuzz test for website previews is
+  included.
+
 - The `.deb` names its maintainer (Arynwood Technology), homepage and a full description, so
   package tools and Ubuntu's App Center no longer show "arynwood" and "(none)". The Windows
   installer's publisher stays "arynwood": it names the registry key that an upgrade reads to

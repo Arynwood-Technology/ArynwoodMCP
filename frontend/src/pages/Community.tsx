@@ -7,7 +7,7 @@ import {
 } from '../lib/api'
 import { cn } from '../lib/cn'
 import { Community as GroveCommunity } from '../community/Community'
-import { GroveContext, type GroveInfo } from '../community/lib/grove'
+import { GroveContext, SCREENS_GROVE_VERSION, type GroveInfo } from '../community/lib/grove'
 import { ircDisconnect } from '../community/lib/irc-manager'
 import { useAppStore as useCommunityStore } from '../community/store/useAppStore'
 
@@ -114,6 +114,10 @@ export function Community() {
             {STATE_TEXT[status.status]}{status.version ? ` · v${status.version}` : ''}
           </span>
         )}
+        <span className="text-muted"
+          title="Arynwood's copy of the Grove screens. When the Grove is newer, Open in browser shows what it added.">
+          Screens from Grove {SCREENS_GROVE_VERSION}
+        </span>
         <span className="ml-auto flex flex-wrap gap-2">
           {status?.can_start && (
             <Button size="sm" onClick={() => run(startCommunity)} disabled={busy}>
