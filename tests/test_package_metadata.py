@@ -46,3 +46,18 @@ def test_the_windows_publisher_is_unchanged():
     # publisher "arynwood"; setting bundle.publisher would make the next upgrade look in another key.
     # Set it only together with an installer step that carries the old key over.
     assert "publisher" not in _bundle()
+
+
+def test_the_copyright_is_arynwood_llc_everywhere():
+    # bundle.copyright becomes the Windows installer's LegalCopyright and branding text; the .deb carries a
+    # Debian copyright file and the license text, since the bundler writes neither.
+    bundle = _bundle()
+    assert bundle["copyright"] == "Copyright © 2025-2026 Arynwood LLC"
+    deb_files = bundle["linux"]["deb"]["files"]
+    assert deb_files["/usr/share/doc/arynwood-mcp/copyright"] == "linux/copyright"
+    assert (TAURI / deb_files["/usr/share/doc/arynwood-mcp/LICENSE"]).resolve() == ROOT / "LICENSE"
+    copyright_file = (TAURI / "linux" / "copyright").read_text()
+    assert copyright_file.startswith("Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/")
+    assert copyright_file.count("Copyright: 2025-2026 Arynwood LLC") == 2
+    assert "\nLicense: AGPL-3.0-only\n This program is free software" in copyright_file
+    assert "Copyright © 2025-2026 Arynwood LLC." in (ROOT / "README.md").read_text()

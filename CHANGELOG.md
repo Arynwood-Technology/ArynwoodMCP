@@ -15,6 +15,8 @@ them as a summary, not a precise record.
   package tools and Ubuntu's App Center no longer show "arynwood" and "(none)". The Windows
   installer's publisher stays "arynwood": it names the registry key that an upgrade reads to
   find the previous install, so changing it needs an installer migration first.
+- Copyright © 2025-2026 Arynwood LLC: in the README, the Windows installer's file details,
+  and a Debian copyright file plus the license text in `/usr/share/doc/arynwood-mcp/` of the `.deb`.
 
 ## [0.5.5] — 2026-11-03
 

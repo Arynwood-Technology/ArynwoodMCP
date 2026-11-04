@@ -114,6 +114,7 @@ Report vulnerabilities privately through
 Arynwood Technology maintains the scope, architecture, review, tests and releases.
 [Contributing](CONTRIBUTING.md) · [How we build](https://github.com/Arynwood-Technology/.github/blob/main/HOW-WE-BUILD.md) · [Project history](docs/history.md).
 
-Code is licensed under [GNU AGPL-3.0-only](LICENSE). Releases through 0.5.3 used an
-earlier source-available license. The Arynwood tree logo and app icons are separate
-artwork, all rights reserved; the code license does not grant rights to that branding.
+Copyright © 2025-2026 Arynwood LLC. Code is licensed under [GNU AGPL-3.0-only](LICENSE).
+Releases through 0.5.3 used an earlier source-available license. The Arynwood tree logo
+and app icons are separate artwork, all rights reserved; the code license does not grant
+rights to that branding.
