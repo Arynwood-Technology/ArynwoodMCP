@@ -15,6 +15,7 @@ import {
   type CpuMode, type Tool, type HardwareProfile, type SearXResult,
 } from '../lib/api'
 import { DownloadButton } from '../components/DownloadButton'
+import { useFrameDownloads } from '../lib/frameDownloads'
 import { Button, SectionCard } from '../components/ui'
 
 // ── CPU mode ──────────────────────────────────────────────────────────────────
@@ -750,9 +751,13 @@ function ActionSection({ tool }: { tool: Tool & { local_html?: boolean } }) {
 // ── Embedded iframe panel (for local HTML tools) ──────────────────────────────
 
 function IframePanel({ url, name }: { url: string; name: string }) {
+  const frame = useRef<HTMLIFrameElement>(null)
+  // The desktop web view drops downloads started in the frame; the tools hand them to this window (lib/frameDownloads.ts).
+  useFrameDownloads(frame, url)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <iframe
+        ref={frame}
         src={url}
         title={name}
         style={{ width: '100%', height: 640, border: '1px solid var(--border)', borderRadius: 8, background: '#000' }}

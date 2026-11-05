@@ -1535,14 +1535,24 @@
         btnRefresh.addEventListener('click', renderPreview);
 
         btnPublish.addEventListener('click', () => {
-            const html = codeEditor.value;
-            const blob = new Blob([html], { type: 'text/html' });
+            const blob = new Blob([codeEditor.value], { type: 'text/html' });
+            // Inside Arynwood this page is a frame from another origin, and the desktop app's web view drops a
+            // download started in such a frame, so the app's window saves it (frontend/src/lib/frameDownloads.ts).
+            // Framing is limited to Arynwood's own origins (frame-ancestors), hence '*'.
+            if (window.parent !== window) {
+                const reader = new FileReader();
+                reader.onload = () => window.parent.postMessage(
+                    { type: 'arynwood:download', name: 'website.html', dataUrl: reader.result }, '*');
+                reader.readAsDataURL(blob);
+                return;
+            }
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = 'website.html';
             a.click();
-            URL.revokeObjectURL(url);
+            // Not revoked at once: the browser reads the blob after click() returns.
+            setTimeout(() => URL.revokeObjectURL(url), 60000);
         });
 
         window.addEventListener('keydown', (e) => {

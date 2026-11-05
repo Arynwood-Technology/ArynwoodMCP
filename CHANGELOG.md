@@ -33,6 +33,13 @@ them as a summary, not a precise record.
 - Copyright © 2025-2026 Arynwood LLC: in the README, the Windows installer's file details,
   and a Debian copyright file plus the license text in `/usr/share/doc/arynwood-mcp/` of the `.deb`.
 
+### Fixed
+
+- Design Center's **Download Instead**, and its download buttons for video results and LoRA files, saved
+  nothing in the desktop app while saying "Downloaded": the app's web view drops downloads started inside
+  a tool's frame. The app's window now saves them, into Downloads, and the same goes for Client Intake's
+  **Publish** (the generated website). Design Center's **Save Here** was not affected.
+
 ## [0.5.5] — 2026-11-03
 
 ### Added
