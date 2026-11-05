@@ -4,6 +4,7 @@ import { X, RefreshCw } from 'lucide-react'
 import { cn } from '../../lib/cn'
 import { Button, IconButton } from '../ui'
 import { useAppStore } from '../../store/useAppStore'
+import { APP_VERSION, backendDiffers } from '../../lib/updates'
 import {
   getStatus, getServers, getModelsFor, serverAddress, getGpuQueue, getKnowledgeStatus,
   getMcpServers, getSidecars, startSidecar, pingServer, restartBackend,
@@ -164,6 +165,15 @@ function DrawerBody() {
                 Restart
               </Button>
             )}
+          />
+          <StatusRow
+            label="Version" state={!status ? 'unknown' : backendDiffers(status) ? 'warn' : 'ok'}
+            detail={backendDiffers(status)
+              ? `Screens ${APP_VERSION} · backend ${status?.version ?? 'older, reports no version'}`
+              : `Arynwood MCP ${APP_VERSION}`}
+            fix={'The screens and the backend come from different builds. If another backend holds port 8010 '
+              + '(lsof -i :8010), stop it and relaunch Arynwood. A desktop build needs the backend built from '
+              + 'the same checkout: make package.'}
           />
         </Section>
 

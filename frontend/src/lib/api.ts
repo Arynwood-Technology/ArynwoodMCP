@@ -192,6 +192,8 @@ export interface SystemStatus {
   /** false in a packaged build, which can't respawn its own backend (absent on older backends). */
   can_restart?: boolean
   cpu_mode?: CpuMode
+  /** The backend's release (absent on backends before this was reported). See backendDiffers in lib/updates. */
+  version?: string
 }
 
 export interface OllamaModel {

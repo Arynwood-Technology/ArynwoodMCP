@@ -28,7 +28,7 @@
      "system"
     ],
     "summary": "Get Status",
-    "description": "GET /status — parallel health check for Ollama, TTS, SD, Prometheus, and GPU.",
+    "description": "GET /status — parallel health check for Ollama, TTS, SD, Prometheus, and GPU.\n\n`version` is this backend's release, so the screens can tell when they come from a different build\n(a backend left running from another copy, or a desktop build that packaged another release's backend).",
     "operationId": "get_status_api_system_status_get",
     "responses": {
      "200": {

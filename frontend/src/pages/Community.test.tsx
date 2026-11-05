@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Community } from './Community'
-import { GroveContext } from '../community/lib/grove'
+import { GroveContext, SCREENS_GROVE_VERSION } from '../community/lib/grove'
 import { JoinByLink } from '../community/components/JoinByLink'
 import * as api from '../lib/api'
 import type { CommunityStatus } from '../lib/api'
@@ -55,6 +55,12 @@ describe('Community page', () => {
     show()
     expect(await screen.findByText('Grove screens for http://127.0.0.1:8018 (local, 0.4.0)')).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Running · v0.4.0')
+  })
+
+  it('shows which Grove release its screens match beside the Grove\'s own version', async () => {
+    status.mockResolvedValue({ ...base, status: 'stopped' })
+    show()
+    expect(await screen.findByText(`Screens from Grove ${SCREENS_GROVE_VERSION}`)).toBeInTheDocument()
   })
 
   it('explains and offers Start when the Grove on this computer is stopped', async () => {
