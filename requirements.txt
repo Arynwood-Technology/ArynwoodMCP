@@ -9,7 +9,7 @@ aiosqlite~=0.22.1
 httpx~=0.28.1
 ollama~=0.6.3
 python-multipart~=0.0.32
-watchdog~=6.0.0
+watchdog~=7.0.0
 requests~=2.34.2
 # Transitive security floors: certifi's trust bundle, urllib3 via requests, and h2 via ddgs's httpx[http2].
 certifi>=2026.10.19,<2027
