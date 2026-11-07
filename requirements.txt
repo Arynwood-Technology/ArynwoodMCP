@@ -15,7 +15,7 @@ requests~=2.34.2
 certifi>=2026.10.19,<2027
 urllib3~=2.8
 h2~=4.4,>=4.4.1
-paramiko~=5.0.0
+paramiko~=5.1.0
 prometheus-fastapi-instrumentator~=8.1.0
 # Direct dependency now (roadmap 2.5's LLM/tool call metrics import it explicitly),
 # not just transitive via prometheus-fastapi-instrumentator.
